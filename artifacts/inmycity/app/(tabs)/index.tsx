@@ -9,33 +9,21 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useState } from "react";
 
 import { useColors } from "@/hooks/useColors";
-import {
-  useGetPlaces,
-  useGetExploreSummary,
-  useGetItineraries,
-} from "@workspace/api-client-react";
+import { useGetPlaces, useGetItineraries } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { CityPicker } from "@/components/CityPicker";
-
-import { CategoryFilter } from "@/components/CategoryFilter";
-import { StatsBar } from "@/components/StatsBar";
+import { CategoryGrid } from "@/components/CategoryGrid";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ItineraryCard } from "@/components/ItineraryCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 
-const CATEGORIES = ["food", "attraction", "essentials", "nightlife"];
-
 export default function ExploreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { selectedCity, showPicker } = useCity();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const cityName = selectedCity?.name;
 
@@ -44,9 +32,8 @@ export default function ExploreScreen() {
     isLoading: placesLoading,
     error: placesError,
     refetch: refetchPlaces,
-  } = useGetPlaces({ city: cityName, category: selectedCategory || undefined });
+  } = useGetPlaces({ city: cityName });
 
-  const { data: summary } = useGetExploreSummary({ city: cityName });
   const { data: itineraries } = useGetItineraries({ city: cityName });
 
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
@@ -56,21 +43,15 @@ export default function ExploreScreen() {
     return <ErrorFallback error={placesError as Error} resetError={refetchPlaces} />;
   }
 
+  const trending = (places || []).slice(0, 10);
+
   const renderHeader = () => (
     <View>
-      {/* Top bar: logo + profile */}
+      {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: topPadding }]}>
         <View style={styles.topRow}>
           <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
-          <TouchableOpacity
-            onPress={() => router.push("/profile")}
-            activeOpacity={0.75}
-            style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          >
-            <Feather name="user" size={17} color={colors.foreground} />
-          </TouchableOpacity>
         </View>
-        {/* City selector row */}
         <TouchableOpacity
           style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={showPicker}
@@ -84,14 +65,11 @@ export default function ExploreScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Stats */}
-      {summary && (
-        <StatsBar
-          places={summary.totalPlaces}
-          events={summary.totalEvents}
-          deals={summary.totalDeals}
-        />
-      )}
+      {/* Category grid */}
+      <View style={styles.sectionRow}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Explore</Text>
+      </View>
+      <CategoryGrid />
 
       {/* City Guides */}
       {itineraries && itineraries.length > 0 && (
@@ -114,16 +92,13 @@ export default function ExploreScreen() {
         </View>
       )}
 
-      {/* Places section header + filters */}
+      {/* Trending */}
       <View style={styles.sectionRow}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Places</Text>
-        <Feather name="compass" size={15} color={colors.amber} />
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+          Trending in {selectedCity?.name ?? "City"}
+        </Text>
+        <Feather name="trending-up" size={15} color={colors.amber} />
       </View>
-      <CategoryFilter
-        categories={CATEGORIES}
-        selectedCategory={selectedCategory}
-        onSelect={setSelectedCategory}
-      />
     </View>
   );
 
@@ -137,7 +112,7 @@ export default function ExploreScreen() {
         </View>
       ) : (
         <FlatList
-          data={places || []}
+          data={trending}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => <PlaceCard place={item} />}
           ListHeaderComponent={renderHeader}
@@ -152,7 +127,7 @@ export default function ExploreScreen() {
               </View>
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nothing here yet</Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Try switching city or changing the filter.
+                Try switching to a different city.
               </Text>
             </View>
           }
@@ -171,7 +146,7 @@ const styles = StyleSheet.create({
   topBar: {
     paddingHorizontal: 20,
     paddingBottom: 12,
-    gap: 10,
+    gap: 8,
   },
   topRow: {
     flexDirection: "row",
@@ -180,16 +155,8 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontFamily: "Inter_700Bold",
-    fontSize: 22,
+    fontSize: 24,
     letterSpacing: -0.5,
-  },
-  profileBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
   },
   cityBtn: {
     flexDirection: "row",
@@ -205,14 +172,13 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
   },
-
   sectionRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   sectionTitle: {
     fontFamily: "Inter_700Bold",
@@ -223,10 +189,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     gap: 12,
   },
-  guideCard: {
-    width: 240,
-  },
-
+  guideCard: { width: 240 },
   emptyContainer: {
     alignItems: "center",
     paddingTop: 48,
@@ -240,15 +203,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 16,
   },
-  emptyTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 20,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 15,
-    textAlign: "center",
-    lineHeight: 22,
-  },
+  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20, marginBottom: 8 },
+  emptyText: { fontFamily: "Inter_400Regular", fontSize: 15, textAlign: "center", lineHeight: 22 },
 });

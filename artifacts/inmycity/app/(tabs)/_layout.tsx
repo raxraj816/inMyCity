@@ -35,12 +35,7 @@ export default function TabLayout() {
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
-            />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ) : null,
       }}
     >
@@ -48,30 +43,34 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Explore",
-          tabBarIcon: ({ color }) => (
-            <Feather name="compass" size={22} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="compass" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="events"
+        name="feeds"
         options={{
-          title: "Events",
-          tabBarIcon: ({ color }) => (
-            <Feather name="calendar" size={22} color={color} />
-          ),
+          title: "Feeds",
+          tabBarIcon: ({ color }) => <Feather name="layers" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="deals"
+        name="search"
         options={{
-          title: "Deals",
-          tabBarIcon: ({ color }) => (
-            <Feather name="tag" size={22} color={color} />
-          ),
+          title: "Search",
+          tabBarIcon: ({ color }) => <Feather name="search" size={22} color={color} />,
         }}
       />
-      <Tabs.Screen name="saved" options={{ href: null }} />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
+        }}
+      />
+      {/* Hidden legacy routes */}
+      <Tabs.Screen name="events"  options={{ href: null }} />
+      <Tabs.Screen name="deals"   options={{ href: null }} />
+      <Tabs.Screen name="saved"   options={{ href: null }} />
       <Tabs.Screen name="tourist" options={{ href: null }} />
     </Tabs>
   );

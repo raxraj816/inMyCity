@@ -43,17 +43,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="cityguide"
-        options={{
-          title: "City Guide",
-          tabBarIcon: ({ color }) => <Feather name="map" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="feeds"
         options={{
           title: "Feeds",
           tabBarIcon: ({ color }) => <Feather name="rss" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="cityguide"
+        options={{
+          title: "City Guide",
+          tabBarIcon: ({ color }) => <Feather name="map" size={22} color={color} />,
         }}
       />
       {/* Hidden routes */}

@@ -38,7 +38,6 @@ const CITY_META: Record<string, {
     tips: [
       { icon: "sun",       label: "Best Season",   value: "Nov – Feb"            },
       { icon: "navigation",label: "Getting Around", value: "Metro & Local Trains" },
-      { icon: "percent",   label: "Tipping",        value: "Optional (5–10%)"    },
       { icon: "phone",     label: "Emergency",      value: "112"                  },
     ],
   },
@@ -47,7 +46,6 @@ const CITY_META: Record<string, {
     tips: [
       { icon: "sun",       label: "Best Season",   value: "Oct – Feb"             },
       { icon: "navigation",label: "Getting Around", value: "Metro & Auto-Rickshaw" },
-      { icon: "percent",   label: "Tipping",        value: "Optional (5–10%)"     },
       { icon: "phone",     label: "Emergency",      value: "112"                   },
     ],
   },
@@ -56,7 +54,6 @@ const CITY_META: Record<string, {
     tips: [
       { icon: "sun",       label: "Best Season",   value: "Apr – Jun, Sep – Nov" },
       { icon: "navigation",label: "Getting Around", value: "Subway & Bus"         },
-      { icon: "percent",   label: "Tipping",        value: "Expected (18–22%)"    },
       { icon: "phone",     label: "Emergency",      value: "911"                  },
     ],
   },
@@ -65,7 +62,6 @@ const CITY_META: Record<string, {
     tips: [
       { icon: "sun",       label: "Best Season",   value: "Sep – Nov"            },
       { icon: "navigation",label: "Getting Around", value: "BART & Muni"          },
-      { icon: "percent",   label: "Tipping",        value: "Expected (18–22%)"    },
       { icon: "phone",     label: "Emergency",      value: "911"                  },
     ],
   },
@@ -74,10 +70,9 @@ const CITY_META: Record<string, {
 const DEFAULT_META = {
   tagline: "Discover this city",
   tips: [
-    { icon: "sun",       label: "Best Season",   value: "Check locally"   },
-    { icon: "navigation",label: "Getting Around", value: "Public Transit"  },
-    { icon: "percent",   label: "Tipping",        value: "Check locally"   },
-    { icon: "phone",     label: "Emergency",      value: "Local number"    },
+    { icon: "sun",       label: "Best Season",   value: "Check locally"  },
+    { icon: "navigation",label: "Getting Around", value: "Public Transit" },
+    { icon: "phone",     label: "Emergency",      value: "Local number"   },
   ],
 };
 
@@ -171,7 +166,7 @@ export default function CityGuideScreen() {
         {/* ── Quick Tips ── */}
         <View style={styles.section}>
           <SectionHeader title="Quick Tips" icon="info" colors={colors} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipsScroll}>
+          <View style={styles.tipsRow}>
             {meta.tips.map((tip) => (
               <View
                 key={tip.label}
@@ -184,7 +179,7 @@ export default function CityGuideScreen() {
                 <Text style={[styles.tipValue, { color: colors.foreground }]}>{tip.value}</Text>
               </View>
             ))}
-          </ScrollView>
+          </View>
         </View>
 
         {/* ── Getting Around CTA ── */}
@@ -553,9 +548,13 @@ const styles = StyleSheet.create({
   transitTitle: { fontFamily: "Inter_700Bold", fontSize: 15, color: "#fff" },
   transitSub: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 1 },
 
-  tipsScroll: { paddingHorizontal: 20, gap: 10 },
+  tipsRow: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    gap: 10,
+  },
   tipCard: {
-    width: 120, borderRadius: 16, padding: 14, borderWidth: 1,
+    flex: 1, borderRadius: 16, padding: 14, borderWidth: 1,
     alignItems: "flex-start", gap: 6,
   },
   tipIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },

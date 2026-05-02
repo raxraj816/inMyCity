@@ -47,7 +47,10 @@ export default function ExploreScreen() {
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: topPadding }]}>
         <View style={styles.topRow}>
-          <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
+          <View>
+            <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
+            <Text style={[styles.appMotto, { color: colors.mutedForeground }]}>City At Your Fingertips</Text>
+          </View>
           <TouchableOpacity
             onPress={() => router.push("/profile")}
             activeOpacity={0.75}
@@ -139,6 +142,12 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 24,
     letterSpacing: -0.5,
+  },
+  appMotto: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    marginTop: 1,
+    letterSpacing: 0.2,
   },
   profileBtn: {
     width: 36,

@@ -1,29 +1,29 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 
-type FeatherIconName = React.ComponentProps<typeof Feather>["name"];
+type MCIName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 
 type Category = {
   id: string;
   label: string;
-  icon: FeatherIconName;
+  icon: MCIName;
   color: string;
   active: boolean;
   route?: string;
 };
 
 const CATEGORIES: Category[] = [
-  { id: "dining",     label: "Dining",      icon: "coffee",    color: "#f97316", active: true,  route: "/(tabs)/feeds?section=dining" },
-  { id: "places",     label: "Places",      icon: "map-pin",   color: "#6366f1", active: true,  route: "/(tabs)/feeds?section=places" },
-  { id: "events",     label: "Events",      icon: "calendar",  color: "#0ea5e9", active: true,  route: "/(tabs)/feeds?section=events" },
-  { id: "deals",      label: "Deals",       icon: "tag",       color: "#10b981", active: true,  route: "/(tabs)/feeds?section=deals"  },
-  { id: "movies",     label: "Movies",      icon: "film",      color: "#8b5cf6", active: true,  route: "/movies" },
-  { id: "hotels",     label: "Hotels",      icon: "home",      color: "#f59e0b", active: true,  route: "/hotels" },
-  { id: "activities", label: "Activities",  icon: "zap",       color: "#ef4444", active: true,  route: "/activities" },
-  { id: "transit",    label: "Transit",     icon: "share-2",   color: "#06b6d4", active: true,  route: "/transit" },
+  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#f97316", active: true,  route: "/(tabs)/feeds?section=dining" },
+  { id: "places",     label: "Places",     icon: "map-marker",            color: "#6366f1", active: true,  route: "/(tabs)/feeds?section=places" },
+  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true,  route: "/(tabs)/feeds?section=events" },
+  { id: "deals",      label: "Deals",      icon: "sale",                  color: "#10b981", active: true,  route: "/(tabs)/feeds?section=deals"  },
+  { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true,  route: "/movies" },
+  { id: "hotels",     label: "Hotels",     icon: "bed-double",            color: "#f59e0b", active: true,  route: "/hotels" },
+  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#ef4444", active: true,  route: "/activities" },
+  { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true,  route: "/transit" },
 ];
 
 export function CategoryGrid() {
@@ -44,19 +44,15 @@ export function CategoryGrid() {
           onPress={() => handlePress(cat)}
           activeOpacity={cat.active ? 0.7 : 1}
         >
-          {/* Icon circle */}
           <View style={[styles.iconCircle, { backgroundColor: cat.color + "1a" }]}>
-            <Feather
+            <MaterialCommunityIcons
               name={cat.icon}
-              size={20}
+              size={22}
               color={cat.active ? cat.color : colors.mutedForeground}
             />
           </View>
           <Text
-            style={[
-              styles.label,
-              { color: cat.active ? colors.foreground : colors.mutedForeground },
-            ]}
+            style={[styles.label, { color: cat.active ? colors.foreground : colors.mutedForeground }]}
             numberOfLines={1}
           >
             {cat.label}

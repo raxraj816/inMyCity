@@ -167,7 +167,7 @@ function formatMembers(n: number) {
 // ─── Main Component ───────────────────────────────────────────
 
 const TABS: { id: MainTab; label: string; icon: string }[] = [
-  { id: "all",       label: "All",       icon: "layers"   },
+  { id: "all",       label: "All",       icon: "grid"     },
   { id: "news",      label: "News",      icon: "bell"     },
   { id: "community", label: "Community", icon: "users"    },
   { id: "qa",        label: "Q&A",       icon: "message-circle" },

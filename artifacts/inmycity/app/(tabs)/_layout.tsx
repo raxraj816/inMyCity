@@ -53,7 +53,7 @@ export default function TabLayout() {
         name="feeds"
         options={{
           title: "Feeds",
-          tabBarIcon: ({ color }) => <Feather name="layers" size={22} color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="rss" size={22} color={color} />,
         }}
       />
       {/* Hidden routes */}

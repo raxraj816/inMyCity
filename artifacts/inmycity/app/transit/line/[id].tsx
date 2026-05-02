@@ -90,7 +90,7 @@ export default function TransitLineDetailScreen() {
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
                   <Feather name="refresh-cw" size={18} color={line.color} />
-                  <Text style={[styles.statValue, { color: colors.foreground }]} numberOfLines={1} style={{ fontFamily: "Inter_700Bold", fontSize: 11, textAlign: "center" }}>{line.frequency}</Text>
+                  <Text style={[styles.statValue, { color: colors.foreground, fontFamily: "Inter_700Bold", fontSize: 11, textAlign: "center" }]} numberOfLines={1}>{line.frequency}</Text>
                   <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Frequency</Text>
                 </View>
               </>

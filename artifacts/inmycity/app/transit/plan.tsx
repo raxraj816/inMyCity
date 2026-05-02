@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
-import { useSearchTransitRoutes } from "@workspace/api-client-react";
+import { useSearchTransitRoutes, getSearchTransitRoutesQueryKey } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 
 const TYPE_ICONS: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
@@ -32,9 +32,10 @@ export default function TransitPlanScreen() {
   const isLocal = selectedCity?.name === "Mumbai" || selectedCity?.name === "Bangalore";
   const currencySymbol = isLocal ? "₹" : "$";
 
+  const searchParams = { city: selectedCity?.name, from: from || undefined, to: to || undefined };
   const { data: routes = [], isLoading, refetch } = useSearchTransitRoutes(
-    { city: selectedCity?.name, from: from || undefined, to: to || undefined },
-    { query: { enabled: false } }
+    searchParams,
+    { query: { enabled: false, queryKey: getSearchTransitRoutesQueryKey(searchParams) } }
   );
 
   const handleSearch = () => {

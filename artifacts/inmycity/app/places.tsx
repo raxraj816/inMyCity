@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Platform, FlatList
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
@@ -28,7 +28,10 @@ export default function PlacesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { selectedCity } = useCity();
-  const [activeFilter, setActiveFilter] = useState("all");
+  const { filter: initialFilter } = useLocalSearchParams<{ filter?: string }>();
+  const [activeFilter, setActiveFilter] = useState(
+    FILTERS.some(f => f.id === initialFilter) ? (initialFilter as string) : "all"
+  );
 
   const activeCategory = FILTERS.find(f => f.id === activeFilter)?.category;
 

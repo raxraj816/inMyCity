@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  FlatList,
   TouchableOpacity,
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 
@@ -27,41 +27,46 @@ import {
   type Event,
 } from "@workspace/api-client-react";
 
-const CITY_META: Record<string, { tagline: string; tips: { icon: string; label: string; value: string }[] }> = {
+// ─── City meta (no Currency — you already know the country) ───
+
+const CITY_META: Record<string, {
+  tagline: string;
+  tips: { icon: string; label: string; value: string }[];
+}> = {
   Mumbai: {
     tagline: "The City of Dreams",
     tips: [
-      { icon: "sun", label: "Best Season", value: "Nov – Feb" },
-      { icon: "navigation", label: "Getting Around", value: "Metro & Local Trains" },
-      { icon: "dollar-sign", label: "Currency", value: "Indian Rupee (₹)" },
-      { icon: "globe", label: "Language", value: "Hindi / Marathi" },
+      { icon: "sun",       label: "Best Season",    value: "Nov – Feb"              },
+      { icon: "navigation",label: "Getting Around",  value: "Metro & Local Trains"   },
+      { icon: "globe",     label: "Language",        value: "Hindi / Marathi"        },
+      { icon: "phone",     label: "Emergency",       value: "112"                    },
     ],
   },
   Bangalore: {
     tagline: "The Garden City",
     tips: [
-      { icon: "sun", label: "Best Season", value: "Oct – Feb" },
-      { icon: "navigation", label: "Getting Around", value: "Metro & Auto-Rickshaw" },
-      { icon: "dollar-sign", label: "Currency", value: "Indian Rupee (₹)" },
-      { icon: "globe", label: "Language", value: "Kannada / English" },
+      { icon: "sun",       label: "Best Season",    value: "Oct – Feb"               },
+      { icon: "navigation",label: "Getting Around",  value: "Metro & Auto-Rickshaw"  },
+      { icon: "globe",     label: "Language",        value: "Kannada / English"      },
+      { icon: "phone",     label: "Emergency",       value: "112"                    },
     ],
   },
   "New York City": {
     tagline: "The City That Never Sleeps",
     tips: [
-      { icon: "sun", label: "Best Season", value: "Apr – Jun, Sep – Nov" },
-      { icon: "navigation", label: "Getting Around", value: "Subway & Bus" },
-      { icon: "dollar-sign", label: "Currency", value: "US Dollar ($)" },
-      { icon: "globe", label: "Language", value: "English" },
+      { icon: "sun",       label: "Best Season",    value: "Apr – Jun, Sep – Nov"    },
+      { icon: "navigation",label: "Getting Around",  value: "Subway & Bus"           },
+      { icon: "globe",     label: "Language",        value: "English"                },
+      { icon: "phone",     label: "Emergency",       value: "911"                    },
     ],
   },
   "San Francisco": {
     tagline: "The City by the Bay",
     tips: [
-      { icon: "sun", label: "Best Season", value: "Sep – Nov" },
-      { icon: "navigation", label: "Getting Around", value: "BART & Muni" },
-      { icon: "dollar-sign", label: "Currency", value: "US Dollar ($)" },
-      { icon: "globe", label: "Language", value: "English" },
+      { icon: "sun",       label: "Best Season",    value: "Sep – Nov"               },
+      { icon: "navigation",label: "Getting Around",  value: "BART & Muni"            },
+      { icon: "globe",     label: "Language",        value: "English"                },
+      { icon: "phone",     label: "Emergency",       value: "911"                    },
     ],
   },
 };
@@ -69,18 +74,30 @@ const CITY_META: Record<string, { tagline: string; tips: { icon: string; label: 
 const DEFAULT_META = {
   tagline: "Discover this city",
   tips: [
-    { icon: "sun", label: "Best Season", value: "Check locally" },
-    { icon: "navigation", label: "Getting Around", value: "Public Transit" },
-    { icon: "dollar-sign", label: "Currency", value: "Local Currency" },
-    { icon: "globe", label: "Language", value: "Local Language" },
+    { icon: "sun",       label: "Best Season",   value: "Check locally"  },
+    { icon: "navigation",label: "Getting Around", value: "Public Transit" },
+    { icon: "globe",     label: "Language",       value: "Local Language" },
+    { icon: "phone",     label: "Emergency",      value: "Local number"   },
   ],
 };
+
+// ─── Place filter pills ────────────────────────────────────────
+
+const PLACE_FILTERS = [
+  { id: "all",        label: "All"         },
+  { id: "attraction", label: "Attractions" },
+  { id: "nightlife",  label: "Nightlife"   },
+  { id: "essentials", label: "Essentials"  },
+];
+
+// ─── Main Screen ───────────────────────────────────────────────
 
 export default function CityGuideScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { selectedCity, showPicker } = useCity();
+  const [placeFilter, setPlaceFilter] = useState("all");
 
   const cityName = selectedCity?.name;
   const meta = (cityName && CITY_META[cityName]) ?? DEFAULT_META;
@@ -89,16 +106,20 @@ export default function CityGuideScreen() {
 
   const { data: itineraries = [], isLoading: iLoading, error: iError, refetch: iRefetch } =
     useGetItineraries({ city: cityName });
-  const { data: places = [], isLoading: pLoading } =
+  const { data: allPlaces = [], isLoading: pLoading } =
     useGetPlaces({ city: cityName });
   const { data: events = [], isLoading: eLoading } =
     useGetEvents({ city: cityName });
 
   if (iError) return <ErrorFallback error={iError as Error} resetError={iRefetch} />;
 
-  const attractions = places.filter((p) => p.category?.toLowerCase() === "attraction").slice(0, 8);
+  const filteredPlaces = (
+    placeFilter === "all"
+      ? allPlaces
+      : allPlaces.filter((p) => p.category?.toLowerCase() === placeFilter)
+  ).slice(0, 10);
+
   const upcomingEvents = events.slice(0, 5);
-  const isLoading = iLoading || pLoading || eLoading;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -147,12 +168,15 @@ export default function CityGuideScreen() {
           </View>
         </View>
 
-        {/* ── Visitor Tips ── */}
+        {/* ── Quick Tips ── */}
         <View style={styles.section}>
           <SectionHeader title="Quick Tips" icon="info" colors={colors} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipsScroll}>
             {meta.tips.map((tip) => (
-              <View key={tip.label} style={[styles.tipCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View
+                key={tip.label}
+                style={[styles.tipCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
                 <View style={[styles.tipIconBox, { backgroundColor: colors.accent }]}>
                   <Feather name={tip.icon as any} size={16} color={colors.amber} />
                 </View>
@@ -163,14 +187,14 @@ export default function CityGuideScreen() {
           </ScrollView>
         </View>
 
-        {/* ── Getting Around ── */}
+        {/* ── Getting Around CTA ── */}
         <TouchableOpacity
           activeOpacity={0.85}
           style={[styles.transitCard, { backgroundColor: "#06b6d4" }]}
           onPress={() => router.push("/transit")}
         >
           <View style={[styles.transitIconBox, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-            <Feather name="share-2" size={22} color="#fff" />
+            <MaterialCommunityIcons name="train-variant" size={22} color="#fff" />
           </View>
           <View style={styles.transitText}>
             <Text style={styles.transitTitle}>Getting Around</Text>
@@ -179,10 +203,74 @@ export default function CityGuideScreen() {
           <Feather name="arrow-right" size={18} color="#fff" />
         </TouchableOpacity>
 
-        {/* ── Curated Itineraries ── */}
+        {/* ── Explore Places ── */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="Explore Places"
+            icon="map-pin"
+            colors={colors}
+            onSeeAll={() => router.push("/places")}
+          />
+
+          {/* Filter pills */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.placeFilterScroll}
+          >
+            {PLACE_FILTERS.map((f) => {
+              const active = placeFilter === f.id;
+              return (
+                <TouchableOpacity
+                  key={f.id}
+                  style={[
+                    styles.filterPill,
+                    {
+                      backgroundColor: active ? "#6366f1" : colors.card,
+                      borderColor: active ? "#6366f1" : colors.border,
+                    },
+                  ]}
+                  onPress={() => setPlaceFilter(f.id)}
+                >
+                  <Text style={[styles.filterPillText, { color: active ? "#fff" : colors.foreground }]}>
+                    {f.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Places horizontal scroll */}
+          {pLoading ? (
+            <View style={styles.skeletonRow}>
+              <SkeletonCard height={180} style={styles.placeSkeletonCard} />
+              <SkeletonCard height={180} style={styles.placeSkeletonCard} />
+              <SkeletonCard height={180} style={styles.placeSkeletonCard} />
+            </View>
+          ) : filteredPlaces.length === 0 ? (
+            <EmptySection icon="map-pin" message={`No ${placeFilter === "all" ? "places" : placeFilter} in ${cityName ?? "this city"} yet.`} colors={colors} />
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.placesScroll}
+            >
+              {filteredPlaces.map((place) => (
+                <PlaceGuideCard
+                  key={place.id}
+                  place={place}
+                  colors={colors}
+                  onPress={() => router.push(`/place/${place.id}` as any)}
+                />
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* ── Curated Guides ── */}
         <View style={styles.section}>
           <SectionHeader title="Curated Guides" icon="map" colors={colors} />
-          {isLoading ? (
+          {iLoading ? (
             <View style={styles.skeletonRow}>
               <SkeletonCard height={220} style={styles.guideSkeletonCard} />
               <SkeletonCard height={220} style={styles.guideSkeletonCard} />
@@ -192,34 +280,25 @@ export default function CityGuideScreen() {
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
               {itineraries.map((itin) => (
-                <ItineraryGuideCard key={itin.id} itinerary={itin} colors={colors} onPress={() => router.push(`/itinerary/${itin.id}`)} />
+                <ItineraryGuideCard
+                  key={itin.id}
+                  itinerary={itin}
+                  colors={colors}
+                  onPress={() => router.push(`/itinerary/${itin.id}` as any)}
+                />
               ))}
             </ScrollView>
           )}
         </View>
 
-        {/* ── Top Attractions ── */}
+        {/* ── Events in the City ── */}
         <View style={styles.section}>
-          <SectionHeader title="Top Attractions" icon="star" colors={colors} />
-          {pLoading ? (
-            <View style={styles.skeletonRow}>
-              <SkeletonCard height={160} style={styles.attractionSkeletonCard} />
-              <SkeletonCard height={160} style={styles.attractionSkeletonCard} />
-            </View>
-          ) : attractions.length === 0 ? (
-            <EmptySection icon="star" message="No attractions listed for this city yet." colors={colors} />
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attractionsScroll}>
-              {attractions.map((place) => (
-                <AttractionCard key={place.id} place={place} colors={colors} onPress={() => router.push(`/place/${place.id}`)} />
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* ── Upcoming Events ── */}
-        <View style={styles.section}>
-          <SectionHeader title="Events in the City" icon="calendar" colors={colors} onSeeAll={() => router.push("/events")} />
+          <SectionHeader
+            title="Events in the City"
+            icon="calendar"
+            colors={colors}
+            onSeeAll={() => router.push("/(tabs)/events" as any)}
+          />
           {eLoading ? (
             <>
               <SkeletonCard height={80} style={styles.eventSkeleton} />
@@ -229,7 +308,12 @@ export default function CityGuideScreen() {
             <EmptySection icon="calendar" message="No upcoming events right now." colors={colors} />
           ) : (
             upcomingEvents.map((event) => (
-              <EventRow key={event.id} event={event} colors={colors} onPress={() => router.push(`/event/${event.id}`)} />
+              <EventRow
+                key={event.id}
+                event={event}
+                colors={colors}
+                onPress={() => router.push(`/event/${event.id}` as any)}
+              />
             ))
           )}
         </View>
@@ -280,6 +364,56 @@ function EmptySection({
   );
 }
 
+function PlaceGuideCard({
+  place, colors, onPress,
+}: {
+  place: Place;
+  colors: ReturnType<typeof import("@/hooks/useColors").useColors>;
+  onPress: () => void;
+}) {
+  const categoryColor =
+    place.category === "food"       ? "#f97316"
+    : place.category === "attraction" ? "#0ea5e9"
+    : place.category === "nightlife"  ? "#ec4899"
+    : place.category === "essentials" ? "#10b981"
+    : colors.mutedForeground;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={[styles.placeCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      onPress={onPress}
+    >
+      <View style={styles.placeImageBox}>
+        {place.imageUrl ? (
+          <Image source={{ uri: place.imageUrl }} style={styles.placeImage} contentFit="cover" transition={200} />
+        ) : (
+          <View style={[styles.placeImage, { backgroundColor: colors.muted }]} />
+        )}
+        <View style={[styles.placeCatBadge, { backgroundColor: categoryColor }]}>
+          <Text style={styles.placeCatText}>{place.category}</Text>
+        </View>
+        {place.isOpen !== null && (
+          <View style={[styles.openDot, { backgroundColor: place.isOpen ? colors.success : colors.destructive }]} />
+        )}
+      </View>
+      <View style={styles.placeBody}>
+        <Text style={[styles.placeName, { color: colors.foreground }]} numberOfLines={2}>
+          {place.name}
+        </Text>
+        {place.rating != null && (
+          <View style={styles.placeRating}>
+            <Feather name="star" size={11} color="#f59e0b" />
+            <Text style={[styles.placeRatingText, { color: colors.mutedForeground }]}>
+              {place.rating.toFixed(1)}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function ItineraryGuideCard({
   itinerary, colors, onPress,
 }: {
@@ -316,46 +450,6 @@ function ItineraryGuideCard({
             {itinerary.stops?.length ?? 0} stops
           </Text>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function AttractionCard({
-  place, colors, onPress,
-}: {
-  place: Place;
-  colors: ReturnType<typeof import("@/hooks/useColors").useColors>;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      style={[styles.attractionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={onPress}
-    >
-      <View style={styles.attractionImageBox}>
-        {place.imageUrl ? (
-          <Image source={{ uri: place.imageUrl }} style={styles.attractionImage} contentFit="cover" transition={200} />
-        ) : (
-          <View style={[styles.attractionImage, { backgroundColor: colors.infoLight }]} />
-        )}
-        {place.isOpen !== null && (
-          <View style={[styles.openDot, { backgroundColor: place.isOpen ? colors.success : colors.destructive }]} />
-        )}
-      </View>
-      <View style={styles.attractionBody}>
-        <Text style={[styles.attractionName, { color: colors.foreground }]} numberOfLines={2}>
-          {place.name}
-        </Text>
-        {place.rating != null && (
-          <View style={styles.attractionRating}>
-            <Feather name="star" size={11} color="#f59e0b" />
-            <Text style={[styles.attractionRatingText, { color: colors.mutedForeground }]}>
-              {place.rating.toFixed(1)}
-            </Text>
-          </View>
-        )}
       </View>
     </TouchableOpacity>
   );
@@ -430,10 +524,16 @@ const styles = StyleSheet.create({
     padding: 24, flexDirection: "row", alignItems: "center", justifyContent: "space-between",
   },
   heroContent: { flex: 1 },
-  heroEyebrow: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1 },
+  heroEyebrow: {
+    fontFamily: "Inter_400Regular", fontSize: 12,
+    color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1,
+  },
   heroCity: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#fff", marginTop: 2 },
   heroTagline: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 },
-  heroIconBox: { width: 68, height: 68, borderRadius: 20, alignItems: "center", justifyContent: "center", marginLeft: 16 },
+  heroIconBox: {
+    width: 68, height: 68, borderRadius: 20,
+    alignItems: "center", justifyContent: "center", marginLeft: 16,
+  },
 
   section: { marginTop: 8 },
   sectionHeader: {
@@ -462,6 +562,38 @@ const styles = StyleSheet.create({
   tipLabel: { fontFamily: "Inter_400Regular", fontSize: 11 },
   tipValue: { fontFamily: "Inter_600SemiBold", fontSize: 13, lineHeight: 17 },
 
+  placeFilterScroll: {
+    paddingHorizontal: 20, paddingBottom: 12, gap: 8,
+  },
+  filterPill: {
+    paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, borderWidth: 1,
+  },
+  filterPillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
+
+  placesScroll: { paddingHorizontal: 20, paddingBottom: 4, gap: 12 },
+  placeCard: {
+    width: 160, borderRadius: 16, overflow: "hidden", borderWidth: 1,
+    ...Platform.select({
+      web: { boxShadow: "0 2px 8px rgba(0,0,0,0.07)" },
+      default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 },
+    }),
+  },
+  placeImageBox: { height: 110, position: "relative" },
+  placeImage: { width: "100%", height: "100%" },
+  placeCatBadge: {
+    position: "absolute", bottom: 8, left: 8,
+    paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8,
+  },
+  placeCatText: { fontFamily: "Inter_600SemiBold", fontSize: 9, color: "#fff", textTransform: "capitalize" },
+  openDot: {
+    position: "absolute", top: 8, right: 8,
+    width: 8, height: 8, borderRadius: 4,
+  },
+  placeBody: { padding: 10, gap: 5 },
+  placeName: { fontFamily: "Inter_600SemiBold", fontSize: 12, lineHeight: 16 },
+  placeRating: { flexDirection: "row", alignItems: "center", gap: 3 },
+  placeRatingText: { fontFamily: "Inter_500Medium", fontSize: 11 },
+
   guidesScroll: { paddingHorizontal: 20, paddingBottom: 4, gap: 12 },
   guideCard: {
     width: 220, borderRadius: 18, overflow: "hidden", borderWidth: 1,
@@ -483,25 +615,6 @@ const styles = StyleSheet.create({
   guideFooter: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
   guideStops: { fontFamily: "Inter_400Regular", fontSize: 11 },
 
-  attractionsScroll: { paddingHorizontal: 20, gap: 10 },
-  attractionCard: {
-    width: 140, borderRadius: 16, overflow: "hidden", borderWidth: 1,
-    ...Platform.select({
-      web: { boxShadow: "0 2px 8px rgba(0,0,0,0.07)" },
-      default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 },
-    }),
-  },
-  attractionImageBox: { height: 100, position: "relative" },
-  attractionImage: { width: "100%", height: "100%" },
-  openDot: {
-    position: "absolute", top: 8, right: 8,
-    width: 8, height: 8, borderRadius: 4,
-  },
-  attractionBody: { padding: 10, gap: 4 },
-  attractionName: { fontFamily: "Inter_600SemiBold", fontSize: 12, lineHeight: 16 },
-  attractionRating: { flexDirection: "row", alignItems: "center", gap: 3 },
-  attractionRatingText: { fontFamily: "Inter_500Medium", fontSize: 11 },
-
   eventRow: {
     marginHorizontal: 20, marginBottom: 8, borderRadius: 14, borderWidth: 1,
     flexDirection: "row", alignItems: "center", padding: 12, gap: 12,
@@ -517,7 +630,7 @@ const styles = StyleSheet.create({
 
   skeletonRow: { flexDirection: "row", paddingHorizontal: 20, gap: 12 },
   guideSkeletonCard: { flex: 1 },
-  attractionSkeletonCard: { width: 140 },
+  placeSkeletonCard: { width: 160 },
   eventSkeleton: { marginHorizontal: 20, marginBottom: 8 },
 
   emptyBox: {

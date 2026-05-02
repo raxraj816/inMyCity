@@ -5,7 +5,6 @@ import {
   Platform,
   Text,
   TouchableOpacity,
-  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -37,8 +36,6 @@ export default function ExploreScreen() {
     refetch: refetchPlaces,
   } = useGetPlaces({ city: cityName });
 
-  const { data: itineraries } = useGetItineraries({ city: cityName });
-
   if (placesError) {
     return <ErrorFallback error={placesError as Error} resetError={refetchPlaces} />;
   }
@@ -47,7 +44,7 @@ export default function ExploreScreen() {
 
   const renderHeader = () => (
     <View>
-      {/* Top bar: logo | city selector | profile icon */}
+      {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: topPadding }]}>
         <View style={styles.topRow}>
           <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
@@ -77,27 +74,6 @@ export default function ExploreScreen() {
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Explore</Text>
       </View>
       <CategoryGrid />
-
-      {/* City Guides */}
-      {itineraries && itineraries.length > 0 && (
-        <View>
-          <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>City Guides</Text>
-            <Feather name="map" size={15} color={colors.amber} />
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.guidesScroll}
-          >
-            {itineraries.map((itin) => (
-              <View key={itin.id} style={styles.guideCard}>
-                <ItineraryCard itinerary={itin} />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
 
       {/* Trending */}
       <View style={styles.sectionRow}>
@@ -198,12 +174,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 18,
   },
-  guidesScroll: {
-    paddingHorizontal: 20,
-    paddingBottom: 4,
-    gap: 12,
-  },
-  guideCard: { width: 240 },
   emptyContainer: {
     alignItems: "center",
     paddingTop: 48,

@@ -23,10 +23,10 @@ import { ErrorFallback } from "@/components/ErrorFallback";
 type SportsTab = "fitness" | "courts" | "outdoor" | "live";
 
 const TABS: { id: SportsTab; label: string; mciIcon: string }[] = [
-  { id: "fitness", label: "Fitness",      mciIcon: "dumbbell"       },
-  { id: "courts",  label: "Courts",       mciIcon: "tennis"         },
-  { id: "outdoor", label: "Outdoor",      mciIcon: "run-fast"       },
-  { id: "live",    label: "Live Sports",  mciIcon: "flag-checkered" },
+  { id: "fitness", label: "Fitness",     mciIcon: "dumbbell"       },
+  { id: "courts",  label: "Courts",      mciIcon: "tennis"         },
+  { id: "outdoor", label: "Outdoor",     mciIcon: "run-fast"       },
+  { id: "live",    label: "Live Sports", mciIcon: "flag-checkered" },
 ];
 
 const TAB_COLOR: Record<SportsTab, string> = {
@@ -58,25 +58,36 @@ export default function SportsScreen() {
   const insets = useSafeAreaInsets();
   const { selectedCity } = useCity();
 
-  const [activeTab, setActiveTab]       = useState<SportsTab>("fitness");
+  const [activeTab,     setActiveTab]     = useState<SportsTab>("fitness");
   const [fitnessFilter, setFitnessFilter] = useState("all");
   const [courtsFilter,  setCourtsFilter]  = useState("all");
 
-  const topPadding   = Math.max(insets.top, Platform.OS === "web" ? 20 : insets.top);
+  const topPadding    = Math.max(insets.top, Platform.OS === "web" ? 20 : insets.top);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
-  const cityName = selectedCity?.name;
-  const isLocal  = cityName === "Mumbai" || cityName === "Bangalore";
+  const cityName   = selectedCity?.name;
+  const isLocal    = cityName === "Mumbai" || cityName === "Bangalore";
   const currSymbol = isLocal ? "₹" : "$";
 
-  const { data: fitnessData  = [], isLoading: fitnessLoading, error: fitnessError, refetch: refetchFitness } =
-    useGetActivities({ city: cityName, category: "fitness" });
-  const { data: courtsData   = [], isLoading: courtsLoading,  error: courtsError,  refetch: refetchCourts  } =
-    useGetActivities({ city: cityName, category: "sports"  });
-  const { data: outdoorData  = [], isLoading: outdoorLoading, error: outdoorError, refetch: refetchOutdoor } =
-    useGetActivities({ city: cityName, category: "outdoor" });
-  const { data: liveEvents   = [], isLoading: liveLoading,   error: liveError,    refetch: refetchLive    } =
-    useGetEvents({ city: cityName, category: "sports" });
+  const {
+    data: fitnessData = [], isLoading: fitnessLoading,
+    error: fitnessError, refetch: refetchFitness,
+  } = useGetActivities({ city: cityName, category: "fitness" });
+
+  const {
+    data: courtsData  = [], isLoading: courtsLoading,
+    error: courtsError, refetch: refetchCourts,
+  } = useGetActivities({ city: cityName, category: "sports" });
+
+  const {
+    data: outdoorData = [], isLoading: outdoorLoading,
+    error: outdoorError, refetch: refetchOutdoor,
+  } = useGetActivities({ city: cityName, category: "outdoor" });
+
+  const {
+    data: liveEvents  = [], isLoading: liveLoading,
+    error: liveError, refetch: refetchLive,
+  } = useGetEvents({ city: cityName, category: "sports" });
 
   const filteredFitness = fitnessFilter === "all"
     ? fitnessData
@@ -86,15 +97,15 @@ export default function SportsScreen() {
     ? courtsData
     : courtsData.filter(a => a.tags?.some(t => t.toLowerCase().includes(courtsFilter)));
 
-  const currentError =
-    activeTab === "fitness" ? fitnessError :
-    activeTab === "courts"  ? courtsError  :
-    activeTab === "outdoor" ? outdoorError : liveError;
+  const currentError = activeTab === "fitness" ? fitnessError
+    : activeTab === "courts"  ? courtsError
+    : activeTab === "outdoor" ? outdoorError
+    : liveError;
 
-  const currentRefetch =
-    activeTab === "fitness" ? refetchFitness :
-    activeTab === "courts"  ? refetchCourts  :
-    activeTab === "outdoor" ? refetchOutdoor : refetchLive;
+  const currentRefetch = activeTab === "fitness" ? refetchFitness
+    : activeTab === "courts"  ? refetchCourts
+    : activeTab === "outdoor" ? refetchOutdoor
+    : refetchLive;
 
   if (currentError) {
     return <ErrorFallback error={currentError as Error} resetError={currentRefetch} />;
@@ -102,8 +113,9 @@ export default function SportsScreen() {
 
   const tabColor = TAB_COLOR[activeTab];
 
-  const renderActivityCard = (item: typeof fitnessData[number]) => (
-    <View key={item.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+  // ── Activity card ──────────────────────────────────────────────────────────
+  const renderActivityCard = ({ item }: { item: typeof fitnessData[number] }) => (
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       {item.imageUrl ? (
         <Image source={{ uri: item.imageUrl }} style={styles.cardImage} contentFit="cover" />
       ) : null}
@@ -117,7 +129,7 @@ export default function SportsScreen() {
           </Text>
         ) : null}
         <View style={styles.metaRow}>
-          {item.durationMinutes ? (
+          {!!item.durationMinutes && (
             <View style={styles.metaChip}>
               <Feather name="clock" size={11} color={colors.mutedForeground} />
               <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
@@ -126,23 +138,23 @@ export default function SportsScreen() {
                   : `${Math.floor(item.durationMinutes / 60)}h`}
               </Text>
             </View>
-          ) : null}
-          {item.price !== null && item.price !== undefined ? (
+          )}
+          {item.price != null && (
             <View style={styles.metaChip}>
               <Feather name="tag" size={11} color={colors.mutedForeground} />
               <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
                 {item.price === 0 ? "Free" : `${currSymbol}${item.price}`}
               </Text>
             </View>
-          ) : null}
-          {item.rating ? (
+          )}
+          {!!item.rating && (
             <View style={styles.metaChip}>
               <Feather name="star" size={11} color="#f59e0b" />
               <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
                 {item.rating.toFixed(1)}
               </Text>
             </View>
-          ) : null}
+          )}
         </View>
         {item.openingHours ? (
           <Text style={[styles.cardHours, { color: colors.mutedForeground }]} numberOfLines={1}>
@@ -153,21 +165,29 @@ export default function SportsScreen() {
     </View>
   );
 
+  // ── Empty state ────────────────────────────────────────────────────────────
   const renderEmpty = (icon: string, title: string, subtitle: string) => (
     <View style={styles.emptyWrap}>
       <MaterialCommunityIcons name={icon as any} size={44} color={colors.mutedForeground} />
-      <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{title}</Text>
+      <Text style={[styles.emptyTitle,    { color: colors.foreground }]}>{title}</Text>
       <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>{subtitle}</Text>
     </View>
   );
 
+  // ── Skeleton loading ────────────────────────────────────────────────────────
+  const renderSkeleton = () => (
+    <View style={styles.skeletonWrap}>
+      <SkeletonCard height={300} />
+      <SkeletonCard height={300} />
+      <SkeletonCard height={300} />
+    </View>
+  );
+
+  // ── Main content (flex: 1 child) ───────────────────────────────────────────
   const renderContent = () => {
+    // ── LIVE SPORTS tab ──
     if (activeTab === "live") {
-      if (liveLoading) return (
-        <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 12 }}>
-          {[160, 160, 160].map((h, i) => <SkeletonCard key={i} height={h} />)}
-        </View>
-      );
+      if (liveLoading) return renderSkeleton();
       if (!liveEvents.length) {
         return renderEmpty(
           "flag-checkered",
@@ -179,6 +199,7 @@ export default function SportsScreen() {
       }
       return (
         <FlatList
+          style={styles.list}
           data={liveEvents}
           keyExtractor={item => `live-${item.id}`}
           renderItem={({ item }) => <EventCard event={item} />}
@@ -188,22 +209,25 @@ export default function SportsScreen() {
       );
     }
 
+    // ── ACTIVITIES tabs (fitness / courts / outdoor) ──
     const isLoading = activeTab === "fitness" ? fitnessLoading
-      : activeTab === "courts" ? courtsLoading : outdoorLoading;
-    const items     = activeTab === "fitness" ? filteredFitness
-      : activeTab === "courts" ? filteredCourts : outdoorData;
-    const emptyIcon = activeTab === "fitness" ? "dumbbell"
-      : activeTab === "courts" ? "tennis" : "run-fast";
-    const emptyMsg  = activeTab === "fitness" ? "No fitness venues found"
-      : activeTab === "courts" ? "No courts or venues found" : "No outdoor routes found";
+      : activeTab === "courts"  ? courtsLoading
+      : outdoorLoading;
 
-    if (isLoading) {
-      return (
-        <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 12 }}>
-          {[150, 150, 150].map((h, i) => <SkeletonCard key={i} height={h} />)}
-        </View>
-      );
-    }
+    const items = activeTab === "fitness" ? filteredFitness
+      : activeTab === "courts"  ? filteredCourts
+      : outdoorData;
+
+    const emptyIcon = activeTab === "fitness" ? "dumbbell"
+      : activeTab === "courts"  ? "tennis"
+      : "run-fast";
+
+    const emptyMsg = activeTab === "fitness" ? "No fitness venues found"
+      : activeTab === "courts"  ? "No courts or venues found"
+      : "No outdoor routes found";
+
+    if (isLoading) return renderSkeleton();
+
     if (!items.length) {
       return renderEmpty(
         emptyIcon,
@@ -216,22 +240,21 @@ export default function SportsScreen() {
 
     return (
       <FlatList
+        style={styles.list}
         data={items}
         keyExtractor={item => `${activeTab}-${item.id}`}
-        renderItem={({ item }) => renderActivityCard(item)}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: bottomPadding,
-          paddingTop: 8,
-          gap: 12,
-        }}
+        renderItem={renderActivityCard}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
     );
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
+      {/* Header */}
       <ScreenHeader title="Sports & Fitness" topPadding={topPadding} />
 
       {/* Main tab pills */}
@@ -251,7 +274,7 @@ export default function SportsScreen() {
                 styles.tabPill,
                 {
                   backgroundColor: active ? tc : colors.card,
-                  borderColor: active ? tc : colors.border,
+                  borderColor:     active ? tc : colors.border,
                 },
               ]}
               onPress={() => setActiveTab(tab.id)}
@@ -270,11 +293,12 @@ export default function SportsScreen() {
         })}
       </ScrollView>
 
-      {/* Sub-filters */}
+      {/* Sub-filters — only shown for Fitness and Courts */}
       {activeTab === "fitness" && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.subFilterRow}
           contentContainerStyle={styles.subFilterContent}
         >
           {FITNESS_FILTERS.map(f => {
@@ -286,7 +310,7 @@ export default function SportsScreen() {
                   styles.subPill,
                   {
                     backgroundColor: active ? tabColor + "20" : colors.muted,
-                    borderColor: active ? tabColor : "transparent",
+                    borderColor:     active ? tabColor : "transparent",
                   },
                 ]}
                 onPress={() => setFitnessFilter(f.id)}
@@ -300,10 +324,12 @@ export default function SportsScreen() {
           })}
         </ScrollView>
       )}
+
       {activeTab === "courts" && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.subFilterRow}
           contentContainerStyle={styles.subFilterContent}
         >
           {COURTS_FILTERS.map(f => {
@@ -315,7 +341,7 @@ export default function SportsScreen() {
                   styles.subPill,
                   {
                     backgroundColor: active ? tabColor + "20" : colors.muted,
-                    borderColor: active ? tabColor : "transparent",
+                    borderColor:     active ? tabColor : "transparent",
                   },
                 ]}
                 onPress={() => setCourtsFilter(f.id)}
@@ -330,15 +356,24 @@ export default function SportsScreen() {
         </ScrollView>
       )}
 
-      {renderContent()}
+      {/* Content area — takes all remaining flex space */}
+      <View style={styles.contentArea}>
+        {renderContent()}
+      </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
 
+  // ── Tab bar ──
   tabRow: {
+    flexGrow: 0,
+    flexShrink: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   tabRowContent: {
@@ -361,6 +396,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+  // ── Sub-filters ──
+  subFilterRow: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   subFilterContent: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -378,12 +418,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  // ── Content wrapper ──
+  contentArea: {
+    flex: 1,
+  },
+
+  // ── List ──
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 100,
+    gap: 12,
+  },
+
+  // ── Skeleton ──
+  skeletonWrap: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 12,
+  },
+
+  // ── Activity card ──
   card: {
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
     ...Platform.select({
-      web: { boxShadow: "0 1px 6px rgba(0,0,0,0.07)" },
+      web: { boxShadow: "0 1px 6px rgba(0,0,0,0.07)" } as any,
       default: {
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
@@ -395,7 +460,7 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: "100%",
-    height: 160,
+    height: 180,
   },
   cardBody: {
     padding: 14,
@@ -413,6 +478,7 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
     alignItems: "center",
     marginTop: 2,
@@ -432,6 +498,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // ── Empty state ──
   emptyWrap: {
     flex: 1,
     alignItems: "center",

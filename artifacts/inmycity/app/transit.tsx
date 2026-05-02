@@ -247,8 +247,8 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderWidth: StyleSheet.hairlineWidth,
   },
   searchInput: { flex: 1, fontFamily: "Inter_400Regular", fontSize: 14 },
-  filtersScroll: { flexGrow: 0 },
-  filtersContent: { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  filtersScroll: { flexGrow: 0, flexShrink: 0 },
+  filtersContent: { flexDirection: "row", flexWrap: "nowrap", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   pill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
   plannerCta: {

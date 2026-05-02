@@ -36,37 +36,37 @@ const CITY_META: Record<string, {
   Mumbai: {
     tagline: "The City of Dreams",
     tips: [
-      { icon: "sun",       label: "Best Season",    value: "Nov – Feb"              },
-      { icon: "navigation",label: "Getting Around",  value: "Metro & Local Trains"   },
-      { icon: "globe",     label: "Language",        value: "Hindi / Marathi"        },
-      { icon: "phone",     label: "Emergency",       value: "112"                    },
+      { icon: "sun",       label: "Best Season",   value: "Nov – Feb"            },
+      { icon: "navigation",label: "Getting Around", value: "Metro & Local Trains" },
+      { icon: "percent",   label: "Tipping",        value: "Optional (5–10%)"    },
+      { icon: "phone",     label: "Emergency",      value: "112"                  },
     ],
   },
   Bangalore: {
     tagline: "The Garden City",
     tips: [
-      { icon: "sun",       label: "Best Season",    value: "Oct – Feb"               },
-      { icon: "navigation",label: "Getting Around",  value: "Metro & Auto-Rickshaw"  },
-      { icon: "globe",     label: "Language",        value: "Kannada / English"      },
-      { icon: "phone",     label: "Emergency",       value: "112"                    },
+      { icon: "sun",       label: "Best Season",   value: "Oct – Feb"             },
+      { icon: "navigation",label: "Getting Around", value: "Metro & Auto-Rickshaw" },
+      { icon: "percent",   label: "Tipping",        value: "Optional (5–10%)"     },
+      { icon: "phone",     label: "Emergency",      value: "112"                   },
     ],
   },
   "New York City": {
     tagline: "The City That Never Sleeps",
     tips: [
-      { icon: "sun",       label: "Best Season",    value: "Apr – Jun, Sep – Nov"    },
-      { icon: "navigation",label: "Getting Around",  value: "Subway & Bus"           },
-      { icon: "globe",     label: "Language",        value: "English"                },
-      { icon: "phone",     label: "Emergency",       value: "911"                    },
+      { icon: "sun",       label: "Best Season",   value: "Apr – Jun, Sep – Nov" },
+      { icon: "navigation",label: "Getting Around", value: "Subway & Bus"         },
+      { icon: "percent",   label: "Tipping",        value: "Expected (18–22%)"    },
+      { icon: "phone",     label: "Emergency",      value: "911"                  },
     ],
   },
   "San Francisco": {
     tagline: "The City by the Bay",
     tips: [
-      { icon: "sun",       label: "Best Season",    value: "Sep – Nov"               },
-      { icon: "navigation",label: "Getting Around",  value: "BART & Muni"            },
-      { icon: "globe",     label: "Language",        value: "English"                },
-      { icon: "phone",     label: "Emergency",       value: "911"                    },
+      { icon: "sun",       label: "Best Season",   value: "Sep – Nov"            },
+      { icon: "navigation",label: "Getting Around", value: "BART & Muni"          },
+      { icon: "percent",   label: "Tipping",        value: "Expected (18–22%)"    },
+      { icon: "phone",     label: "Emergency",      value: "911"                  },
     ],
   },
 };
@@ -74,10 +74,10 @@ const CITY_META: Record<string, {
 const DEFAULT_META = {
   tagline: "Discover this city",
   tips: [
-    { icon: "sun",       label: "Best Season",   value: "Check locally"  },
-    { icon: "navigation",label: "Getting Around", value: "Public Transit" },
-    { icon: "globe",     label: "Language",       value: "Local Language" },
-    { icon: "phone",     label: "Emergency",      value: "Local number"   },
+    { icon: "sun",       label: "Best Season",   value: "Check locally"   },
+    { icon: "navigation",label: "Getting Around", value: "Public Transit"  },
+    { icon: "percent",   label: "Tipping",        value: "Check locally"   },
+    { icon: "phone",     label: "Emergency",      value: "Local number"    },
   ],
 };
 

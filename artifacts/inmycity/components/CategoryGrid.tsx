@@ -16,10 +16,10 @@ type Category = {
 };
 
 const CATEGORIES: Category[] = [
-  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#f97316", active: true,  route: "/(tabs)/feeds?section=dining" },
-  { id: "places",     label: "Places",     icon: "map-marker",            color: "#6366f1", active: true,  route: "/(tabs)/feeds?section=places" },
-  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true,  route: "/(tabs)/feeds?section=events" },
-  { id: "deals",      label: "Deals",      icon: "sale",                  color: "#10b981", active: true,  route: "/(tabs)/feeds?section=deals"  },
+  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#f97316", active: true,  route: "/dining"         },
+  { id: "places",     label: "Places",     icon: "map-marker",            color: "#6366f1", active: true,  route: "/places"         },
+  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true,  route: "/(tabs)/events"  },
+  { id: "deals",      label: "Deals",      icon: "sale",                  color: "#10b981", active: true,  route: "/(tabs)/deals"   },
   { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true,  route: "/movies" },
   { id: "hotels",     label: "Hotels",     icon: "bed-double",            color: "#f59e0b", active: true,  route: "/hotels" },
   { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#ef4444", active: true,  route: "/activities" },

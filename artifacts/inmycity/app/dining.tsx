@@ -1,0 +1,155 @@
+import React, { useState } from "react";
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Platform, FlatList
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+
+import { useColors } from "@/hooks/useColors";
+import { useGetPlaces } from "@workspace/api-client-react";
+import { useCity } from "@/context/CityContext";
+import { PlaceCard } from "@/components/PlaceCard";
+import { SkeletonCard } from "@/components/SkeletonCard";
+import { ErrorFallback } from "@/components/ErrorFallback";
+
+const FILTERS = [
+  { id: "all",         label: "All"         },
+  { id: "restaurant",  label: "Restaurants" },
+  { id: "cafe",        label: "Cafes"       },
+  { id: "street food", label: "Street Food" },
+  { id: "bar",         label: "Bars"        },
+];
+
+const ACCENT = "#f97316";
+
+export default function DiningScreen() {
+  const router = useRouter();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const { selectedCity } = useCity();
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const { data: places = [], isLoading, error, refetch } = useGetPlaces({
+    city: selectedCity?.name,
+    category: "food",
+  });
+
+  const filtered = activeFilter === "all"
+    ? places
+    : places.filter(p => p.subcategory?.toLowerCase() === activeFilter);
+
+  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[
+        styles.header,
+        { paddingTop: Math.max(insets.top, 20), backgroundColor: colors.background, borderBottomColor: colors.border }
+      ]}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Feather name="arrow-left" size={24} color={colors.foreground} />
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerTitle, { color: colors.foreground }]}>Dining</Text>
+          {selectedCity && (
+            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{selectedCity.displayName}</Text>
+          )}
+        </View>
+        <View style={{ width: 44 }} />
+      </View>
+
+      {/* Filter Pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filtersScroll}
+        contentContainerStyle={styles.filtersContent}
+      >
+        {FILTERS.map(f => {
+          const active = activeFilter === f.id;
+          return (
+            <TouchableOpacity
+              key={f.id}
+              style={[
+                styles.pill,
+                { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border }
+              ]}
+              onPress={() => setActiveFilter(f.id)}
+            >
+              <Text style={[styles.pillText, { color: active ? "#fff" : colors.foreground }]}>{f.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Content */}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          {[1, 2, 3].map(i => <SkeletonCard key={i} height={240} style={styles.skeleton} />)}
+        </View>
+      ) : filtered.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <View style={[styles.emptyIcon, { backgroundColor: ACCENT + "15" }]}>
+            <Feather name="coffee" size={32} color={ACCENT} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No restaurants found</Text>
+          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+            {activeFilter !== "all"
+              ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
+              : `No dining spots in ${selectedCity?.name ?? "this city"} yet.`}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={item => String(item.id)}
+          renderItem={({ item }) => <PlaceCard place={item} />}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 32 }}
+          showsVerticalScrollIndicator={false}
+          onRefresh={refetch}
+          refreshing={isLoading}
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  backBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  headerCenter: { flex: 1, alignItems: "center" },
+  headerTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
+  headerSub: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 1 },
+  filtersScroll: { flexGrow: 0, flexShrink: 0 },
+  filtersContent: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  pill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
+  loadingContainer: { padding: 16, gap: 12 },
+  skeleton: { marginHorizontal: 20, marginBottom: 4 },
+  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 40 },
+  emptyIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },
+  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20 },
+  emptyText: { fontFamily: "Inter_400Regular", fontSize: 15, textAlign: "center", lineHeight: 22 },
+});

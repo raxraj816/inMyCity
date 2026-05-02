@@ -105,7 +105,7 @@ export default function ActivitiesScreen() {
         <FlatList
           data={activities}
           keyExtractor={item => String(item.id)}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             const catColor = CATEGORY_COLORS[item.category] ?? "#6366f1";
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
   headerSub: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 1 },
   filtersScroll: { flexGrow: 0 },
-  filtersContent: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
+  filtersContent: { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
   loadingContainer: { padding: 16, gap: 12 },
@@ -202,8 +202,8 @@ const styles = StyleSheet.create({
       default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3 },
     }),
   },
-  cardInner: { flexDirection: "row" },
-  activityImage: { width: 120, height: "100%" },
+  cardInner: { flexDirection: "row", alignItems: "stretch" },
+  activityImage: { width: 120, minHeight: 140 },
   activityBody: { flex: 1, padding: 14, gap: 6 },
   catBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: "flex-start" },
   catText: { fontFamily: "Inter_600SemiBold", fontSize: 10 },

@@ -92,7 +92,7 @@ export default function HotelsScreen() {
         <FlatList
           data={hotels}
           keyExtractor={item => String(item.id)}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             const catColor = CATEGORY_COLORS[item.category] ?? "#6366f1";
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
   headerSub: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 1 },
   filtersScroll: { flexGrow: 0 },
-  filtersContent: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
+  filtersContent: { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
   loadingContainer: { padding: 16, gap: 12 },

@@ -11,6 +11,7 @@ import { useColors } from "@/hooks/useColors";
 import { useGetTransitLines } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const TYPE_FILTERS = [
   { id: "all", label: "All" },
@@ -65,24 +66,18 @@ export default function TransitScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20), backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color={colors.foreground} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.foreground }]}>Transit</Text>
-          {selectedCity && (
-            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{selectedCity.displayName}</Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={[styles.planBtn, { backgroundColor: "#06b6d41a" }]}
-          onPress={() => router.push("/transit/plan" as any)}
-        >
-          <Feather name="map" size={18} color="#06b6d4" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Transit"
+        topPadding={Math.max(insets.top, 20)}
+        rightElement={
+          <TouchableOpacity
+            style={[styles.planBtn, { backgroundColor: "#06b6d41a" }]}
+            onPress={() => router.push("/transit/plan" as any)}
+          >
+            <Feather name="map" size={18} color="#06b6d4" />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Search */}
       <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>

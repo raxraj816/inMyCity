@@ -11,6 +11,7 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { DealCard } from "@/components/DealCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { AppHeader } from "@/components/AppHeader";
 
 const CATEGORIES = ["food", "attraction", "retail", "wellness", "nightlife"];
 
@@ -38,16 +39,8 @@ export default function DealsScreen() {
   }
 
   const renderHeader = () => (
-    <View style={{ paddingTop: topPadding }}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Deals</Text>
-        {selectedCity && (
-          <View style={[styles.cityTag, { backgroundColor: colors.muted }]}>
-            <Feather name="map-pin" size={11} color={colors.amber} />
-            <Text style={[styles.cityTagText, { color: colors.mutedForeground }]}>{selectedCity.name}</Text>
-          </View>
-        )}
-      </View>
+    <View>
+      <AppHeader subtitle="Deals" topPadding={topPadding} />
       <CategoryFilter
         categories={CATEGORIES}
         selectedCategory={selectedCategory}

@@ -13,6 +13,7 @@ import { useCity } from "@/context/CityContext";
 import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const FILTERS = [
   { id: "all",         label: "All"         },
@@ -44,22 +45,7 @@ export default function DiningScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[
-        styles.header,
-        { paddingTop: Math.max(insets.top, 20), backgroundColor: colors.background, borderBottomColor: colors.border }
-      ]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color={colors.foreground} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.foreground }]}>Dining</Text>
-          {selectedCity && (
-            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{selectedCity.displayName}</Text>
-          )}
-        </View>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Dining" topPadding={Math.max(insets.top, 20)} />
 
       {/* Filter Pills */}
       <ScrollView

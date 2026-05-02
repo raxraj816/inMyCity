@@ -11,6 +11,7 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { EventCard } from "@/components/EventCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { AppHeader } from "@/components/AppHeader";
 
 const CATEGORIES = ["music", "food", "art", "comedy", "film", "wellness", "networking"];
 
@@ -38,16 +39,8 @@ export default function EventsScreen() {
   }
 
   const renderHeader = () => (
-    <View style={{ paddingTop: topPadding }}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Events</Text>
-        {selectedCity && (
-          <View style={[styles.cityTag, { backgroundColor: colors.muted }]}>
-            <Feather name="map-pin" size={11} color={colors.amber} />
-            <Text style={[styles.cityTagText, { color: colors.mutedForeground }]}>{selectedCity.name}</Text>
-          </View>
-        )}
-      </View>
+    <View>
+      <AppHeader subtitle="Events" topPadding={topPadding} />
       <CategoryFilter
         categories={CATEGORIES}
         selectedCategory={selectedCategory}

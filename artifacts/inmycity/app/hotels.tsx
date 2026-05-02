@@ -11,6 +11,7 @@ import { useColors } from "@/hooks/useColors";
 import { useGetHotels } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -46,19 +47,7 @@ export default function HotelsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20), backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color={colors.foreground} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.foreground }]}>Hotels</Text>
-          {selectedCity && (
-            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{selectedCity.displayName}</Text>
-          )}
-        </View>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Hotels" topPadding={Math.max(insets.top, 20)} />
 
       {/* Filter Pills */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={styles.filtersContent}>

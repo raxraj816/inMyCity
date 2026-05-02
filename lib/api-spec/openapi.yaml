@@ -1,22 +1,34 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: inMyCity API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: places
+    description: Place operations
+  - name: events
+    description: Event operations
+  - name: deals
+    description: Deal operations
+  - name: favorites
+    description: Favorites operations
+  - name: itineraries
+    description: Itinerary operations
+  - name: collections
+    description: Collection operations
+  - name: explore
+    description: Explore/discovery operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,433 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /places:
+    get:
+      operationId: getPlaces
+      tags: [places]
+      summary: Get nearby places
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: rating
+          in: query
+          schema:
+            type: number
+        - name: openNow
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of places
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Place"
+
+  /places/{id}:
+    get:
+      operationId: getPlaceById
+      tags: [places]
+      summary: Get a place by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Place details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Place"
+        "404":
+          description: Not found
+
+  /events:
+    get:
+      operationId: getEvents
+      tags: [events]
+      summary: Get events
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+  /events/{id}:
+    get:
+      operationId: getEventById
+      tags: [events]
+      summary: Get an event by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Not found
+
+  /deals:
+    get:
+      operationId: getDeals
+      tags: [deals]
+      summary: Get nearby deals
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deal"
+
+  /deals/{id}:
+    get:
+      operationId: getDealById
+      tags: [deals]
+      summary: Get a deal by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deal details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "404":
+          description: Not found
+
+  /favorites:
+    get:
+      operationId: getFavorites
+      tags: [favorites]
+      summary: Get all favorites
+      responses:
+        "200":
+          description: List of favorites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Favorite"
+    post:
+      operationId: addFavorite
+      tags: [favorites]
+      summary: Add a place to favorites
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFavoriteInput"
+      responses:
+        "201":
+          description: Favorite created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Favorite"
+
+  /favorites/{placeId}:
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      summary: Remove a place from favorites
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /itineraries:
+    get:
+      operationId: getItineraries
+      tags: [itineraries]
+      summary: Get itineraries
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: duration
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of itineraries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Itinerary"
+
+  /itineraries/{id}:
+    get:
+      operationId: getItineraryById
+      tags: [itineraries]
+      summary: Get an itinerary by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Itinerary details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Itinerary"
+        "404":
+          description: Not found
+
+  /collections:
+    get:
+      operationId: getCollections
+      tags: [collections]
+      summary: Get all collections
+      responses:
+        "200":
+          description: List of collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Collection"
+    post:
+      operationId: createCollection
+      tags: [collections]
+      summary: Create a new collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCollectionInput"
+      responses:
+        "201":
+          description: Collection created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+
+  /collections/{id}:
+    get:
+      operationId: getCollectionById
+      tags: [collections]
+      summary: Get collection by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+    delete:
+      operationId: deleteCollection
+      tags: [collections]
+      summary: Delete a collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /collections/{id}/places:
+    post:
+      operationId: addPlaceToCollection
+      tags: [collections]
+      summary: Add a place to a collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddPlaceToCollectionInput"
+      responses:
+        "200":
+          description: Updated collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+
+  /collections/{id}/places/{placeId}:
+    delete:
+      operationId: removePlaceFromCollection
+      tags: [collections]
+      summary: Remove a place from a collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: placeId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+
+  /explore/summary:
+    get:
+      operationId: getExploreSummary
+      tags: [explore]
+      summary: Get category summary counts for a location
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Category summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExploreSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +473,324 @@ components:
       required:
         - status
 
+    Place:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: ["string", "null"]
+        address:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        rating:
+          type: ["number", "null"]
+        reviewCount:
+          type: ["integer", "null"]
+        phone:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        openingHours:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        images:
+          type: array
+          items:
+            type: string
+        distanceKm:
+          type: ["number", "null"]
+        isOpen:
+          type: ["boolean", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - category
+        - address
+        - city
+        - lat
+        - lng
+        - images
+        - tags
+        - createdAt
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        category:
+          type: string
+        venue:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        lat:
+          type: ["number", "null"]
+        lng:
+          type: ["number", "null"]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        price:
+          type: ["number", "null"]
+        isFree:
+          type: boolean
+        imageUrl:
+          type: ["string", "null"]
+        bookingUrl:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - category
+        - venue
+        - address
+        - city
+        - startDate
+        - isFree
+        - tags
+        - createdAt
+
+    Deal:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        placeId:
+          type: ["integer", "null"]
+        placeName:
+          type: string
+        category:
+          type: string
+        discountPercent:
+          type: ["integer", "null"]
+        discountText:
+          type: string
+        originalPrice:
+          type: ["number", "null"]
+        dealPrice:
+          type: ["number", "null"]
+        code:
+          type: ["string", "null"]
+        qrData:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        lat:
+          type: ["number", "null"]
+        lng:
+          type: ["number", "null"]
+        distanceKm:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - placeName
+        - category
+        - discountText
+        - createdAt
+
+    Favorite:
+      type: object
+      properties:
+        id:
+          type: integer
+        placeId:
+          type: integer
+        place:
+          $ref: "#/components/schemas/Place"
+        createdAt:
+          type: string
+      required:
+        - id
+        - placeId
+        - place
+        - createdAt
+
+    CreateFavoriteInput:
+      type: object
+      properties:
+        placeId:
+          type: integer
+      required:
+        - placeId
+
+    Itinerary:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        city:
+          type: string
+        durationDays:
+          type: integer
+        description:
+          type: ["string", "null"]
+        coverImageUrl:
+          type: ["string", "null"]
+        tips:
+          type: array
+          items:
+            type: string
+        stops:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItineraryStop"
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - city
+        - durationDays
+        - tips
+        - stops
+        - createdAt
+
+    ItineraryStop:
+      type: object
+      properties:
+        id:
+          type: integer
+        day:
+          type: integer
+        order:
+          type: integer
+        placeId:
+          type: integer
+        place:
+          $ref: "#/components/schemas/Place"
+        tip:
+          type: ["string", "null"]
+        bestTimeToVisit:
+          type: ["string", "null"]
+        estimatedCost:
+          type: ["string", "null"]
+        durationMinutes:
+          type: ["integer", "null"]
+      required:
+        - id
+        - day
+        - order
+        - placeId
+        - place
+
+    Collection:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        places:
+          type: array
+          items:
+            $ref: "#/components/schemas/Place"
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - places
+        - createdAt
+
+    CreateCollectionInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+      required:
+        - name
+
+    AddPlaceToCollectionInput:
+      type: object
+      properties:
+        placeId:
+          type: integer
+      required:
+        - placeId
+
+    ExploreSummary:
+      type: object
+      properties:
+        totalPlaces:
+          type: integer
+        totalEvents:
+          type: integer
+        totalDeals:
+          type: integer
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryCount"
+      required:
+        - totalPlaces
+        - totalEvents
+        - totalDeals
+        - categories
+
+    CategoryCount:
+      type: object
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+        label:
+          type: string
+      required:
+        - category
+        - count
+        - label
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success

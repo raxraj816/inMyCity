@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "aaAv1nzLhvTc9B_kotxGH"
+uri = "file://artifacts/inmycity/assets/images/icon.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "1cFQfuwTrXGyDvaxckeu3"
+uri = "file://artifacts/inmycity/assets/images/food-placeholder.png"
+type = "image"
+title = "Food and cafe thumbnail"
+
+[[generated]]
+id = "eujz0PfHx0Tf9zgUdsfiU"
+uri = "file://artifacts/inmycity/assets/images/attraction-placeholder.png"
+type = "image"
+title = "Attraction placeholder"
+
+[[generated]]
+id = "4AKTnl074qdV02iULVOFO"
+uri = "file://artifacts/inmycity/assets/images/nightlife-placeholder.png"
+type = "image"
+title = "Nightlife placeholder"

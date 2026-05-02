@@ -1,0 +1,282 @@
+You are a senior staff-level software engineer and system architect. Your task is to design and implement a production-ready mobile application called **inMyCity**, a smart city explorer app for both tourists and residents.
+
+---
+
+## 🎯 PRODUCT GOAL
+
+Build a scalable, real-world mobile app that answers:
+
+1. What can I do near me right now?
+2. What are the best places to visit in this city?
+3. What events or deals are happening nearby?
+
+The system must prioritize:
+
+* Fast performance (<200ms API latency)
+* High usability
+* Clean architecture
+* Scalability to 1M+ users
+
+---
+
+## 📱 CORE FEATURES (STRICT MVP SCOPE)
+
+### 1. Smart Explore (Primary)
+
+* Detect user location (GPS)
+* Show nearby places:
+
+  * Food & Cafes
+  * Attractions
+  * Essentials
+  * Nightlife
+* Map + list view toggle
+* Filters:
+
+  * Distance
+  * Rating
+  * Open now
+* Place detail page:
+
+  * Images, timings, contact info
+  * Distance and ETA
+* Save/bookmark places
+
+---
+
+### 2. Tourist Mode
+
+* Predefined itineraries:
+
+  * 1-day plan
+  * 3-day plan
+* Multi-stop route optimization
+* Show tips (best time, cost, notes)
+
+---
+
+### 3. Events Module
+
+* Event discovery feed
+* Filters: date, category
+* Event detail page
+* Redirect to external booking (no payment system in MVP)
+
+---
+
+### 4. Deals Module
+
+* Nearby deals based on location
+* Deal detail page:
+
+  * Discount info
+  * Expiry countdown
+* Redemption via QR or code
+* Geo-triggered notifications
+
+---
+
+### 5. Save & Plan
+
+* Save places
+* Create collections
+* Plan trips with multiple saved places
+
+---
+
+## 🧱 TECH STACK (MANDATORY)
+
+### Frontend (Mobile)
+
+* React Native with TypeScript
+* State management: Zustand or Redux Toolkit
+* Data fetching: React Query
+* Maps: Google Maps SDK
+* Notifications: Firebase Cloud Messaging
+
+---
+
+### Backend
+
+* Use Node.js (Fastify) OR Java (Spring Boot)
+* Follow clean architecture or modular monolith (do NOT over-engineer microservices initially)
+
+---
+
+### Database
+
+* PostgreSQL with PostGIS (for geo queries)
+* Redis (for caching)
+
+---
+
+### Search
+
+* Elasticsearch (for geo + text search)
+
+---
+
+### Infra
+
+* AWS (or equivalent):
+
+  * API Gateway
+  * Container service (ECS/EKS)
+  * S3 (image storage)
+  * CDN (CloudFront)
+
+---
+
+## 📡 API DESIGN (MINIMUM)
+
+Implement the following endpoints:
+
+GET /places?lat=&lng=&radius=&category=
+GET /places/{id}
+
+GET /events?date=&category=
+GET /deals?lat=&lng=
+
+POST /favorites
+GET /itineraries?city=
+
+---
+
+## 🗄️ DATA MODEL REQUIREMENTS
+
+Design normalized schemas for:
+
+* Users
+* Places (with geo coordinates)
+* Events
+* Deals
+* Favorites
+* Itineraries
+
+Include:
+
+* Proper indexing (geo + search)
+* Relationships
+* Sample seed data
+
+---
+
+## 📍 GEO FEATURES
+
+* Radius-based search
+* Distance sorting
+* Efficient geo queries using PostGIS
+* Optimize for performance at scale
+
+---
+
+## 🔔 NOTIFICATIONS
+
+* Trigger notifications for:
+
+  * Nearby deals
+  * Event reminders
+* Use Firebase Cloud Messaging
+* Backend-controlled triggers
+
+---
+
+## 🔐 AUTHENTICATION
+
+* JWT-based auth
+* Google login (OAuth)
+* Secure endpoints
+
+---
+
+## 🧪 TESTING
+
+* Unit tests for services
+* Integration tests for APIs
+* Basic E2E flows
+
+---
+
+## 📊 OBSERVABILITY
+
+* Logging (structured logs)
+* Metrics (latency, usage)
+* Error tracking
+
+---
+
+## 🚀 DEPLOYMENT
+
+* CI/CD pipeline
+* Containerized services
+* Environment configs
+* Blue-green or rolling deployments
+
+---
+
+## 📦 DATA BOOTSTRAP STRATEGY
+
+* Integrate Google Places API OR mock dataset
+* Seed:
+
+  * 200–500 places
+  * 50 events
+  * 30 deals
+
+---
+
+## 📱 UX REQUIREMENTS
+
+* Clean, minimal UI
+* Fast loading states
+* Skeleton loaders
+* Mobile-first design
+* Smooth map interactions
+
+---
+
+## ⚠️ CONSTRAINTS
+
+* Do NOT build unnecessary features (no social network, no complex reviews, no payments)
+* Focus on speed, simplicity, and usefulness
+* Keep code modular and production-ready
+
+---
+
+## 📦 DELIVERABLES
+
+1. Mobile app (React Native)
+2. Backend API (running server)
+3. Database schema + migrations
+4. Seed scripts
+5. API documentation
+6. Basic deployment setup
+7. README with setup instructions
+
+---
+
+## 🧠 EXECUTION INSTRUCTIONS
+
+* Start by designing system architecture
+* Then define database schema
+* Then implement backend APIs
+* Then build frontend screens
+* Then integrate end-to-end
+* Then add caching and optimizations
+* Then add tests
+* Then prepare for deployment
+
+Work iteratively and explain decisions where necessary.
+
+---
+
+## SUCCESS CRITERIA
+
+* User can open app and instantly see nearby places
+* User can explore, save, and plan
+* User can discover events and deals
+* App is fast, stable, and usable in real-world scenarios
+
+---
+
+Build this like a real startup product, not a demo.

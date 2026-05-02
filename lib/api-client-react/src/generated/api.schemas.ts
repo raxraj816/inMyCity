@@ -9,6 +9,26 @@ export interface HealthStatus {
   status: string;
 }
 
+export type SupportedCityStatus =
+  (typeof SupportedCityStatus)[keyof typeof SupportedCityStatus];
+
+export const SupportedCityStatus = {
+  live: "live",
+  soon: "soon",
+} as const;
+
+export interface SupportedCity {
+  id: string;
+  name: string;
+  displayName: string;
+  country: string;
+  state: string;
+  lat: number;
+  lng: number;
+  status: SupportedCityStatus;
+  tagline: string;
+}
+
 export interface Place {
   id: number;
   name: string;
@@ -75,6 +95,8 @@ export interface Deal {
   /** @nullable */
   placeId?: number | null;
   placeName: string;
+  /** @nullable */
+  city?: string | null;
   category: string;
   /** @nullable */
   discountPercent?: number | null;
@@ -178,6 +200,7 @@ export interface SuccessResponse {
 }
 
 export type GetPlacesParams = {
+  city?: string;
   lat?: number;
   lng?: number;
   radius?: number;
@@ -189,6 +212,7 @@ export type GetPlacesParams = {
 };
 
 export type GetEventsParams = {
+  city?: string;
   lat?: number;
   lng?: number;
   date?: string;
@@ -198,6 +222,7 @@ export type GetEventsParams = {
 };
 
 export type GetDealsParams = {
+  city?: string;
   lat?: number;
   lng?: number;
   radius?: number;
@@ -211,6 +236,7 @@ export type GetItinerariesParams = {
 };
 
 export type GetExploreSummaryParams = {
+  city?: string;
   lat?: number;
   lng?: number;
   radius?: number;

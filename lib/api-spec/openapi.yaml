@@ -23,6 +23,8 @@ tags:
     description: Collection operations
   - name: explore
     description: Explore/discovery operations
+  - name: cities
+    description: City operations
 paths:
   /healthz:
     get:
@@ -37,12 +39,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  /cities:
+    get:
+      operationId: getCities
+      tags: [cities]
+      summary: Get list of supported cities
+      responses:
+        "200":
+          description: List of supported cities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupportedCity"
+
   /places:
     get:
       operationId: getPlaces
       tags: [places]
       summary: Get nearby places
       parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
         - name: lat
           in: query
           schema:
@@ -112,6 +133,10 @@ paths:
       tags: [events]
       summary: Get events
       parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
         - name: lat
           in: query
           schema:
@@ -173,6 +198,10 @@ paths:
       tags: [deals]
       summary: Get nearby deals
       parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
         - name: lat
           in: query
           schema:
@@ -443,6 +472,10 @@ paths:
       tags: [explore]
       summary: Get category summary counts for a location
       parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
         - name: lat
           in: query
           schema:
@@ -472,6 +505,39 @@ components:
           type: string
       required:
         - status
+
+    SupportedCity:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        displayName:
+          type: string
+        country:
+          type: string
+        state:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        status:
+          type: string
+          enum: ["live", "soon"]
+        tagline:
+          type: string
+      required:
+        - id
+        - name
+        - displayName
+        - country
+        - state
+        - lat
+        - lng
+        - status
+        - tagline
 
     Place:
       type: object
@@ -594,6 +660,8 @@ components:
           type: ["integer", "null"]
         placeName:
           type: string
+        city:
+          type: ["string", "null"]
         category:
           type: string
         discountPercent:

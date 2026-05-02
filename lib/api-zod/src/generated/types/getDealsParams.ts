@@ -7,6 +7,7 @@
  */
 
 export type GetDealsParams = {
+  city?: string;
   lat?: number;
   lng?: number;
   radius?: number;

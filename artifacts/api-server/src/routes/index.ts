@@ -7,10 +7,12 @@ import favoritesRouter from "./favorites";
 import itinerariesRouter from "./itineraries";
 import collectionsRouter from "./collections";
 import exploreRouter from "./explore";
+import citiesRouter from "./cities";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(citiesRouter);
 router.use(placesRouter);
 router.use(eventsRouter);
 router.use(dealsRouter);

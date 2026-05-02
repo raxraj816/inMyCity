@@ -72,21 +72,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tourist"
-        options={{
-          title: "Tourist",
-          tabBarIcon: ({ color }) => (
-            <Feather name="map" size={22} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="saved"
         options={{
           title: "Saved",
           tabBarIcon: ({ color }) => (
             <Feather name="bookmark" size={22} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="tourist"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

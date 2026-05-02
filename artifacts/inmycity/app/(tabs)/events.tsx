@@ -5,7 +5,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetEvents } from "@workspace/api-client-react";
-import { useLocation } from "@/context/LocationContext";
+import { useCity } from "@/context/CityContext";
 
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { EventCard } from "@/components/EventCard";
@@ -17,7 +17,7 @@ const CATEGORIES = ["music", "food", "art", "comedy", "film", "wellness", "netwo
 export default function EventsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { location } = useLocation();
+  const { selectedCity } = useCity();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const {
@@ -26,8 +26,7 @@ export default function EventsScreen() {
     error,
     refetch
   } = useGetEvents({
-    lat: location?.lat,
-    lng: location?.lng,
+    city: selectedCity?.name,
     category: selectedCategory || undefined,
   });
 
@@ -40,7 +39,15 @@ export default function EventsScreen() {
 
   const renderHeader = () => (
     <View style={{ paddingTop: topPadding }}>
-      <Text style={[styles.headerTitle, { color: colors.foreground }]}>Discover Events</Text>
+      <View style={styles.headerRow}>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Events</Text>
+        {selectedCity && (
+          <View style={[styles.cityTag, { backgroundColor: colors.muted }]}>
+            <Feather name="map-pin" size={11} color={colors.amber} />
+            <Text style={[styles.cityTagText, { color: colors.mutedForeground }]}>{selectedCity.name}</Text>
+          </View>
+        )}
+      </View>
       <CategoryFilter
         categories={CATEGORIES}
         selectedCategory={selectedCategory}
@@ -58,7 +65,9 @@ export default function EventsScreen() {
         </View>
         <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No events found</Text>
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-          We couldn't find any events {selectedCategory ? `in ${selectedCategory}` : 'nearby'}.
+          {selectedCategory
+            ? `No ${selectedCategory} events in ${selectedCity?.name ?? "this city"}.`
+            : `No upcoming events in ${selectedCity?.name ?? "this city"}.`}
         </Text>
       </View>
     );
@@ -91,43 +100,34 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    marginBottom: 8,
   },
   headerTitle: {
     fontFamily: "Inter_700Bold",
     fontSize: 28,
-    paddingHorizontal: 20,
-    marginBottom: 8,
   },
-  loadingContainer: {
-    flex: 1,
-  },
-  skeleton: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-  },
-  emptyContainer: {
+  cityTag: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 40,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
+  cityTagText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
   },
-  emptyTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 20,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 16,
-    textAlign: "center",
-  },
+  loadingContainer: { flex: 1 },
+  skeleton: { marginHorizontal: 20, marginBottom: 16 },
+  emptyContainer: { alignItems: "center", justifyContent: "center", paddingHorizontal: 40 },
+  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20, marginBottom: 8 },
+  emptyText: { fontFamily: "Inter_400Regular", fontSize: 16, textAlign: "center" },
 });

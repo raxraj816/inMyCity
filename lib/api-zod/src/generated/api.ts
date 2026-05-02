@@ -15,9 +15,26 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
+ * @summary Get list of supported cities
+ */
+export const GetCitiesResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  displayName: zod.string(),
+  country: zod.string(),
+  state: zod.string(),
+  lat: zod.number(),
+  lng: zod.number(),
+  status: zod.enum(["live", "soon"]),
+  tagline: zod.string(),
+});
+export const GetCitiesResponse = zod.array(GetCitiesResponseItem);
+
+/**
  * @summary Get nearby places
  */
 export const GetPlacesQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
   lat: zod.coerce.number().optional(),
   lng: zod.coerce.number().optional(),
   radius: zod.coerce.number().optional(),
@@ -84,6 +101,7 @@ export const GetPlaceByIdResponse = zod.object({
  * @summary Get events
  */
 export const GetEventsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
   lat: zod.coerce.number().optional(),
   lng: zod.coerce.number().optional(),
   date: zod.coerce.string().optional(),
@@ -144,6 +162,7 @@ export const GetEventByIdResponse = zod.object({
  * @summary Get nearby deals
  */
 export const GetDealsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
   lat: zod.coerce.number().optional(),
   lng: zod.coerce.number().optional(),
   radius: zod.coerce.number().optional(),
@@ -157,6 +176,7 @@ export const GetDealsResponseItem = zod.object({
   description: zod.string().nullish(),
   placeId: zod.number().nullish(),
   placeName: zod.string(),
+  city: zod.string().nullish(),
   category: zod.string(),
   discountPercent: zod.number().nullish(),
   discountText: zod.string(),
@@ -186,6 +206,7 @@ export const GetDealByIdResponse = zod.object({
   description: zod.string().nullish(),
   placeId: zod.number().nullish(),
   placeName: zod.string(),
+  city: zod.string().nullish(),
   category: zod.string(),
   discountPercent: zod.number().nullish(),
   discountText: zod.string(),
@@ -527,6 +548,7 @@ export const RemovePlaceFromCollectionResponse = zod.object({
  * @summary Get category summary counts for a location
  */
 export const GetExploreSummaryQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
   lat: zod.coerce.number().optional(),
   lng: zod.coerce.number().optional(),
   radius: zod.coerce.number().optional(),

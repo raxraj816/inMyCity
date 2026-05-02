@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, dealsTable } from "@workspace/db";
-import { eq, and, or, gte } from "drizzle-orm";
+import { eq, and, or, gte, ilike } from "drizzle-orm";
 
 const router = Router();
 
@@ -20,6 +20,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 router.get("/deals", async (req, res) => {
   try {
+    const city = req.query.city as string | undefined;
     const lat = req.query.lat ? parseFloat(req.query.lat as string) : null;
     const lng = req.query.lng ? parseFloat(req.query.lng as string) : null;
     const radius = req.query.radius ? parseFloat(req.query.radius as string) : 15;
@@ -27,6 +28,7 @@ router.get("/deals", async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
 
     const conditions = [];
+    if (city) conditions.push(ilike(dealsTable.city, `%${city}%`));
     if (category) conditions.push(eq(dealsTable.category, category));
 
     const now = new Date();

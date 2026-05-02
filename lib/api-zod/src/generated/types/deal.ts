@@ -14,6 +14,8 @@ export interface Deal {
   /** @nullable */
   placeId?: number | null;
   placeName: string;
+  /** @nullable */
+  city?: string | null;
   category: string;
   /** @nullable */
   discountPercent?: number | null;

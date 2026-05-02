@@ -59,7 +59,10 @@ router.get("/places", async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
+    const city = req.query.city as string | undefined;
+
     const conditions = [];
+    if (city) conditions.push(ilike(placesTable.city, `%${city}%`));
     if (category) conditions.push(eq(placesTable.category, category));
     if (minRating) conditions.push(gte(placesTable.rating, minRating));
 

@@ -7,6 +7,7 @@
  */
 
 export type GetEventsParams = {
+  city?: string;
   lat?: number;
   lng?: number;
   date?: string;

@@ -16,6 +16,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { LocationProvider } from "@/context/LocationContext";
+import { CityProvider } from "@/context/CityContext";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
@@ -71,11 +72,13 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <LocationProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              {withKeyboard}
-            </GestureHandlerRootView>
-          </LocationProvider>
+          <CityProvider>
+            <LocationProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                {withKeyboard}
+              </GestureHandlerRootView>
+            </LocationProvider>
+          </CityProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

@@ -1,17 +1,19 @@
 import { Router } from "express";
 import { db, eventsTable } from "@workspace/db";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, ilike } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/events", async (req, res) => {
   try {
+    const city = req.query.city as string | undefined;
     const dateStr = req.query.date as string | undefined;
     const category = req.query.category as string | undefined;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
     const conditions = [];
+    if (city) conditions.push(ilike(eventsTable.city, `%${city}%`));
     if (category) conditions.push(eq(eventsTable.category, category));
     if (dateStr) {
       const date = new Date(dateStr);

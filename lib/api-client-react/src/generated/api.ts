@@ -34,6 +34,7 @@ import type {
   Itinerary,
   Place,
   SuccessResponse,
+  SupportedCity,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -112,6 +113,73 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get list of supported cities
+ */
+export const getGetCitiesUrl = () => {
+  return `/api/cities`;
+};
+
+export const getCities = async (
+  options?: RequestInit,
+): Promise<SupportedCity[]> => {
+  return customFetch<SupportedCity[]>(getGetCitiesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCitiesQueryKey = () => {
+  return [`/api/cities`] as const;
+};
+
+export const getGetCitiesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCities>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getCities>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCitiesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCities>>> = ({
+    signal,
+  }) => getCities({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCities>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCitiesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCities>>
+>;
+export type GetCitiesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get list of supported cities
+ */
+
+export function useGetCities<
+  TData = Awaited<ReturnType<typeof getCities>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getCities>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCitiesQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

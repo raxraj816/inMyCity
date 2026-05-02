@@ -7,6 +7,7 @@
  */
 
 export type GetExploreSummaryParams = {
+  city?: string;
   lat?: number;
   lng?: number;
   radius?: number;

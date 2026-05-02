@@ -31,6 +31,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 router.get("/explore/summary", async (req, res) => {
   try {
+    const city = req.query.city as string | undefined;
     const lat = req.query.lat ? parseFloat(req.query.lat as string) : null;
     const lng = req.query.lng ? parseFloat(req.query.lng as string) : null;
     const radius = req.query.radius ? parseFloat(req.query.radius as string) : 10;
@@ -44,11 +45,19 @@ router.get("/explore/summary", async (req, res) => {
     ]);
 
     const nearbyPlaces = places.filter((p) => {
+      if (city && !p.city.toLowerCase().includes(city.toLowerCase())) return false;
       if (lat !== null && lng !== null) {
         return haversineKm(lat, lng, p.lat, p.lng) <= radius;
       }
       return true;
     });
+
+    const cityEvents = city
+      ? events.filter((e) => e.city.toLowerCase().includes(city.toLowerCase()))
+      : events;
+    const cityDeals = city
+      ? deals.filter((d) => d.city?.toLowerCase().includes(city.toLowerCase()))
+      : deals;
 
     const categoryCounts: Record<string, number> = {};
     for (const p of nearbyPlaces) {
@@ -65,8 +74,8 @@ router.get("/explore/summary", async (req, res) => {
 
     res.json({
       totalPlaces: nearbyPlaces.length,
-      totalEvents: events.length,
-      totalDeals: deals.length,
+      totalEvents: cityEvents.length,
+      totalDeals: cityDeals.length,
       categories,
     });
   } catch (err) {

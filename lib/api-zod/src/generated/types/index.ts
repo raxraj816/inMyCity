@@ -25,3 +25,5 @@ export * from "./itinerary";
 export * from "./itineraryStop";
 export * from "./place";
 export * from "./successResponse";
+export * from "./supportedCity";
+export * from "./supportedCityStatus";

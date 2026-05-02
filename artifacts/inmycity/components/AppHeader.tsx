@@ -25,7 +25,7 @@ export function AppHeader({
   const { selectedCity, showPicker } = useCity();
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding }]}>
+    <View style={[styles.container, { paddingTop: topPadding, borderBottomColor: colors.border }]}>
       <View style={styles.topRow}>
         <View>
           <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
     gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   topRow: {
     flexDirection: "row",

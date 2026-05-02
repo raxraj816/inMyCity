@@ -20,7 +20,7 @@ export default function TouristScreen() {
     refetch
   } = useGetItineraries();
 
-  const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const topPadding = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
   if (error) {

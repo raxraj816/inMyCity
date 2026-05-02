@@ -26,8 +26,8 @@ const CATEGORIES: Category[] = [
   { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true, route: "/movies"                   },
   // Row 3 — Transit, savings & sport
   { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true, route: "/transit"                  },
-  { id: "deals",      label: "Deals",      icon: "sale",                  color: "#10b981", active: true, route: "/(tabs)/deals"             },
-  { id: "sports",     label: "Sports",     icon: "dumbbell",              color: "#22c55e", active: true, route: "/sports"                   },
+  { id: "deals",      label: "Deals",      icon: "percent",               color: "#10b981", active: true, route: "/(tabs)/deals"             },
+  { id: "sports",     label: "Sports &\nFitness", icon: "dumbbell",      color: "#22c55e", active: true, route: "/sports"                   },
 ];
 
 export function CategoryGrid() {
@@ -57,7 +57,7 @@ export function CategoryGrid() {
           </View>
           <Text
             style={[styles.label, { color: cat.active ? colors.foreground : colors.mutedForeground }]}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {cat.label}
           </Text>
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: "30.5%",
-    aspectRatio: 0.95,
+    aspectRatio: 0.88,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",

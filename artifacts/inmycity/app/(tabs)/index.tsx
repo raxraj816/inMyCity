@@ -12,12 +12,11 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
-import { useGetPlaces, useGetItineraries } from "@workspace/api-client-react";
+import { useGetPlaces } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { CityPicker } from "@/components/CityPicker";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { PlaceCard } from "@/components/PlaceCard";
-import { ItineraryCard } from "@/components/ItineraryCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 

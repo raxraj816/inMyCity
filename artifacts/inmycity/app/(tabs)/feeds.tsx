@@ -215,14 +215,28 @@ export default function FeedsScreen() {
 
   // ── ALL tab feed ──────────────────────────────────────────
   type FeedItem =
-    | { kind: "event"; data: typeof events[number] }
-    | { kind: "deal";  data: typeof deals[number]; promoted?: boolean };
+    | { kind: "event";     data: typeof events[number] }
+    | { kind: "deal";      data: typeof deals[number]; promoted?: boolean }
+    | { kind: "news";      data: NewsItem }
+    | { kind: "community"; data: Community }
+    | { kind: "qa";        data: QAItem };
 
   const allFeed: FeedItem[] = [];
   const maxLen = Math.max(events.length, deals.length);
+  // Inject news/community/qa in rotation after every 2 API-item pairs
+  const injectOrder: Array<"news" | "community" | "qa"> = ["news", "community", "qa"];
+  let ni = 0, ci = 0, qi = 0, injIdx = 0;
   for (let i = 0; i < maxLen; i++) {
     if (i < events.length) allFeed.push({ kind: "event", data: events[i] });
     if (i < deals.length)  allFeed.push({ kind: "deal", data: deals[i], promoted: i % 4 === 1 });
+    // After every pair of API items, splice in one content card
+    if (i % 2 === 1) {
+      const type = injectOrder[injIdx % injectOrder.length];
+      if      (type === "news"      && ni < news.length)         allFeed.push({ kind: "news",      data: news[ni++] });
+      else if (type === "community" && ci < communities.length)  allFeed.push({ kind: "community", data: communities[ci++] });
+      else if (type === "qa"        && qi < qaItems.length)      allFeed.push({ kind: "qa",        data: qaItems[qi++] });
+      injIdx++;
+    }
   }
   const isAllLoading = eventsLoading || dealsLoading;
 
@@ -282,17 +296,103 @@ export default function FeedsScreen() {
       <FlatList
         data={allFeed}
         keyExtractor={(item, i) => `${item.kind}-${item.data.id}-${i}`}
-        renderItem={({ item }) => (
-          <View>
-            {item.kind === "deal" && item.promoted && (
-              <View style={[styles.promotedBanner, { backgroundColor: colors.accent }]}>
-                <Feather name="star" size={11} color={colors.amber} />
-                <Text style={[styles.promotedText, { color: colors.amber }]}>Sponsored</Text>
+        renderItem={({ item }) => {
+          if (item.kind === "event") return <EventCard event={item.data} />;
+
+          if (item.kind === "deal") return (
+            <View>
+              {item.promoted && (
+                <View style={[styles.promotedBanner, { backgroundColor: colors.accent }]}>
+                  <Feather name="star" size={11} color={colors.amber} />
+                  <Text style={[styles.promotedText, { color: colors.amber }]}>Sponsored</Text>
+                </View>
+              )}
+              <DealCard deal={item.data} />
+            </View>
+          );
+
+          if (item.kind === "news") {
+            const meta = NEWS_COLORS[item.data.type];
+            return (
+              <View style={[styles.inlineCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.inlineCardHeader}>
+                  <View style={[styles.newsBadge, { backgroundColor: meta.bg }]}>
+                    <Feather name={meta.icon as any} size={11} color={meta.fg} />
+                    <Text style={[styles.newsBadgeText, { color: meta.fg }]}>{meta.label}</Text>
+                  </View>
+                  <Text style={[styles.newsTime, { color: colors.mutedForeground }]}>{timeAgo(item.data.minutesAgo)}</Text>
+                </View>
+                <Text style={[styles.newsHeadline, { color: colors.foreground }]}>{item.data.headline}</Text>
+                <Text style={[styles.newsSummary, { color: colors.mutedForeground }]} numberOfLines={2}>{item.data.summary}</Text>
+                <View style={styles.newsFooter}>
+                  <Feather name="radio" size={11} color={colors.mutedForeground} />
+                  <Text style={[styles.newsSource, { color: colors.mutedForeground }]}>{item.data.source}</Text>
+                </View>
               </View>
-            )}
-            {item.kind === "event" ? <EventCard event={item.data} /> : <DealCard deal={item.data} />}
-          </View>
-        )}
+            );
+          }
+
+          if (item.kind === "community") {
+            const joined = joinedCommunities.has(item.data.id);
+            return (
+              <View style={[styles.inlineCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.communityTop}>
+                  <View style={[styles.communityIcon, { backgroundColor: colors.accent }]}>
+                    <Feather name={item.data.icon as any} size={20} color={colors.amber} />
+                  </View>
+                  <View style={styles.communityInfo}>
+                    <Text style={[styles.communityName, { color: colors.foreground }]}>{item.data.name}</Text>
+                    <View style={styles.communityMeta}>
+                      <Feather name="users" size={11} color={colors.mutedForeground} />
+                      <Text style={[styles.communityMetaText, { color: colors.mutedForeground }]}>{formatMembers(item.data.members)} members</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.joinBtn, { backgroundColor: joined ? colors.muted : colors.amber, borderColor: joined ? colors.border : colors.amber }]}
+                    onPress={() => toggleJoin(item.data.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.joinBtnText, { color: joined ? colors.mutedForeground : "#fff" }]}>
+                      {joined ? "Joined" : "Join"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={[styles.communityDesc, { color: colors.mutedForeground }]} numberOfLines={2}>{item.data.description}</Text>
+              </View>
+            );
+          }
+
+          if (item.kind === "qa") {
+            const isUpvoted = upvotedQA.has(item.data.id);
+            const count = upvoteCounts[item.data.id] ?? item.data.upvotes;
+            return (
+              <View style={[styles.inlineCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.qaTop}>
+                  <View style={[styles.qaAvatar, { backgroundColor: colors.amber + "20" }]}>
+                    <Text style={[styles.qaAvatarText, { color: colors.amber }]}>{item.data.initials}</Text>
+                  </View>
+                  <View style={styles.qaAuthorRow}>
+                    <Text style={[styles.qaAuthor, { color: colors.foreground }]}>{item.data.author}</Text>
+                    <Text style={[styles.qaTime, { color: colors.mutedForeground }]}>{timeAgo(item.data.minutesAgo)}</Text>
+                  </View>
+                </View>
+                <Text style={[styles.qaQuestion, { color: colors.foreground }]}>{item.data.question}</Text>
+                <View style={[styles.qaFooter, { borderTopColor: colors.border }]}>
+                  <TouchableOpacity style={styles.qaUpvote} onPress={() => toggleUpvote(item.data.id, item.data.upvotes)} activeOpacity={0.7}>
+                    <Feather name="arrow-up" size={14} color={isUpvoted ? colors.amber : colors.mutedForeground} />
+                    <Text style={[styles.qaUpvoteText, { color: isUpvoted ? colors.amber : colors.mutedForeground }]}>{count}</Text>
+                  </TouchableOpacity>
+                  <View style={styles.qaAnswerCount}>
+                    <Feather name="message-square" size={14} color={colors.mutedForeground} />
+                    <Text style={[styles.qaAnswerText, { color: colors.mutedForeground }]}>{item.data.answers} answers</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          }
+
+          return null;
+        }}
         contentContainerStyle={{ paddingBottom: bottomPadding, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         onRefresh={() => { refetchEvents(); refetchDeals(); }}
@@ -549,6 +649,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, alignSelf: "flex-start",
   },
   promotedText: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
+
+  inlineCard: {
+    marginHorizontal: 16, marginVertical: 6, borderRadius: 16, borderWidth: 1, padding: 14,
+    gap: 8,
+    ...Platform.select({
+      web: { boxShadow: "0 1px 6px rgba(0,0,0,0.06)" },
+      default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+    }),
+  },
+  inlineCardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
 
   // News
   newsCard: {

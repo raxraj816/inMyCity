@@ -20,12 +20,14 @@ const CATEGORIES: Category[] = [
   { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#f97316", active: true, route: "/dining"                  },
   { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#ef4444", active: true, route: "/activities"               },
   { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true, route: "/(tabs)/events"            },
+  // Row 2 — Entertainment & hotels
   { id: "hotels",     label: "Hotels",     icon: "hanger",                color: "#f59e0b", active: true, route: "/hotels"                   },
-  // Row 2 — Entertainment, transit & savings
   { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#ec4899", active: true, route: "/places?filter=nightlife"  },
   { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true, route: "/movies"                   },
+  // Row 3 — Transit, savings & sport
   { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true, route: "/transit"                  },
   { id: "deals",      label: "Deals",      icon: "sale",                  color: "#10b981", active: true, route: "/(tabs)/deals"             },
+  { id: "sports",     label: "Sports",     icon: "dumbbell",              color: "#22c55e", active: true, route: "/sports"                   },
 ];
 
 export function CategoryGrid() {
@@ -79,8 +81,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tile: {
-    width: "22.5%",
-    aspectRatio: 0.9,
+    width: "30.5%",
+    aspectRatio: 0.95,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",

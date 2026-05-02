@@ -24,7 +24,7 @@ type MainTab = "all" | "news" | "community" | "qa";
 
 interface NewsItem {
   id: number;
-  type: "traffic" | "weather" | "civic" | "breaking" | "transit";
+  type: "traffic" | "weather" | "civic" | "breaking" | "transit" | "sports";
   headline: string;
   summary: string;
   source: string;
@@ -61,6 +61,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
     { id: 3, type: "weather",  headline: "Orange alert issued for Mumbai: heavy rain for 48 hrs", summary: "IMD warns of flooding in low-lying areas. Avoid coastal roads.", source: "IMD Mumbai", minutesAgo: 90 },
     { id: 4, type: "transit",  headline: "Central line disruption between Kurla and Thane", summary: "Services delayed by 15 min due to track maintenance at Vikhroli.", source: "CR Rail", minutesAgo: 130 },
     { id: 5, type: "breaking", headline: "Dharavi redevelopment project breaks ground officially", summary: "Maharashtra CM inaugurates the ₹20,000 Cr project with 350 acres to be redeveloped.", source: "Hindustan Times", minutesAgo: 200 },
+    { id: 6, type: "sports",   headline: "Mumbai Indians sell out Wankhede for IPL clash vs RCB", summary: "All 33,000 tickets sold within 90 minutes. MI vs RCB is the most anticipated home game of the season.", source: "Times of India Sport", minutesAgo: 65 },
   ],
   Bangalore: [
     { id: 1, type: "civic",    headline: "Namma Metro Phase 2 Whitefield extension opens next month", summary: "The 13.71 km stretch will add 12 new stations, cutting Whitefield–MG Road to 35 min.", source: "BMRCL", minutesAgo: 20 },
@@ -68,6 +69,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
     { id: 3, type: "weather",  headline: "Bengaluru receives unseasonal heavy showers", summary: "Outer Ring Road and Sarjapur Road report waterlogging. Drive carefully.", source: "IMD Bengaluru", minutesAgo: 100 },
     { id: 4, type: "transit",  headline: "BMTC introduces 10 new AC bus routes in North Bangalore", summary: "Routes connect Hebbal, Yelahanka, and Kempegowda International Airport.", source: "BMTC", minutesAgo: 180 },
     { id: 5, type: "breaking", headline: "BBMP pothole repair drive begins in HSR Layout, Koramangala", summary: "Ward-level teams deployed with target to fix 2,000 potholes in 2 weeks.", source: "Deccan Herald", minutesAgo: 240 },
+    { id: 6, type: "sports",   headline: "Bengaluru FC qualifies for ISL semi-finals with comeback win", summary: "Sunil Chhetri's late goal seals a 2-1 victory over ATK Mohun Bagan at Kanteerava Stadium.", source: "Deccan Herald Sport", minutesAgo: 40 },
   ],
   "New York City": [
     { id: 1, type: "transit",  headline: "MTA: Weekend subway service changes on A, C, E lines", summary: "No A train service between Howard Beach and Far Rockaway Sat–Sun.", source: "MTA", minutesAgo: 8 },
@@ -75,6 +77,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
     { id: 3, type: "civic",    headline: "Times Square pedestrian safety redesign unveiled", summary: "New protected lanes and wider sidewalks approved by City Council.", source: "NYC DOT", minutesAgo: 120 },
     { id: 4, type: "traffic",  headline: "BQE lane closures: expect delays toward Brooklyn Bridge", summary: "Two lanes closed for emergency deck repair. Use alternate bridge crossings.", source: "NYSDOT", minutesAgo: 160 },
     { id: 5, type: "breaking", headline: "NYC Marathon route closures announced for Sunday", summary: "Over 60 streets close from Staten Island Ferry terminal through Central Park.", source: "NYRR", minutesAgo: 210 },
+    { id: 6, type: "sports",   headline: "Knicks defeat Celtics in overtime thriller at MSG", summary: "Jalen Brunson drops 42 points in a historic comeback from 18 points down. The Garden goes electric.", source: "NY Post Sports", minutesAgo: 95 },
   ],
   "San Francisco": [
     { id: 1, type: "transit",  headline: "BART strike averted — service continues as normal", summary: "Union and BART management reach tentative agreement. All lines running.", source: "BART", minutesAgo: 15 },
@@ -82,6 +85,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
     { id: 3, type: "civic",    headline: "SF expands overnight shelter capacity by 300 beds", summary: "New Navigation Center opens in SOMA district under Mayor's winter plan.", source: "SF Chronicle", minutesAgo: 140 },
     { id: 4, type: "traffic",  headline: "Bay Bridge westbound lane closure: Friday evening", summary: "One lane closed from 8pm–5am for seismic sensor installation.", source: "Bay Bridge", minutesAgo: 190 },
     { id: 5, type: "breaking", headline: "PG&E Public Safety Power Shutoff possible this weekend", summary: "Fire weather watch issued. Up to 12,000 homes in fire risk zones may lose power.", source: "PG&E", minutesAgo: 250 },
+    { id: 6, type: "sports",   headline: "Warriors clinch playoff spot with dominant win over Lakers", summary: "Steph Curry's 38-point performance at Chase Center cements Golden State's top-4 seeding.", source: "SF Chronicle Sport", minutesAgo: 180 },
   ],
 };
 
@@ -91,24 +95,28 @@ const COMMUNITY_DATA: Record<string, Community[]> = {
     { id: 2, name: "Mumbai Local Train Riders", description: "Tips, route hacks, and daily updates for local train commuters.", icon: "share-2", members: 31500, activity: "88 posts today", tags: ["Transit", "Commute", "Western", "Central"] },
     { id: 3, name: "Bandra Residents", description: "Hyperlocal updates, events, and community issues for Bandra folks.", icon: "home", members: 9200, activity: "24 posts today", tags: ["Bandra", "Local", "Events"] },
     { id: 4, name: "Mumbai Cricket Fans", description: "Live match discussions, Wankhede events, and cricket banter.", icon: "activity", members: 56000, activity: "310 posts today", tags: ["Cricket", "Sports", "IPL"] },
+    { id: 5, name: "Mumbai Runners Club", description: "Weekend running groups along Marine Drive, Bandra Bandstand, and Powai Lake. All paces welcome — 5K to ultra.", icon: "activity", members: 14200, activity: "45 posts today", tags: ["Running", "Fitness", "Marathon"] },
   ],
   Bangalore: [
     { id: 1, name: "Namma Bengaluru Foodies", description: "From MTR to microbreweries — all things food in Bangalore.", icon: "coffee", members: 38200, activity: "95 posts today", tags: ["Food", "Restaurants", "Cafes"] },
     { id: 2, name: "Bangalore Tech Community", description: "Meetups, job postings, and startup news for Bangalore's tech scene.", icon: "code", members: 67400, activity: "210 posts today", tags: ["Tech", "Startups", "Jobs", "Meetups"] },
     { id: 3, name: "Koramangala Connect", description: "Residents and businesses of Koramangala sharing local updates.", icon: "home", members: 12100, activity: "41 posts today", tags: ["Koramangala", "Local", "Housing"] },
     { id: 4, name: "BLR Cyclists", description: "Weekend rides, routes, and cycling advocacy across Bangalore.", icon: "wind", members: 8700, activity: "18 posts today", tags: ["Cycling", "Fitness", "Outdoors"] },
+    { id: 5, name: "Bangalore Fitness Tribe", description: "CrossFit, calisthenics, and gym reviews across Bangalore. Plus marathon training groups and running routes.", icon: "activity", members: 11800, activity: "32 posts today", tags: ["Fitness", "Gym", "CrossFit", "Running"] },
   ],
   "New York City": [
     { id: 1, name: "NYC Food Scene", description: "Restaurant discoveries, chef news, and the best pizza debates.", icon: "coffee", members: 89600, activity: "450 posts today", tags: ["Food", "Restaurants", "Pizza", "Brunch"] },
     { id: 2, name: "Brooklyn Residents", description: "Community news, events, and neighbourhood updates for Brooklyn.", icon: "home", members: 43000, activity: "130 posts today", tags: ["Brooklyn", "Local", "Events"] },
     { id: 3, name: "NYC Photography Club", description: "Share your city shots, join photo walks, and get feedback.", icon: "aperture", members: 22300, activity: "76 posts today", tags: ["Photography", "Art", "Creative"] },
     { id: 4, name: "Commuter Warriors NYC", description: "Subway hacks, MTA complaints, and commuter solidarity.", icon: "share-2", members: 31800, activity: "195 posts today", tags: ["Transit", "MTA", "Subway", "Commute"] },
+    { id: 5, name: "NYC Runners", description: "Central Park loop runs, marathon training tips, and the city's best running routes. All levels welcome.", icon: "activity", members: 38600, activity: "150 posts today", tags: ["Running", "Marathon", "NYRR", "Central Park"] },
   ],
   "San Francisco": [
     { id: 1, name: "SF Bay Foodies", description: "Farm-to-table finds, Mission burritos, and Michelin guides.", icon: "coffee", members: 34500, activity: "110 posts today", tags: ["Food", "Restaurants", "Mission"] },
     { id: 2, name: "Mission District Community", description: "Hyperlocal issues, murals, events and housing news.", icon: "home", members: 11200, activity: "38 posts today", tags: ["Mission", "Local", "Housing"] },
     { id: 3, name: "SF Tech Founders", description: "Startup stories, investor intros, and SoMa office chatter.", icon: "code", members: 48900, activity: "220 posts today", tags: ["Tech", "Startups", "VC", "Founders"] },
     { id: 4, name: "Golden Gate Cyclists", description: "Bridge crossings, Marin trails, and bike commute tips.", icon: "wind", members: 9600, activity: "29 posts today", tags: ["Cycling", "Outdoors", "GGBP"] },
+    { id: 5, name: "Bay Area Fitness Community", description: "CrossFit, trail running, open water swimming, and Bay Area sports events. Your city's active lifestyle hub.", icon: "activity", members: 16400, activity: "52 posts today", tags: ["Fitness", "Trail Running", "CrossFit", "Swimming"] },
   ],
 };
 
@@ -118,24 +126,28 @@ const QA_DATA: Record<string, QAItem[]> = {
     { id: 2, question: "Which areas have the best street food near Marine Drive?", author: "Priya K.", initials: "PK", tags: ["Food", "Marine Drive"], upvotes: 94, answers: 22, minutesAgo: 90 },
     { id: 3, question: "How do I apply for an emergency water connection via BMC?", author: "Sanjay D.", initials: "SD", tags: ["Civic", "BMC", "Utilities"], upvotes: 47, answers: 8, minutesAgo: 200 },
     { id: 4, question: "Is there parking near Bandra Kurla Complex on weekends?", author: "Aisha T.", initials: "AT", tags: ["Parking", "BKC"], upvotes: 63, answers: 11, minutesAgo: 310 },
+    { id: 5, question: "Best affordable gyms in Bandra or Andheri with no annual lock-in?", author: "Rohan S.", initials: "RS", tags: ["Fitness", "Gym", "Bandra"], upvotes: 84, answers: 16, minutesAgo: 75 },
   ],
   Bangalore: [
     { id: 1, question: "Which Namma Metro stations have reliable bike parking?", author: "Karthik R.", initials: "KR", tags: ["Metro", "Parking", "Cycling"], upvotes: 112, answers: 17, minutesAgo: 20 },
     { id: 2, question: "Best co-working spaces near Indiranagar with good wifi?", author: "Sneha V.", initials: "SV", tags: ["Work", "Indiranagar", "Coworking"], upvotes: 87, answers: 19, minutesAgo: 80 },
     { id: 3, question: "How to navigate BBMP property tax payment issues online?", author: "Mohan P.", initials: "MP", tags: ["Civic", "BBMP", "Tax"], upvotes: 55, answers: 9, minutesAgo: 180 },
     { id: 4, question: "Auto-rickshaw refusing meter — what are my options?", author: "Divya L.", initials: "DL", tags: ["Transit", "Auto", "Rights"], upvotes: 201, answers: 31, minutesAgo: 260 },
+    { id: 5, question: "How do I book badminton courts at Kanteerava Stadium online?", author: "Preethi M.", initials: "PM", tags: ["Sports", "Badminton", "Booking"], upvotes: 67, answers: 11, minutesAgo: 110 },
   ],
   "New York City": [
     { id: 1, question: "Fastest subway route from JFK to Midtown on a Sunday?", author: "Jake S.", initials: "JS", tags: ["Transit", "Subway", "JFK"], upvotes: 156, answers: 24, minutesAgo: 15 },
     { id: 2, question: "Are Citi Bikes worth it for daily commuting in Brooklyn?", author: "Maya L.", initials: "ML", tags: ["Cycling", "Citi Bike", "Brooklyn"], upvotes: 88, answers: 16, minutesAgo: 75 },
     { id: 3, question: "Best bagel spots open before 7am in Lower Manhattan?", author: "Dave R.", initials: "DR", tags: ["Food", "Bagels", "Manhattan"], upvotes: 213, answers: 38, minutesAgo: 130 },
     { id: 4, question: "How does alternate-side parking work for alternate days?", author: "Kim W.", initials: "KW", tags: ["Parking", "Rules", "Civic"], upvotes: 72, answers: 14, minutesAgo: 290 },
+    { id: 5, question: "Best outdoor running routes in Brooklyn that are safe early morning?", author: "Sarah M.", initials: "SM", tags: ["Running", "Brooklyn", "Fitness"], upvotes: 118, answers: 21, minutesAgo: 55 },
   ],
   "San Francisco": [
     { id: 1, question: "Is BART safe to take late at night to Oakland?", author: "Tom H.", initials: "TH", tags: ["BART", "Safety", "Oakland"], upvotes: 142, answers: 29, minutesAgo: 25 },
     { id: 2, question: "Best neighborhoods for young professionals moving to SF?", author: "Ava C.", initials: "AC", tags: ["Housing", "Neighborhoods", "Moving"], upvotes: 198, answers: 43, minutesAgo: 60 },
     { id: 3, question: "How does the SF residential parking permit system work?", author: "Leo B.", initials: "LB", tags: ["Parking", "Permit", "Civic"], upvotes: 67, answers: 12, minutesAgo: 150 },
     { id: 4, question: "What's the deal with the SFMTA Muni app — is it accurate?", author: "Nora F.", initials: "NF", tags: ["Transit", "Muni", "App"], upvotes: 95, answers: 18, minutesAgo: 220 },
+    { id: 5, question: "Are Golden Gate Park tennis courts worth booking in advance vs just showing up?", author: "Chris P.", initials: "CP", tags: ["Tennis", "Golden Gate Park", "Sports"], upvotes: 76, answers: 13, minutesAgo: 85 },
   ],
 };
 
@@ -146,11 +158,12 @@ const DEFAULT_NEWS: NewsItem[] = [
 // ─── Helpers ──────────────────────────────────────────────────
 
 const NEWS_COLORS: Record<NewsItem["type"], { bg: string; fg: string; label: string; icon: string }> = {
-  breaking: { bg: "#fef2f2", fg: "#ef4444", label: "Breaking", icon: "zap" },
-  traffic:  { bg: "#fff7ed", fg: "#f97316", label: "Traffic",  icon: "alert-triangle" },
-  weather:  { bg: "#eff6ff", fg: "#3b82f6", label: "Weather",  icon: "cloud-rain" },
-  civic:    { bg: "#f0fdf4", fg: "#22c55e", label: "Civic",    icon: "info" },
-  transit:  { bg: "#f0f9ff", fg: "#06b6d4", label: "Transit",  icon: "share-2" },
+  breaking: { bg: "#fef2f2", fg: "#ef4444", label: "Breaking", icon: "zap"            },
+  traffic:  { bg: "#fff7ed", fg: "#f97316", label: "Traffic",  icon: "alert-triangle"  },
+  weather:  { bg: "#eff6ff", fg: "#3b82f6", label: "Weather",  icon: "cloud-rain"      },
+  civic:    { bg: "#f0fdf4", fg: "#22c55e", label: "Civic",    icon: "info"            },
+  transit:  { bg: "#f0f9ff", fg: "#06b6d4", label: "Transit",  icon: "share-2"         },
+  sports:   { bg: "#f0fdf4", fg: "#16a34a", label: "Sports",   icon: "activity"        },
 };
 
 function timeAgo(min: number) {
@@ -191,9 +204,9 @@ export default function FeedsScreen() {
   const { data: deals = [], isLoading: dealsLoading, refetch: refetchDeals } =
     useGetDeals({ city: cityName });
 
-  const news = (cityName && NEWS_DATA[cityName]) ?? DEFAULT_NEWS;
-  const communities = (cityName && COMMUNITY_DATA[cityName]) ?? [];
-  const qaItems = (cityName && QA_DATA[cityName]) ?? [];
+  const news        = (cityName ? NEWS_DATA[cityName]      : undefined) ?? DEFAULT_NEWS;
+  const communities = (cityName ? COMMUNITY_DATA[cityName] : undefined) ?? [];
+  const qaItems     = (cityName ? QA_DATA[cityName]        : undefined) ?? [];
 
   const toggleJoin = (id: number) => {
     setJoinedCommunities((prev) => {

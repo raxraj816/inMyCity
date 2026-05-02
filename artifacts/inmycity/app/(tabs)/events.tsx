@@ -13,7 +13,7 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { AppHeader } from "@/components/AppHeader";
 
-const CATEGORIES = ["music", "food", "art", "comedy", "film", "wellness", "networking"];
+const CATEGORIES = ["music", "food", "art", "comedy", "film", "wellness", "networking", "sports"];
 
 export default function EventsScreen() {
   const colors = useColors();

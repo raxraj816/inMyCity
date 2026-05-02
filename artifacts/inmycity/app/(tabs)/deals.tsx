@@ -13,7 +13,7 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { AppHeader } from "@/components/AppHeader";
 
-const CATEGORIES = ["food", "attraction", "retail", "wellness", "nightlife"];
+const CATEGORIES = ["food", "attraction", "retail", "wellness", "nightlife", "fitness"];
 
 export default function DealsScreen() {
   const colors = useColors();

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
@@ -25,38 +25,61 @@ export function AppHeader({
   const { selectedCity, showPicker } = useCity();
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding, borderBottomColor: colors.border }]}>
-      <View style={styles.topRow}>
-        <View>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: topPadding, borderBottomColor: colors.border },
+      ]}
+    >
+      {/* Single row: wordmark (flex) + city pill + profile */}
+      <View style={styles.row}>
+
+        {/* Left — wordmark + tagline */}
+        <View style={styles.wordmarkBlock}>
           <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{subtitle}</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+            {subtitle}
+          </Text>
         </View>
+
+        {/* Right — city pill + any extra element + profile */}
         <View style={styles.rightSlot}>
           {rightElement}
+
+          {showCityPicker && (
+            <TouchableOpacity
+              style={[
+                styles.cityPill,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={showPicker}
+              activeOpacity={0.75}
+            >
+              <Feather name="map-pin" size={11} color={colors.amber} />
+              <Text
+                style={[styles.cityPillText, { color: colors.foreground }]}
+                numberOfLines={1}
+              >
+                {selectedCity?.name ?? "City"}
+              </Text>
+              <Feather name="chevron-down" size={11} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
+
           {showProfile && (
             <TouchableOpacity
               onPress={() => router.push("/profile")}
               activeOpacity={0.75}
-              style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                styles.profileBtn,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
             >
               <Feather name="user" size={17} color={colors.foreground} />
             </TouchableOpacity>
           )}
         </View>
       </View>
-      {showCityPicker && (
-        <TouchableOpacity
-          style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={showPicker}
-          activeOpacity={0.75}
-        >
-          <Feather name="map-pin" size={13} color={colors.amber} />
-          <Text style={[styles.cityBtnText, { color: colors.foreground }]} numberOfLines={1}>
-            {selectedCity?.displayName ?? "Select City"}
-          </Text>
-          <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -64,14 +87,19 @@ export function AppHeader({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingBottom: 12,
-    gap: 10,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  topRow: {
+
+  row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
+  },
+
+  wordmarkBlock: {
+    flex: 1,
   },
   wordmark: {
     fontFamily: "Inter_700Bold",
@@ -83,11 +111,30 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 1,
   },
+
   rightSlot: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    flexShrink: 0,
   },
+
+  cityPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    maxWidth: 120,
+  },
+  cityPillText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    flexShrink: 1,
+  },
+
   profileBtn: {
     width: 36,
     height: 36,
@@ -95,19 +142,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-  },
-  cityBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  cityBtnText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
   },
 });

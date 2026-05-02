@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetPlaces } from "@workspace/api-client-react";
@@ -18,12 +17,12 @@ import { CategoryGrid } from "@/components/CategoryGrid";
 import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { AppHeader } from "@/components/AppHeader";
 
 export default function ExploreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { selectedCity, showPicker } = useCity();
+  const { selectedCity } = useCity();
 
   const cityName = selectedCity?.name;
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
@@ -44,33 +43,11 @@ export default function ExploreScreen() {
 
   const renderHeader = () => (
     <View>
-      {/* Top bar */}
-      <View style={[styles.topBar, { paddingTop: topPadding }]}>
-        <View style={styles.topRow}>
-          <View>
-            <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
-            <Text style={[styles.appMotto, { color: colors.mutedForeground }]}>City At Your Fingertips</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => router.push("/profile")}
-            activeOpacity={0.75}
-            style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          >
-            <Feather name="user" size={17} color={colors.foreground} />
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity
-          style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={showPicker}
-          activeOpacity={0.75}
-        >
-          <Feather name="map-pin" size={13} color={colors.amber} />
-          <Text style={[styles.cityBtnText, { color: colors.foreground }]} numberOfLines={1}>
-            {selectedCity?.name ?? "Select City"}
-          </Text>
-          <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        subtitle="City At Your Fingertips"
+        topPadding={topPadding}
+        showCityPicker
+      />
 
       {/* Category grid */}
       <View style={styles.sectionRow}>

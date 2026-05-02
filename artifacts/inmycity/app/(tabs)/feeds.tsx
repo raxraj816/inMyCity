@@ -245,13 +245,8 @@ export default function FeedsScreen() {
     <View style={[styles.header, { paddingTop: topPadding, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
       <View style={styles.titleRow}>
         <View>
-          <Text style={[styles.screenTitle, { color: colors.foreground }]}>Feeds</Text>
-          {selectedCity && (
-            <View style={styles.cityRow}>
-              <Feather name="map-pin" size={11} color={colors.amber} />
-              <Text style={[styles.cityName, { color: colors.mutedForeground }]}>{selectedCity.name}</Text>
-            </View>
-          )}
+          <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
+          <Text style={[styles.wordmarkSub, { color: colors.mutedForeground }]}>What's Happening</Text>
         </View>
         <View style={[styles.liveChip, { backgroundColor: "#ef444420" }]}>
           <View style={styles.liveDot} />
@@ -620,6 +615,8 @@ const styles = StyleSheet.create({
   screenTitle: { fontFamily: "Inter_700Bold", fontSize: 26, letterSpacing: -0.3 },
   cityRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   cityName: { fontFamily: "Inter_500Medium", fontSize: 12 },
+  wordmark: { fontFamily: "Inter_700Bold", fontSize: 24, letterSpacing: -0.5 },
+  wordmarkSub: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 1 },
   liveChip: {
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, marginTop: 4,

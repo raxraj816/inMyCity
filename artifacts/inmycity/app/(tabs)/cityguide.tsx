@@ -18,6 +18,7 @@ import { useCity } from "@/context/CityContext";
 import { CityPicker } from "@/components/CityPicker";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { AppHeader } from "@/components/AppHeader";
 import {
   useGetItineraries,
   useGetPlaces,
@@ -91,7 +92,7 @@ export default function CityGuideScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { selectedCity, showPicker } = useCity();
+  const { selectedCity } = useCity();
   const [placeFilter, setPlaceFilter] = useState("all");
 
   const cityName = selectedCity?.name;
@@ -123,33 +124,11 @@ export default function CityGuideScreen() {
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
         {/* ── Header ── */}
-        <View style={[styles.header, { paddingTop: topPadding }]}>
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={[styles.headerTitle, { color: colors.foreground }]}>City Guide</Text>
-              <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-                Everything a visitor needs
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => router.push("/profile")}
-              style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <Feather name="user" size={17} color={colors.foreground} />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={showPicker}
-            activeOpacity={0.75}
-          >
-            <Feather name="map-pin" size={13} color={colors.amber} />
-            <Text style={[styles.cityBtnText, { color: colors.foreground }]} numberOfLines={1}>
-              {selectedCity?.displayName ?? "Select City"}
-            </Text>
-            <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
-          </TouchableOpacity>
-        </View>
+        <AppHeader
+          subtitle="Your Visitor's Guide"
+          topPadding={topPadding}
+          showCityPicker
+        />
 
         {/* ── Hero Banner ── */}
         <View style={[styles.heroBanner, { backgroundColor: colors.navy }]}>

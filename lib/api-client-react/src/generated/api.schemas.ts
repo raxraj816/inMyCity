@@ -199,6 +199,114 @@ export interface SuccessResponse {
   success: boolean;
 }
 
+export type MovieStatus = (typeof MovieStatus)[keyof typeof MovieStatus];
+
+export const MovieStatus = {
+  now_showing: "now_showing",
+  coming_soon: "coming_soon",
+} as const;
+
+export interface Movie {
+  id: number;
+  title: string;
+  genre: string;
+  language: string;
+  /** @nullable */
+  durationMinutes?: number | null;
+  /** @nullable */
+  rating?: number | null;
+  /** @nullable */
+  reviewCount?: number | null;
+  /** @nullable */
+  posterUrl?: string | null;
+  /** @nullable */
+  synopsis?: string | null;
+  /** @nullable */
+  director?: string | null;
+  cast: string[];
+  /** @nullable */
+  releaseDate?: string | null;
+  city: string;
+  status: MovieStatus;
+  /** @nullable */
+  venue?: string | null;
+  /** @nullable */
+  price?: number | null;
+  /** @nullable */
+  bookingUrl?: string | null;
+  tags: string[];
+  createdAt: string;
+}
+
+export interface Hotel {
+  id: number;
+  name: string;
+  category: string;
+  address: string;
+  city: string;
+  /** @nullable */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
+  /** @nullable */
+  rating?: number | null;
+  /** @nullable */
+  reviewCount?: number | null;
+  /** @nullable */
+  pricePerNight?: number | null;
+  currency: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  images: string[];
+  amenities: string[];
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  website?: string | null;
+  /** @nullable */
+  checkIn?: string | null;
+  /** @nullable */
+  checkOut?: string | null;
+  /** @nullable */
+  description?: string | null;
+  tags: string[];
+  createdAt: string;
+}
+
+export interface Activity {
+  id: number;
+  name: string;
+  category: string;
+  address: string;
+  city: string;
+  /** @nullable */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  durationMinutes?: number | null;
+  /** @nullable */
+  price?: number | null;
+  currency: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  images: string[];
+  /** @nullable */
+  rating?: number | null;
+  /** @nullable */
+  reviewCount?: number | null;
+  /** @nullable */
+  openingHours?: string | null;
+  /** @nullable */
+  bookingUrl?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  tags: string[];
+  createdAt: string;
+}
+
 export type GetPlacesParams = {
   city?: string;
   lat?: number;
@@ -233,6 +341,38 @@ export type GetDealsParams = {
 export type GetItinerariesParams = {
   city?: string;
   duration?: number;
+};
+
+export type GetMoviesParams = {
+  city?: string;
+  status?: GetMoviesStatus;
+  genre?: string;
+  language?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export type GetMoviesStatus =
+  (typeof GetMoviesStatus)[keyof typeof GetMoviesStatus];
+
+export const GetMoviesStatus = {
+  now_showing: "now_showing",
+  coming_soon: "coming_soon",
+} as const;
+
+export type GetHotelsParams = {
+  city?: string;
+  category?: string;
+  maxPrice?: number;
+  limit?: number;
+  offset?: number;
+};
+
+export type GetActivitiesParams = {
+  city?: string;
+  category?: string;
+  limit?: number;
+  offset?: number;
 };
 
 export type GetExploreSummaryParams = {

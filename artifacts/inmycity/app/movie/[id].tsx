@@ -1,0 +1,233 @@
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image } from "expo-image";
+import { Feather } from "@expo/vector-icons";
+
+import { useColors } from "@/hooks/useColors";
+import { useGetMovieById, getGetMovieByIdQueryKey } from "@workspace/api-client-react";
+import { ErrorFallback } from "@/components/ErrorFallback";
+
+export default function MovieDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+
+  const movieId = parseInt(id, 10);
+  const { data: movie, isLoading, error, refetch } = useGetMovieById(movieId, {
+    query: { enabled: !!movieId, queryKey: getGetMovieByIdQueryKey(movieId) }
+  });
+
+  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  if (isLoading || !movie) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
+
+  const isLocal = movie.city === "Mumbai" || movie.city === "Bangalore";
+  const currencySymbol = isLocal ? "₹" : "$";
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+        {/* Poster */}
+        <View style={styles.posterContainer}>
+          <Image
+            source={{ uri: movie.posterUrl ?? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800" }}
+            style={styles.poster}
+            contentFit="cover"
+          />
+          <View style={[styles.posterOverlay]} />
+
+          <View style={[styles.topActions, { paddingTop: Math.max(insets.top, 20) }]}>
+            <TouchableOpacity style={[styles.circleButton, { backgroundColor: "rgba(0,0,0,0.5)" }]} onPress={() => router.back()}>
+              <Feather name="arrow-left" size={22} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Status badge on poster */}
+          <View style={[
+            styles.posterBadge,
+            { backgroundColor: movie.status === "now_showing" ? "#10b981" : "#f59e0b" }
+          ]}>
+            <Text style={styles.posterBadgeText}>
+              {movie.status === "now_showing" ? "Now Showing" : "Coming Soon"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Content */}
+        <View style={[styles.content, { backgroundColor: colors.background, paddingBottom: insets.bottom + 110 }]}>
+          {/* Genre + Language */}
+          <View style={styles.badgeRow}>
+            <View style={[styles.badge, { backgroundColor: "#8b5cf61a", borderColor: "#8b5cf620" }]}>
+              <Text style={[styles.badgeText, { color: "#8b5cf6" }]}>{movie.genre}</Text>
+            </View>
+            <View style={[styles.badge, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>{movie.language}</Text>
+            </View>
+          </View>
+
+          <Text style={[styles.title, { color: colors.foreground }]}>{movie.title}</Text>
+
+          {/* Stats row */}
+          <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {movie.rating && (
+              <View style={styles.statItem}>
+                <Feather name="star" size={18} color="#f59e0b" />
+                <Text style={[styles.statValue, { color: colors.foreground }]}>{movie.rating.toFixed(1)}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Rating</Text>
+              </View>
+            )}
+            {movie.durationMinutes && (
+              <>
+                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.statItem}>
+                  <Feather name="clock" size={18} color="#8b5cf6" />
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>
+                    {Math.floor(movie.durationMinutes / 60)}h {movie.durationMinutes % 60}m
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Duration</Text>
+                </View>
+              </>
+            )}
+            {movie.releaseDate && (
+              <>
+                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.statItem}>
+                  <Feather name="calendar" size={18} color="#0ea5e9" />
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>
+                    {new Date(movie.releaseDate).getFullYear()}
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Year</Text>
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* Synopsis */}
+          {movie.synopsis && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Synopsis</Text>
+              <Text style={[styles.description, { color: colors.mutedForeground }]}>{movie.synopsis}</Text>
+            </View>
+          )}
+
+          {/* Director & Cast */}
+          {(movie.director || (movie.cast && movie.cast.length > 0)) && (
+            <View style={[styles.castCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {movie.director && (
+                <View style={styles.castRow}>
+                  <Text style={[styles.castLabel, { color: colors.mutedForeground }]}>Director</Text>
+                  <Text style={[styles.castValue, { color: colors.foreground }]}>{movie.director}</Text>
+                </View>
+              )}
+              {movie.cast && movie.cast.length > 0 && (
+                <>
+                  {movie.director && <View style={[styles.castDivider, { backgroundColor: colors.border }]} />}
+                  <View style={styles.castRow}>
+                    <Text style={[styles.castLabel, { color: colors.mutedForeground }]}>Cast</Text>
+                    <Text style={[styles.castValue, { color: colors.foreground }]}>{movie.cast.join(", ")}</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Venue */}
+          {movie.venue && (
+            <View style={[styles.venueRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.iconBox, { backgroundColor: "#8b5cf61a" }]}>
+                <Feather name="map-pin" size={18} color="#8b5cf6" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.venueName, { color: colors.foreground }]}>{movie.venue}</Text>
+                <Text style={[styles.venueCity, { color: colors.mutedForeground }]}>{movie.city}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Tags */}
+          {movie.tags && movie.tags.length > 0 && (
+            <View style={styles.tagsRow}>
+              {movie.tags.map(tag => (
+                <View key={tag} style={[styles.tag, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.tagText, { color: colors.foreground }]}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Bottom Bar */}
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom || 24, backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        <View>
+          <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Tickets from</Text>
+          <Text style={[styles.priceValue, { color: colors.foreground }]}>
+            {movie.price ? `${currencySymbol}${movie.price}` : "Check theatre"}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.bookBtn, { backgroundColor: "#8b5cf6", opacity: movie.bookingUrl ? 1 : 0.5 }]}
+          onPress={() => movie.bookingUrl && Linking.openURL(movie.bookingUrl)}
+          disabled={!movie.bookingUrl}
+        >
+          <Text style={styles.bookBtnText}>Book Tickets</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  posterContainer: { height: 420, position: "relative" },
+  poster: { width: "100%", height: "100%" },
+  posterOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, height: 80 },
+  topActions: { position: "absolute", top: 0, left: 0, paddingHorizontal: 20 },
+  circleButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  posterBadge: {
+    position: "absolute", bottom: 16, right: 16,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+  },
+  posterBadgeText: { fontFamily: "Inter_700Bold", fontSize: 12, color: "#fff" },
+  content: { padding: 24, marginTop: -24, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  badgeRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  badge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
+  badgeText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  title: { fontFamily: "Inter_700Bold", fontSize: 28, lineHeight: 34, marginBottom: 20 },
+  statsCard: {
+    flexDirection: "row", borderRadius: 16, padding: 16, marginBottom: 24,
+    borderWidth: StyleSheet.hairlineWidth, justifyContent: "space-around", alignItems: "center",
+  },
+  statItem: { alignItems: "center", gap: 4 },
+  statValue: { fontFamily: "Inter_700Bold", fontSize: 15 },
+  statLabel: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  statDivider: { width: 1, height: 36 },
+  section: { marginBottom: 24 },
+  sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 18, marginBottom: 8 },
+  description: { fontFamily: "Inter_400Regular", fontSize: 15, lineHeight: 24 },
+  castCard: { borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: StyleSheet.hairlineWidth, gap: 4 },
+  castRow: { flexDirection: "row", gap: 12 },
+  castLabel: { fontFamily: "Inter_500Medium", fontSize: 13, width: 70 },
+  castValue: { fontFamily: "Inter_400Regular", fontSize: 13, flex: 1, lineHeight: 20 },
+  castDivider: { height: StyleSheet.hairlineWidth, marginVertical: 8 },
+  venueRow: {
+    flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16,
+    padding: 14, marginBottom: 20, borderWidth: StyleSheet.hairlineWidth,
+  },
+  iconBox: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  venueName: { fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  venueCity: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
+  tagsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  tag: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
+  tagText: { fontFamily: "Inter_500Medium", fontSize: 13 },
+  bottomBar: {
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 24, paddingTop: 16, borderTopWidth: 1,
+  },
+  priceLabel: { fontFamily: "Inter_500Medium", fontSize: 12, marginBottom: 2 },
+  priceValue: { fontFamily: "Inter_700Bold", fontSize: 20 },
+  bookBtn: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12 },
+  bookBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 16 },
+});

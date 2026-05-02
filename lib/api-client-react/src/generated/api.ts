@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  Activity,
   AddPlaceToCollectionInput,
   Collection,
   CreateCollectionInput,
@@ -25,13 +26,18 @@ import type {
   Event,
   ExploreSummary,
   Favorite,
+  GetActivitiesParams,
   GetDealsParams,
   GetEventsParams,
   GetExploreSummaryParams,
+  GetHotelsParams,
   GetItinerariesParams,
+  GetMoviesParams,
   GetPlacesParams,
   HealthStatus,
+  Hotel,
   Itinerary,
+  Movie,
   Place,
   SuccessResponse,
   SupportedCity,
@@ -1664,6 +1670,549 @@ export const useRemovePlaceFromCollection = <
 > => {
   return useMutation(getRemovePlaceFromCollectionMutationOptions(options));
 };
+
+/**
+ * @summary Get movies
+ */
+export const getGetMoviesUrl = (params?: GetMoviesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/movies?${stringifiedParams}`
+    : `/api/movies`;
+};
+
+export const getMovies = async (
+  params?: GetMoviesParams,
+  options?: RequestInit,
+): Promise<Movie[]> => {
+  return customFetch<Movie[]>(getGetMoviesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMoviesQueryKey = (params?: GetMoviesParams) => {
+  return [`/api/movies`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetMoviesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMovies>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetMoviesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMovies>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMoviesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMovies>>> = ({
+    signal,
+  }) => getMovies(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMovies>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMoviesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMovies>>
+>;
+export type GetMoviesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get movies
+ */
+
+export function useGetMovies<
+  TData = Awaited<ReturnType<typeof getMovies>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetMoviesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMovies>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMoviesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a movie by ID
+ */
+export const getGetMovieByIdUrl = (id: number) => {
+  return `/api/movies/${id}`;
+};
+
+export const getMovieById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Movie> => {
+  return customFetch<Movie>(getGetMovieByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMovieByIdQueryKey = (id: number) => {
+  return [`/api/movies/${id}`] as const;
+};
+
+export const getGetMovieByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMovieById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMovieById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMovieByIdQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMovieById>>> = ({
+    signal,
+  }) => getMovieById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMovieById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMovieByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMovieById>>
+>;
+export type GetMovieByIdQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a movie by ID
+ */
+
+export function useGetMovieById<
+  TData = Awaited<ReturnType<typeof getMovieById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMovieById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMovieByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get hotels
+ */
+export const getGetHotelsUrl = (params?: GetHotelsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/hotels?${stringifiedParams}`
+    : `/api/hotels`;
+};
+
+export const getHotels = async (
+  params?: GetHotelsParams,
+  options?: RequestInit,
+): Promise<Hotel[]> => {
+  return customFetch<Hotel[]>(getGetHotelsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetHotelsQueryKey = (params?: GetHotelsParams) => {
+  return [`/api/hotels`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetHotelsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getHotels>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetHotelsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getHotels>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetHotelsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getHotels>>> = ({
+    signal,
+  }) => getHotels(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getHotels>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetHotelsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getHotels>>
+>;
+export type GetHotelsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get hotels
+ */
+
+export function useGetHotels<
+  TData = Awaited<ReturnType<typeof getHotels>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetHotelsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getHotels>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetHotelsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a hotel by ID
+ */
+export const getGetHotelByIdUrl = (id: number) => {
+  return `/api/hotels/${id}`;
+};
+
+export const getHotelById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Hotel> => {
+  return customFetch<Hotel>(getGetHotelByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetHotelByIdQueryKey = (id: number) => {
+  return [`/api/hotels/${id}`] as const;
+};
+
+export const getGetHotelByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getHotelById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getHotelById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetHotelByIdQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getHotelById>>> = ({
+    signal,
+  }) => getHotelById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getHotelById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetHotelByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getHotelById>>
+>;
+export type GetHotelByIdQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a hotel by ID
+ */
+
+export function useGetHotelById<
+  TData = Awaited<ReturnType<typeof getHotelById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getHotelById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetHotelByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get activities
+ */
+export const getGetActivitiesUrl = (params?: GetActivitiesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/activities?${stringifiedParams}`
+    : `/api/activities`;
+};
+
+export const getActivities = async (
+  params?: GetActivitiesParams,
+  options?: RequestInit,
+): Promise<Activity[]> => {
+  return customFetch<Activity[]>(getGetActivitiesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetActivitiesQueryKey = (params?: GetActivitiesParams) => {
+  return [`/api/activities`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetActivitiesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivities>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetActivitiesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivities>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetActivitiesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivities>>> = ({
+    signal,
+  }) => getActivities(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActivities>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetActivitiesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getActivities>>
+>;
+export type GetActivitiesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get activities
+ */
+
+export function useGetActivities<
+  TData = Awaited<ReturnType<typeof getActivities>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetActivitiesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivities>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetActivitiesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get an activity by ID
+ */
+export const getGetActivityByIdUrl = (id: number) => {
+  return `/api/activities/${id}`;
+};
+
+export const getActivityById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Activity> => {
+  return customFetch<Activity>(getGetActivityByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetActivityByIdQueryKey = (id: number) => {
+  return [`/api/activities/${id}`] as const;
+};
+
+export const getGetActivityByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivityById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivityById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetActivityByIdQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityById>>> = ({
+    signal,
+  }) => getActivityById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActivityById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetActivityByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getActivityById>>
+>;
+export type GetActivityByIdQueryError = ErrorType<void>;
+
+/**
+ * @summary Get an activity by ID
+ */
+
+export function useGetActivityById<
+  TData = Awaited<ReturnType<typeof getActivityById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivityById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetActivityByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get category summary counts for a location

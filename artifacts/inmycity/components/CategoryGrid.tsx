@@ -20,9 +20,9 @@ const CATEGORIES: Category[] = [
   { id: "places",     label: "Places",      icon: "map-pin",   color: "#6366f1", active: true,  route: "/(tabs)/feeds?section=places" },
   { id: "events",     label: "Events",      icon: "calendar",  color: "#0ea5e9", active: true,  route: "/(tabs)/feeds?section=events" },
   { id: "deals",      label: "Deals",       icon: "tag",       color: "#10b981", active: true,  route: "/(tabs)/feeds?section=deals"  },
-  { id: "movies",     label: "Movies",      icon: "film",      color: "#8b5cf6", active: false },
-  { id: "hotels",     label: "Hotels",      icon: "home",      color: "#f59e0b", active: false },
-  { id: "activities", label: "Activities",  icon: "zap",       color: "#ef4444", active: false },
+  { id: "movies",     label: "Movies",      icon: "film",      color: "#8b5cf6", active: true,  route: "/movies" },
+  { id: "hotels",     label: "Hotels",      icon: "home",      color: "#f59e0b", active: true,  route: "/hotels" },
+  { id: "activities", label: "Activities",  icon: "zap",       color: "#ef4444", active: true,  route: "/activities" },
   { id: "travel",     label: "Travel",      icon: "navigation",color: "#06b6d4", active: false },
 ];
 

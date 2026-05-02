@@ -25,6 +25,12 @@ tags:
     description: Explore/discovery operations
   - name: cities
     description: City operations
+  - name: movies
+    description: Movie operations
+  - name: hotels
+    description: Hotel operations
+  - name: activities
+    description: Activity operations
 paths:
   /healthz:
     get:
@@ -466,6 +472,178 @@ paths:
               schema:
                 $ref: "#/components/schemas/Collection"
 
+  /movies:
+    get:
+      operationId: getMovies
+      tags: [movies]
+      summary: Get movies
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [now_showing, coming_soon]
+        - name: genre
+          in: query
+          schema:
+            type: string
+        - name: language
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of movies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Movie"
+
+  /movies/{id}:
+    get:
+      operationId: getMovieById
+      tags: [movies]
+      summary: Get a movie by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Movie details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Movie"
+        "404":
+          description: Not found
+
+  /hotels:
+    get:
+      operationId: getHotels
+      tags: [hotels]
+      summary: Get hotels
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of hotels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hotel"
+
+  /hotels/{id}:
+    get:
+      operationId: getHotelById
+      tags: [hotels]
+      summary: Get a hotel by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Hotel details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hotel"
+        "404":
+          description: Not found
+
+  /activities:
+    get:
+      operationId: getActivities
+      tags: [activities]
+      summary: Get activities
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+
+  /activities/{id}:
+    get:
+      operationId: getActivityById
+      tags: [activities]
+      summary: Get an activity by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "404":
+          description: Not found
+
   /explore/summary:
     get:
       operationId: getExploreSummary
@@ -862,3 +1040,181 @@ components:
           type: boolean
       required:
         - success
+
+    Movie:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        genre:
+          type: string
+        language:
+          type: string
+        durationMinutes:
+          type: ["integer", "null"]
+        rating:
+          type: ["number", "null"]
+        reviewCount:
+          type: ["integer", "null"]
+        posterUrl:
+          type: ["string", "null"]
+        synopsis:
+          type: ["string", "null"]
+        director:
+          type: ["string", "null"]
+        cast:
+          type: array
+          items:
+            type: string
+        releaseDate:
+          type: ["string", "null"]
+        city:
+          type: string
+        status:
+          type: string
+          enum: [now_showing, coming_soon]
+        venue:
+          type: ["string", "null"]
+        price:
+          type: ["number", "null"]
+        bookingUrl:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - genre
+        - language
+        - cast
+        - city
+        - status
+        - tags
+        - createdAt
+
+    Hotel:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        lat:
+          type: ["number", "null"]
+        lng:
+          type: ["number", "null"]
+        rating:
+          type: ["number", "null"]
+        reviewCount:
+          type: ["integer", "null"]
+        pricePerNight:
+          type: ["number", "null"]
+        currency:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        images:
+          type: array
+          items:
+            type: string
+        amenities:
+          type: array
+          items:
+            type: string
+        phone:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        checkIn:
+          type: ["string", "null"]
+        checkOut:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - category
+        - address
+        - city
+        - currency
+        - images
+        - amenities
+        - tags
+        - createdAt
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        lat:
+          type: ["number", "null"]
+        lng:
+          type: ["number", "null"]
+        description:
+          type: ["string", "null"]
+        durationMinutes:
+          type: ["integer", "null"]
+        price:
+          type: ["number", "null"]
+        currency:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        images:
+          type: array
+          items:
+            type: string
+        rating:
+          type: ["number", "null"]
+        reviewCount:
+          type: ["integer", "null"]
+        openingHours:
+          type: ["string", "null"]
+        bookingUrl:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - category
+        - address
+        - city
+        - currency
+        - images
+        - tags
+        - createdAt

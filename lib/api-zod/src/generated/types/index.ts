@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./activity";
 export * from "./addPlaceToCollectionInput";
 export * from "./categoryCount";
 export * from "./collection";
@@ -15,14 +16,21 @@ export * from "./deal";
 export * from "./event";
 export * from "./exploreSummary";
 export * from "./favorite";
+export * from "./getActivitiesParams";
 export * from "./getDealsParams";
 export * from "./getEventsParams";
 export * from "./getExploreSummaryParams";
+export * from "./getHotelsParams";
 export * from "./getItinerariesParams";
+export * from "./getMoviesParams";
+export * from "./getMoviesStatus";
 export * from "./getPlacesParams";
 export * from "./healthStatus";
+export * from "./hotel";
 export * from "./itinerary";
 export * from "./itineraryStop";
+export * from "./movie";
+export * from "./movieStatus";
 export * from "./place";
 export * from "./successResponse";
 export * from "./supportedCity";

@@ -545,6 +545,201 @@ export const RemovePlaceFromCollectionResponse = zod.object({
 });
 
 /**
+ * @summary Get movies
+ */
+export const GetMoviesQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  status: zod.enum(["now_showing", "coming_soon"]).optional(),
+  genre: zod.coerce.string().optional(),
+  language: zod.coerce.string().optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetMoviesResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  genre: zod.string(),
+  language: zod.string(),
+  durationMinutes: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number().nullish(),
+  posterUrl: zod.string().nullish(),
+  synopsis: zod.string().nullish(),
+  director: zod.string().nullish(),
+  cast: zod.array(zod.string()),
+  releaseDate: zod.string().nullish(),
+  city: zod.string(),
+  status: zod.enum(["now_showing", "coming_soon"]),
+  venue: zod.string().nullish(),
+  price: zod.number().nullish(),
+  bookingUrl: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  createdAt: zod.string(),
+});
+export const GetMoviesResponse = zod.array(GetMoviesResponseItem);
+
+/**
+ * @summary Get a movie by ID
+ */
+export const GetMovieByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetMovieByIdResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  genre: zod.string(),
+  language: zod.string(),
+  durationMinutes: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number().nullish(),
+  posterUrl: zod.string().nullish(),
+  synopsis: zod.string().nullish(),
+  director: zod.string().nullish(),
+  cast: zod.array(zod.string()),
+  releaseDate: zod.string().nullish(),
+  city: zod.string(),
+  status: zod.enum(["now_showing", "coming_soon"]),
+  venue: zod.string().nullish(),
+  price: zod.number().nullish(),
+  bookingUrl: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Get hotels
+ */
+export const GetHotelsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  category: zod.coerce.string().optional(),
+  maxPrice: zod.coerce.number().optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetHotelsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  lat: zod.number().nullish(),
+  lng: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number().nullish(),
+  pricePerNight: zod.number().nullish(),
+  currency: zod.string(),
+  imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()),
+  amenities: zod.array(zod.string()),
+  phone: zod.string().nullish(),
+  website: zod.string().nullish(),
+  checkIn: zod.string().nullish(),
+  checkOut: zod.string().nullish(),
+  description: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  createdAt: zod.string(),
+});
+export const GetHotelsResponse = zod.array(GetHotelsResponseItem);
+
+/**
+ * @summary Get a hotel by ID
+ */
+export const GetHotelByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetHotelByIdResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  lat: zod.number().nullish(),
+  lng: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number().nullish(),
+  pricePerNight: zod.number().nullish(),
+  currency: zod.string(),
+  imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()),
+  amenities: zod.array(zod.string()),
+  phone: zod.string().nullish(),
+  website: zod.string().nullish(),
+  checkIn: zod.string().nullish(),
+  checkOut: zod.string().nullish(),
+  description: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Get activities
+ */
+export const GetActivitiesQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  category: zod.coerce.string().optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetActivitiesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  lat: zod.number().nullish(),
+  lng: zod.number().nullish(),
+  description: zod.string().nullish(),
+  durationMinutes: zod.number().nullish(),
+  price: zod.number().nullish(),
+  currency: zod.string(),
+  imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number().nullish(),
+  openingHours: zod.string().nullish(),
+  bookingUrl: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  createdAt: zod.string(),
+});
+export const GetActivitiesResponse = zod.array(GetActivitiesResponseItem);
+
+/**
+ * @summary Get an activity by ID
+ */
+export const GetActivityByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetActivityByIdResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  lat: zod.number().nullish(),
+  lng: zod.number().nullish(),
+  description: zod.string().nullish(),
+  durationMinutes: zod.number().nullish(),
+  price: zod.number().nullish(),
+  currency: zod.string(),
+  imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number().nullish(),
+  openingHours: zod.string().nullish(),
+  bookingUrl: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  createdAt: zod.string(),
+});
+
+/**
  * @summary Get category summary counts for a location
  */
 export const GetExploreSummaryQueryParams = zod.object({

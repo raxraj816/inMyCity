@@ -8,6 +8,9 @@ import itinerariesRouter from "./itineraries";
 import collectionsRouter from "./collections";
 import exploreRouter from "./explore";
 import citiesRouter from "./cities";
+import moviesRouter from "./movies";
+import hotelsRouter from "./hotels";
+import activitiesRouter from "./activities";
 
 const router: IRouter = Router();
 
@@ -20,5 +23,8 @@ router.use(favoritesRouter);
 router.use(itinerariesRouter);
 router.use(collectionsRouter);
 router.use(exploreRouter);
+router.use(moviesRouter);
+router.use(hotelsRouter);
+router.use(activitiesRouter);
 
 export default router;

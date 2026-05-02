@@ -4,3 +4,6 @@ export * from "./deals";
 export * from "./favorites";
 export * from "./itineraries";
 export * from "./collections";
+export * from "./movies";
+export * from "./hotels";
+export * from "./activities";

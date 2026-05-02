@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetPlaces, useGetExploreSummary, useGetItineraries } from "@workspace/api-client-react";
@@ -29,6 +30,7 @@ const CATEGORIES = ["food", "attraction", "essentials", "nightlife"];
 export default function ExploreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { selectedCity, showPicker } = useCity();
   const [mode, setMode] = useState<Mode>("resident");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -46,7 +48,6 @@ export default function ExploreScreen() {
   });
 
   const { data: summary } = useGetExploreSummary({ city: cityName });
-
   const { data: itineraries } = useGetItineraries({ city: cityName });
 
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
@@ -61,41 +62,59 @@ export default function ExploreScreen() {
       ? (places || []).filter((p) => p.category === "attraction" || p.category === "food").slice(0, 20)
       : places || [];
 
-  const renderCityHeader = () => (
-    <View style={[styles.cityHeader, { paddingTop: topPadding }]}>
-      <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
-      <TouchableOpacity style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={showPicker} activeOpacity={0.75}>
+  const renderTopBar = () => (
+    <View style={[styles.topBar, { paddingTop: topPadding }]}>
+      {/* Row 1: logo + profile */}
+      <View style={styles.topRow}>
+        <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
+        <TouchableOpacity
+          onPress={() => router.push("/profile")}
+          activeOpacity={0.75}
+          style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <Feather name="user" size={17} color={colors.foreground} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Row 2: city selector */}
+      <TouchableOpacity
+        style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={showPicker}
+        activeOpacity={0.75}
+      >
         <Feather name="map-pin" size={13} color={colors.amber} />
         <Text style={[styles.cityBtnText, { color: colors.foreground }]} numberOfLines={1}>
           {selectedCity?.name ?? "Select City"}
         </Text>
-        <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
+        <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
       </TouchableOpacity>
     </View>
   );
 
   const renderModeToggle = () => (
-    <View style={[styles.modeContainer, { backgroundColor: colors.muted }]}>
-      <TouchableOpacity
-        style={[styles.modePill, mode === "resident" && { backgroundColor: colors.background }]}
-        onPress={() => { setMode("resident"); setSelectedCategory(null); }}
-        activeOpacity={0.8}
-      >
-        <Feather name="home" size={13} color={mode === "resident" ? colors.amber : colors.mutedForeground} />
-        <Text style={[styles.modePillText, { color: mode === "resident" ? colors.foreground : colors.mutedForeground }]}>
-          For You
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.modePill, mode === "tourist" && { backgroundColor: colors.background }]}
-        onPress={() => { setMode("tourist"); setSelectedCategory(null); }}
-        activeOpacity={0.8}
-      >
-        <Feather name="camera" size={13} color={mode === "tourist" ? colors.amber : colors.mutedForeground} />
-        <Text style={[styles.modePillText, { color: mode === "tourist" ? colors.foreground : colors.mutedForeground }]}>
-          Visitor Guide
-        </Text>
-      </TouchableOpacity>
+    <View style={styles.modeWrapper}>
+      <View style={[styles.modeContainer, { backgroundColor: colors.muted }]}>
+        <TouchableOpacity
+          style={[styles.modePill, mode === "resident" && { backgroundColor: colors.background }]}
+          onPress={() => { setMode("resident"); setSelectedCategory(null); }}
+          activeOpacity={0.8}
+        >
+          <Feather name="home" size={13} color={mode === "resident" ? colors.amber : colors.mutedForeground} />
+          <Text style={[styles.modePillText, { color: mode === "resident" ? colors.foreground : colors.mutedForeground }]}>
+            For You
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modePill, mode === "tourist" && { backgroundColor: colors.background }]}
+          onPress={() => { setMode("tourist"); setSelectedCategory(null); }}
+          activeOpacity={0.8}
+        >
+          <Feather name="camera" size={13} color={mode === "tourist" ? colors.amber : colors.mutedForeground} />
+          <Text style={[styles.modePillText, { color: mode === "tourist" ? colors.foreground : colors.mutedForeground }]}>
+            Visitor Guide
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -129,10 +148,8 @@ export default function ExploreScreen() {
 
   const renderHeader = () => (
     <View>
-      {renderCityHeader()}
-      <View style={styles.modeWrapper}>
-        {renderModeToggle()}
-      </View>
+      {renderTopBar()}
+      {renderModeToggle()}
       {mode === "tourist" && renderItinerariesRow()}
       {mode === "resident" && summary && (
         <StatsBar
@@ -192,33 +209,45 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1 },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-  cityHeader: {
+
+  topBar: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    gap: 10,
+  },
+  topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 12,
   },
   appName: {
     fontFamily: "Inter_700Bold",
     fontSize: 22,
     letterSpacing: -0.5,
   },
+  profileBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
   cityBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    alignSelf: "flex-start",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    maxWidth: 180,
   },
   cityBtnText: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 14,
-    flexShrink: 1,
   },
+
   modeWrapper: {
     paddingHorizontal: 20,
     marginBottom: 4,
@@ -242,6 +271,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
   },
+
   sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -267,6 +297,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 8,
   },
+
   emptyContainer: {
     alignItems: "center",
     paddingTop: 48,

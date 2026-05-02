@@ -45,8 +45,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="feeds"
         options={{
-          title: "Feeds",
-          tabBarIcon: ({ color }) => <Feather name="align-left" size={22} color={color} />,
+          title: "Pulse",
+          tabBarIcon: ({ color }) => <Feather name="zap" size={22} color={color} />,
         }}
       />
       <Tabs.Screen

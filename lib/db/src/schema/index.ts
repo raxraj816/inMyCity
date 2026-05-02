@@ -7,3 +7,4 @@ export * from "./collections";
 export * from "./movies";
 export * from "./hotels";
 export * from "./activities";
+export * from "./transit";

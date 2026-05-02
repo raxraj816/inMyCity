@@ -23,7 +23,7 @@ const CATEGORIES: Category[] = [
   { id: "movies",     label: "Movies",      icon: "film",      color: "#8b5cf6", active: true,  route: "/movies" },
   { id: "hotels",     label: "Hotels",      icon: "home",      color: "#f59e0b", active: true,  route: "/hotels" },
   { id: "activities", label: "Activities",  icon: "zap",       color: "#ef4444", active: true,  route: "/activities" },
-  { id: "travel",     label: "Travel",      icon: "navigation",color: "#06b6d4", active: false },
+  { id: "transit",    label: "Transit",     icon: "share-2",   color: "#06b6d4", active: true,  route: "/transit" },
 ];
 
 export function CategoryGrid() {

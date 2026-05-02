@@ -11,6 +11,7 @@ import citiesRouter from "./cities";
 import moviesRouter from "./movies";
 import hotelsRouter from "./hotels";
 import activitiesRouter from "./activities";
+import transitRouter from "./transit";
 
 const router: IRouter = Router();
 

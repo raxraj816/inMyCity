@@ -21,7 +21,7 @@ const CATEGORIES: Category[] = [
   { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true,  route: "/(tabs)/events"  },
   { id: "deals",      label: "Deals",      icon: "sale",                  color: "#10b981", active: true,  route: "/(tabs)/deals"   },
   { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true,  route: "/movies" },
-  { id: "hotels",     label: "Hotels",     icon: "bed-double",            color: "#f59e0b", active: true,  route: "/hotels" },
+  { id: "hotels",     label: "Hotels",     icon: "hanger",                color: "#f59e0b", active: true,  route: "/hotels" },
   { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#ef4444", active: true,  route: "/activities" },
   { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true,  route: "/transit" },
 ];

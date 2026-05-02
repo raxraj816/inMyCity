@@ -30,8 +30,9 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 Smart city explorer app. City-by-city rollout: Mumbai, Bangalore, New York City, San Francisco.
 
 ### Screens / Routes
-- `/(tabs)/explore` — Explore tab: CategoryGrid (8 tiles) + City Guides + Trending
+- `/(tabs)/explore` — Explore tab: CategoryGrid (9 tiles) + City Guides + Trending
 - `/(tabs)/feeds` — Feeds tab
+- `/shops` — Shops list (category pills + Has Deals toggle + ShopCard with call button + deal badge)
 - `/movies` → `/movie/[id]` — Movie listings + detail
 - `/hotels` → `/hotel/[id]` — Hotel listings + detail
 - `/activities` → `/activity/[id]` — Activities listings + detail
@@ -40,12 +41,19 @@ Smart city explorer app. City-by-city rollout: Mumbai, Bangalore, New York City,
 - `/transit/line/[id]` — Transit line detail (stops, times, fare)
 - `/transit/route/[id]` — Transit route detail (step-by-step, tips, transfers)
 
+### CategoryGrid (3×3)
+- Row 1 — Discovery: Dining / Activities / Events
+- Row 2 — Lifestyle: Shops / Sports & Fitness / Hotels
+- Row 3 — Practical: Transit / Deals / Nightlife
+
 ### Category Colors
-- primary: `#f97316` (orange)
+- primary / Shops: `#f97316` (orange)
 - Transit: `#06b6d4` (cyan)
 - Movies: `#8b5cf6` (purple)
 - Hotels: `#f59e0b` (amber)
 - Activities: `#ef4444` (red)
+- Sports: `#22c55e` (green)
+- Nightlife: `#ec4899` (pink)
 
 ### Critical Notes
 - `Link asChild` crashes web — always use `useRouter` + `router.push()`
@@ -55,6 +63,8 @@ Smart city explorer app. City-by-city rollout: Mumbai, Bangalore, New York City,
 ## DB Tables
 - `places`, `events`, `deals`, `itineraries`, `itinerary_stops`
 - `movies`, `hotels`, `activities`
-- `transit_lines`, `transit_routes` (new — seeded with 17 lines + 17 routes across all 4 cities)
+- `transit_lines`, `transit_routes` (seeded with 17 lines + 17 routes across all 4 cities)
+- Shopping places: 22 places seeded across all 4 cities (`category: "shopping"`) with phone, website, openingHours, tags for sub-filtering
+- Shopping deals: 6 shop-specific deals seeded (Fabindia, Bombay Store, Namma Ooru, Strand, Amoeba, Heath Ceramics)
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.

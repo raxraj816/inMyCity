@@ -27,7 +27,7 @@ const CATEGORIES: Category[] = [
   // Row 3 — Practical (Utility + entertainment)
   { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true, route: "/transit"                  },
   { id: "deals",      label: "Deals",      icon: "percent",               color: "#10b981", active: true, route: "/(tabs)/deals"             },
-  { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#ec4899", active: true, route: "/places?filter=nightlife"  },
+  { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true, route: "/movies"                   },
 ];
 
 export function CategoryGrid() {

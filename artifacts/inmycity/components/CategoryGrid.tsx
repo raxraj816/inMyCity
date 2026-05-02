@@ -16,14 +16,16 @@ type Category = {
 };
 
 const CATEGORIES: Category[] = [
-  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#f97316", active: true,  route: "/dining"         },
-  { id: "nightlife",   label: "Nightlife",   icon: "glass-cocktail",        color: "#ec4899", active: true,  route: "/places?filter=nightlife" },
-  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true,  route: "/(tabs)/events"  },
-  { id: "deals",      label: "Deals",      icon: "sale",                  color: "#10b981", active: true,  route: "/(tabs)/deals"   },
-  { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true,  route: "/movies" },
-  { id: "hotels",     label: "Hotels",     icon: "hanger",                color: "#f59e0b", active: true,  route: "/hotels" },
-  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#ef4444", active: true,  route: "/activities" },
-  { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true,  route: "/transit" },
+  // Row 1 — What to do & where to stay
+  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#f97316", active: true, route: "/dining"                  },
+  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#ef4444", active: true, route: "/activities"               },
+  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true, route: "/(tabs)/events"            },
+  { id: "hotels",     label: "Hotels",     icon: "hanger",                color: "#f59e0b", active: true, route: "/hotels"                   },
+  // Row 2 — Entertainment, transit & savings
+  { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#ec4899", active: true, route: "/places?filter=nightlife"  },
+  { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true, route: "/movies"                   },
+  { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true, route: "/transit"                  },
+  { id: "deals",      label: "Deals",      icon: "sale",                  color: "#10b981", active: true, route: "/(tabs)/deals"             },
 ];
 
 export function CategoryGrid() {

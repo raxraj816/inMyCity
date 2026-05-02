@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   View,
   FlatList,
@@ -11,9 +10,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 
 import { useColors } from "@/hooks/useColors";
-import { useGetPlaces, useGetExploreSummary, useGetItineraries } from "@workspace/api-client-react";
+import {
+  useGetPlaces,
+  useGetExploreSummary,
+  useGetItineraries,
+} from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { CityPicker } from "@/components/CityPicker";
 
@@ -24,7 +28,6 @@ import { ItineraryCard } from "@/components/ItineraryCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 
-type Mode = "resident" | "tourist";
 const CATEGORIES = ["food", "attraction", "essentials", "nightlife"];
 
 export default function ExploreScreen() {
@@ -32,7 +35,6 @@ export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { selectedCity, showPicker } = useCity();
-  const [mode, setMode] = useState<Mode>("resident");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const cityName = selectedCity?.name;
@@ -42,10 +44,7 @@ export default function ExploreScreen() {
     isLoading: placesLoading,
     error: placesError,
     refetch: refetchPlaces,
-  } = useGetPlaces({
-    city: cityName,
-    category: mode === "resident" ? (selectedCategory || undefined) : undefined,
-  });
+  } = useGetPlaces({ city: cityName, category: selectedCategory || undefined });
 
   const { data: summary } = useGetExploreSummary({ city: cityName });
   const { data: itineraries } = useGetItineraries({ city: cityName });
@@ -57,114 +56,74 @@ export default function ExploreScreen() {
     return <ErrorFallback error={placesError as Error} resetError={refetchPlaces} />;
   }
 
-  const displayPlaces =
-    mode === "tourist"
-      ? (places || []).filter((p) => p.category === "attraction" || p.category === "food").slice(0, 20)
-      : places || [];
-
-  const renderTopBar = () => (
-    <View style={[styles.topBar, { paddingTop: topPadding }]}>
-      {/* Row 1: logo + profile */}
-      <View style={styles.topRow}>
-        <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
-        <TouchableOpacity
-          onPress={() => router.push("/profile")}
-          activeOpacity={0.75}
-          style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-        >
-          <Feather name="user" size={17} color={colors.foreground} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Row 2: city selector */}
-      <TouchableOpacity
-        style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-        onPress={showPicker}
-        activeOpacity={0.75}
-      >
-        <Feather name="map-pin" size={13} color={colors.amber} />
-        <Text style={[styles.cityBtnText, { color: colors.foreground }]} numberOfLines={1}>
-          {selectedCity?.name ?? "Select City"}
-        </Text>
-        <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderModeToggle = () => (
-    <View style={styles.modeWrapper}>
-      <View style={[styles.modeContainer, { backgroundColor: colors.muted }]}>
-        <TouchableOpacity
-          style={[styles.modePill, mode === "resident" && { backgroundColor: colors.background }]}
-          onPress={() => { setMode("resident"); setSelectedCategory(null); }}
-          activeOpacity={0.8}
-        >
-          <Feather name="home" size={13} color={mode === "resident" ? colors.amber : colors.mutedForeground} />
-          <Text style={[styles.modePillText, { color: mode === "resident" ? colors.foreground : colors.mutedForeground }]}>
-            For You
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.modePill, mode === "tourist" && { backgroundColor: colors.background }]}
-          onPress={() => { setMode("tourist"); setSelectedCategory(null); }}
-          activeOpacity={0.8}
-        >
-          <Feather name="camera" size={13} color={mode === "tourist" ? colors.amber : colors.mutedForeground} />
-          <Text style={[styles.modePillText, { color: mode === "tourist" ? colors.foreground : colors.mutedForeground }]}>
-            Visitor Guide
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderItinerariesRow = () => {
-    if (!itineraries || itineraries.length === 0) return null;
-    return (
-      <View>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>City Guides</Text>
-          <Feather name="map" size={16} color={colors.amber} />
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.itinerariesScroll}
-        >
-          {itineraries.map((itin) => (
-            <View key={itin.id} style={styles.itineraryCardWrapper}>
-              <ItineraryCard itinerary={itin} />
-            </View>
-          ))}
-        </ScrollView>
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Top Picks</Text>
-          <Feather name="star" size={16} color={colors.amber} />
-        </View>
-      </View>
-    );
-  };
-
   const renderHeader = () => (
     <View>
-      {renderTopBar()}
-      {renderModeToggle()}
-      {mode === "tourist" && renderItinerariesRow()}
-      {mode === "resident" && summary && (
+      {/* Top bar: logo + profile */}
+      <View style={[styles.topBar, { paddingTop: topPadding }]}>
+        <View style={styles.topRow}>
+          <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
+          <TouchableOpacity
+            onPress={() => router.push("/profile")}
+            activeOpacity={0.75}
+            style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <Feather name="user" size={17} color={colors.foreground} />
+          </TouchableOpacity>
+        </View>
+        {/* City selector row */}
+        <TouchableOpacity
+          style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={showPicker}
+          activeOpacity={0.75}
+        >
+          <Feather name="map-pin" size={13} color={colors.amber} />
+          <Text style={[styles.cityBtnText, { color: colors.foreground }]} numberOfLines={1}>
+            {selectedCity?.name ?? "Select City"}
+          </Text>
+          <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Stats */}
+      {summary && (
         <StatsBar
           places={summary.totalPlaces}
           events={summary.totalEvents}
           deals={summary.totalDeals}
         />
       )}
-      {mode === "resident" && (
-        <CategoryFilter
-          categories={CATEGORIES}
-          selectedCategory={selectedCategory}
-          onSelect={setSelectedCategory}
-        />
+
+      {/* City Guides */}
+      {itineraries && itineraries.length > 0 && (
+        <View>
+          <View style={styles.sectionRow}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>City Guides</Text>
+            <Feather name="map" size={15} color={colors.amber} />
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.guidesScroll}
+          >
+            {itineraries.map((itin) => (
+              <View key={itin.id} style={styles.guideCard}>
+                <ItineraryCard itinerary={itin} />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
       )}
+
+      {/* Places section header + filters */}
+      <View style={styles.sectionRow}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Places</Text>
+        <Feather name="compass" size={15} color={colors.amber} />
+      </View>
+      <CategoryFilter
+        categories={CATEGORIES}
+        selectedCategory={selectedCategory}
+        onSelect={setSelectedCategory}
+      />
     </View>
   );
 
@@ -175,11 +134,10 @@ export default function ExploreScreen() {
           {renderHeader()}
           <SkeletonCard height={180} style={styles.skeleton} />
           <SkeletonCard height={180} style={styles.skeleton} />
-          <SkeletonCard height={180} style={styles.skeleton} />
         </View>
       ) : (
         <FlatList
-          data={displayPlaces}
+          data={places || []}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => <PlaceCard place={item} />}
           ListHeaderComponent={renderHeader}
@@ -212,7 +170,7 @@ const styles = StyleSheet.create({
 
   topBar: {
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingBottom: 12,
     gap: 10,
   },
   topRow: {
@@ -248,54 +206,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  modeWrapper: {
-    paddingHorizontal: 20,
-    marginBottom: 4,
-  },
-  modeContainer: {
-    flexDirection: "row",
-    borderRadius: 14,
-    padding: 3,
-    marginBottom: 8,
-  },
-  modePill: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  modePillText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-  },
-
-  sectionHeaderRow: {
+  sectionRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 8,
   },
   sectionTitle: {
     fontFamily: "Inter_700Bold",
     fontSize: 18,
   },
-  itinerariesScroll: {
+  guidesScroll: {
     paddingHorizontal: 20,
     paddingBottom: 4,
     gap: 12,
   },
-  itineraryCardWrapper: {
+  guideCard: {
     width: 240,
-  },
-  divider: {
-    height: 1,
-    marginHorizontal: 20,
-    marginTop: 8,
   },
 
   emptyContainer: {

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetPlaces, useGetItineraries } from "@workspace/api-client-react";
@@ -23,9 +24,12 @@ import { ErrorFallback } from "@/components/ErrorFallback";
 export default function ExploreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { selectedCity, showPicker } = useCity();
 
   const cityName = selectedCity?.name;
+  const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
+  const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
   const {
     data: places,
@@ -36,9 +40,6 @@ export default function ExploreScreen() {
 
   const { data: itineraries } = useGetItineraries({ city: cityName });
 
-  const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
-  const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
-
   if (placesError) {
     return <ErrorFallback error={placesError as Error} resetError={refetchPlaces} />;
   }
@@ -47,10 +48,17 @@ export default function ExploreScreen() {
 
   const renderHeader = () => (
     <View>
-      {/* Top bar */}
+      {/* Top bar: logo | city selector | profile icon */}
       <View style={[styles.topBar, { paddingTop: topPadding }]}>
         <View style={styles.topRow}>
           <Text style={[styles.appName, { color: colors.amber }]}>inMyCity</Text>
+          <TouchableOpacity
+            onPress={() => router.push("/profile")}
+            activeOpacity={0.75}
+            style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <Feather name="user" size={17} color={colors.foreground} />
+          </TouchableOpacity>
         </View>
         <TouchableOpacity
           style={[styles.cityBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -142,7 +150,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1 },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-
   topBar: {
     paddingHorizontal: 20,
     paddingBottom: 12,
@@ -157,6 +164,14 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 24,
     letterSpacing: -0.5,
+  },
+  profileBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
   cityBtn: {
     flexDirection: "row",

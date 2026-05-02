@@ -16,76 +16,61 @@ import { useColors } from "@/hooks/useColors";
 import { useGetFavorites, useGetCollections } from "@workspace/api-client-react";
 import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
 
 type Tab = "favorites" | "collections";
 
-export default function ProfileScreen() {
+export default function ProfileModal() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("favorites");
 
-  const {
-    data: favorites,
-    isLoading: favLoading,
-    error: favError,
-    refetch: refetchFav,
-  } = useGetFavorites();
-
-  const {
-    data: collections,
-    isLoading: colLoading,
-    error: colError,
-    refetch: refetchCol,
-  } = useGetCollections();
+  const { data: favorites, isLoading: favLoading, refetch: refetchFav } = useGetFavorites();
+  const { data: collections, isLoading: colLoading, refetch: refetchCol } = useGetCollections();
 
   const onRefresh = () => { refetchFav(); refetchCol(); };
   const isRefreshing = favLoading || colLoading;
-
-  const topPad = Platform.OS === "web" ? 24 : insets.top + 8;
-  const bottomPad = Platform.OS === "web" ? 32 : insets.bottom + 16;
-
-  if (favError || colError) {
-    return <ErrorFallback error={(favError || colError) as Error} resetError={onRefresh} />;
-  }
+  const topPadding = Platform.OS === "web" ? 24 : insets.top + 8;
+  const bottomPadding = Platform.OS === "web" ? 32 : insets.bottom + 16;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="x" size={22} color={colors.foreground} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Profile</Text>
+      <View style={[styles.header, { paddingTop: topPadding, borderBottomColor: colors.border }]}>
         <View style={{ width: 36 }} />
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Profile</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <Feather name="x" size={20} color={colors.mutedForeground} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: bottomPad }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.amber} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Avatar */}
-        <View style={styles.avatarSection}>
+        {/* Avatar card */}
+        <View style={[styles.avatarCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.avatar, { backgroundColor: colors.amber }]}>
             <Text style={styles.avatarInitial}>G</Text>
           </View>
-          <Text style={[styles.userName, { color: colors.foreground }]}>Guest</Text>
-          <Text style={[styles.userSub, { color: colors.mutedForeground }]}>
-            Sign in to sync your saves across devices
-          </Text>
+          <View style={styles.avatarInfo}>
+            <Text style={[styles.userName, { color: colors.foreground }]}>Guest</Text>
+            <Text style={[styles.userSub, { color: colors.mutedForeground }]}>
+              Sign in to sync across devices
+            </Text>
+          </View>
           <TouchableOpacity
-            style={[styles.signInBtn, { borderColor: colors.amber }]}
-            activeOpacity={0.8}
+            style={[styles.signInBtn, { backgroundColor: colors.amber }]}
+            activeOpacity={0.85}
           >
-            <Text style={[styles.signInBtnText, { color: colors.amber }]}>Sign In</Text>
+            <Text style={styles.signInBtnText}>Sign In</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Saved section */}
+        {/* Saved */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SAVED</Text>
         <View style={[styles.savedCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {/* Tabs */}
           <View style={[styles.tabRow, { borderBottomColor: colors.border }]}>
             {(["favorites", "collections"] as Tab[]).map((t) => (
               <TouchableOpacity
@@ -93,105 +78,66 @@ export default function ProfileScreen() {
                 style={[styles.tab, activeTab === t && { borderBottomColor: colors.amber, borderBottomWidth: 2 }]}
                 onPress={() => setActiveTab(t)}
               >
-                <Feather
-                  name={t === "favorites" ? "heart" : "folder"}
-                  size={14}
-                  color={activeTab === t ? colors.amber : colors.mutedForeground}
-                />
-                <Text
-                  style={[
-                    styles.tabText,
-                    { color: activeTab === t ? colors.amber : colors.mutedForeground },
-                    activeTab === t && { fontFamily: "Inter_600SemiBold" },
-                  ]}
-                >
+                <Feather name={t === "favorites" ? "heart" : "folder"} size={14} color={activeTab === t ? colors.amber : colors.mutedForeground} />
+                <Text style={[styles.tabText, { color: activeTab === t ? colors.amber : colors.mutedForeground }, activeTab === t && { fontFamily: "Inter_600SemiBold" }]}>
                   {t === "favorites" ? "Favorites" : "Collections"}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Favorites */}
           {activeTab === "favorites" && (
-            <View>
-              {favLoading && !favorites ? (
-                <View style={styles.skeletonWrap}>
-                  <SkeletonCard style={styles.skeleton} />
-                  <SkeletonCard style={styles.skeleton} />
-                </View>
-              ) : !favorites?.length ? (
-                <View style={styles.emptyWrap}>
-                  <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
-                    <Feather name="heart" size={28} color={colors.mutedForeground} />
-                  </View>
-                  <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No favorites yet</Text>
-                  <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                    Tap the heart on any place to save it here.
-                  </Text>
-                </View>
-              ) : (
-                favorites.map((fav) => <PlaceCard key={fav.id} place={fav.place} />)
-              )}
-            </View>
+            favLoading && !favorites ? (
+              <View style={styles.skeletonWrap}><SkeletonCard style={styles.skeleton} /><SkeletonCard style={styles.skeleton} /></View>
+            ) : !favorites?.length ? (
+              <View style={styles.emptyWrap}>
+                <Feather name="heart" size={28} color={colors.mutedForeground} />
+                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No favorites yet</Text>
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Tap the heart on any place to save it.</Text>
+              </View>
+            ) : favorites.map((fav) => <PlaceCard key={fav.id} place={fav.place} />)
           )}
 
-          {/* Collections */}
           {activeTab === "collections" && (
-            <View style={{ padding: 16, gap: 12 }}>
-              {colLoading && !collections ? (
-                <View style={styles.skeletonWrap}>
-                  <SkeletonCard height={88} style={styles.skeleton} />
-                  <SkeletonCard height={88} style={styles.skeleton} />
-                </View>
-              ) : !collections?.length ? (
-                <View style={styles.emptyWrap}>
-                  <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
-                    <Feather name="folder" size={28} color={colors.mutedForeground} />
-                  </View>
-                  <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No collections</Text>
-                  <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                    Create collections to organise your saved places.
-                  </Text>
-                </View>
-              ) : (
-                collections.map((col) => (
-                  <TouchableOpacity
-                    key={col.id}
-                    activeOpacity={0.75}
-                    style={[styles.colCard, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  >
+            colLoading && !collections ? (
+              <View style={styles.skeletonWrap}><SkeletonCard height={88} style={styles.skeleton} /></View>
+            ) : !collections?.length ? (
+              <View style={styles.emptyWrap}>
+                <Feather name="folder" size={28} color={colors.mutedForeground} />
+                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No collections</Text>
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Organise your saved places into collections.</Text>
+              </View>
+            ) : (
+              <View style={{ padding: 16, gap: 12 }}>
+                {collections.map((col) => (
+                  <TouchableOpacity key={col.id} activeOpacity={0.75}
+                    style={[styles.colCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                     <View style={[styles.colIcon, { backgroundColor: colors.muted }]}>
                       <Feather name="folder" size={18} color={colors.amber} />
                     </View>
                     <View style={styles.colInfo}>
                       <Text style={[styles.colName, { color: colors.foreground }]}>{col.name}</Text>
-                      {col.description ? (
-                        <Text style={[styles.colDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
-                          {col.description}
-                        </Text>
-                      ) : null}
-                      <Text style={[styles.colCount, { color: colors.mutedForeground }]}>
-                        {col.places?.length ?? 0} places
-                      </Text>
+                      <Text style={[styles.colCount, { color: colors.mutedForeground }]}>{col.places?.length ?? 0} places</Text>
                     </View>
                     <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
                   </TouchableOpacity>
-                ))
-              )}
-            </View>
+                ))}
+              </View>
+            )
           )}
         </View>
 
-        {/* Settings rows */}
+        {/* Settings */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SETTINGS</Text>
         <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {[
+          {([
             { icon: "bell" as const, label: "Notifications" },
             { icon: "moon" as const, label: "Dark Mode" },
             { icon: "info" as const, label: "About inMyCity" },
-          ].map(({ icon, label }) => (
+          ]).map(({ icon, label }, idx, arr) => (
             <TouchableOpacity
               key={label}
-              style={[styles.settingsRow, { borderBottomColor: colors.border }]}
+              style={[styles.settingsRow, idx < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
               activeOpacity={0.7}
             >
               <View style={[styles.settingsIcon, { backgroundColor: colors.muted }]}>
@@ -217,30 +163,40 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
-  avatarSection: { alignItems: "center", paddingVertical: 28, paddingHorizontal: 24 },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  closeBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  avatarCard: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  avatarInitial: { fontFamily: "Inter_700Bold", fontSize: 28, color: "#fff" },
-  userName: { fontFamily: "Inter_700Bold", fontSize: 22, marginBottom: 4 },
-  userSub: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", marginBottom: 16 },
-  signInBtn: {
-    paddingHorizontal: 28,
-    paddingVertical: 10,
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 24,
+    padding: 16,
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 12,
+    ...Platform.select({
+      web: { boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+      default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+    }),
   },
-  signInBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  avatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  avatarInitial: { fontFamily: "Inter_700Bold", fontSize: 22, color: "#fff" },
+  avatarInfo: { flex: 1 },
+  userName: { fontFamily: "Inter_700Bold", fontSize: 17, marginBottom: 2 },
+  userSub: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  signInBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
+  signInBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: "#fff" },
+  sectionLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    letterSpacing: 0.8,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
   savedCard: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 24,
     borderRadius: 20,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
@@ -249,39 +205,24 @@ const styles = StyleSheet.create({
       default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
     }),
   },
-  tabRow: {
-    flexDirection: "row",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
+  tabRow: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
   tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 14,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: "transparent",
   },
   tabText: { fontFamily: "Inter_500Medium", fontSize: 14 },
   skeletonWrap: { padding: 16, gap: 12 },
   skeleton: { marginBottom: 0 },
-  emptyWrap: { alignItems: "center", paddingVertical: 36, paddingHorizontal: 32 },
-  emptyIcon: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 18, marginBottom: 6 },
+  emptyWrap: { alignItems: "center", paddingVertical: 32, paddingHorizontal: 32, gap: 8 },
+  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 17 },
   emptyText: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 20 },
   colCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 12,
+    flexDirection: "row", alignItems: "center", padding: 14,
+    borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, gap: 12,
   },
   colIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   colInfo: { flex: 1 },
   colName: { fontFamily: "Inter_600SemiBold", fontSize: 16, marginBottom: 2 },
-  colDesc: { fontFamily: "Inter_400Regular", fontSize: 13, marginBottom: 2 },
   colCount: { fontFamily: "Inter_500Medium", fontSize: 12 },
   settingsCard: {
     marginHorizontal: 16,
@@ -295,12 +236,8 @@ const styles = StyleSheet.create({
     }),
   },
   settingsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 12,
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 14, gap: 12,
   },
   settingsIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   settingsLabel: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 15 },

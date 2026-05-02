@@ -29,11 +29,7 @@ export default function TabLayout() {
         },
         tabBarBackground: () =>
           isIOS ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
+            <BlurView intensity={100} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           ) : isWeb ? (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ) : null,
@@ -53,21 +49,9 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Feather name="layers" size={22} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "Search",
-          tabBarIcon: ({ color }) => <Feather name="search" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
-        }}
-      />
-      {/* Hidden legacy routes */}
+      {/* Hidden routes */}
+      <Tabs.Screen name="search"  options={{ href: null }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="events"  options={{ href: null }} />
       <Tabs.Screen name="deals"   options={{ href: null }} />
       <Tabs.Screen name="saved"   options={{ href: null }} />

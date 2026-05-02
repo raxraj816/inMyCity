@@ -31,6 +31,8 @@ tags:
     description: Hotel operations
   - name: activities
     description: Activity operations
+  - name: transit
+    description: Transit operations
 paths:
   /healthz:
     get:
@@ -644,6 +646,100 @@ paths:
         "404":
           description: Not found
 
+  /transit/lines:
+    get:
+      operationId: getTransitLines
+      tags: [transit]
+      summary: Get transit lines for a city
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of transit lines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransitLine"
+
+  /transit/lines/{id}:
+    get:
+      operationId: getTransitLineById
+      tags: [transit]
+      summary: Get a transit line by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transit line details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransitLine"
+        "404":
+          description: Not found
+
+  /transit/search:
+    get:
+      operationId: searchTransitRoutes
+      tags: [transit]
+      summary: Search transit routes between stops
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of matching transit routes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransitRoute"
+
+  /transit/routes/{id}:
+    get:
+      operationId: getTransitRouteById
+      tags: [transit]
+      summary: Get a transit route by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transit route details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransitRoute"
+        "404":
+          description: Not found
+
   /explore/summary:
     get:
       operationId: getExploreSummary
@@ -1159,6 +1255,114 @@ components:
         - images
         - amenities
         - tags
+        - createdAt
+
+    TransitLine:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: ["string", "null"]
+        type:
+          type: string
+        city:
+          type: string
+        color:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+        stops:
+          type: array
+          items:
+            type: string
+        frequency:
+          type: ["string", "null"]
+        firstTrain:
+          type: ["string", "null"]
+        lastTrain:
+          type: ["string", "null"]
+        fare:
+          type: ["number", "null"]
+        currency:
+          type: string
+        operatedBy:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - type
+        - city
+        - color
+        - from
+        - to
+        - stops
+        - currency
+        - tags
+        - createdAt
+
+    TransitRoute:
+      type: object
+      properties:
+        id:
+          type: integer
+        lineId:
+          type: integer
+        lineName:
+          type: string
+        lineType:
+          type: string
+        lineColor:
+          type: string
+        city:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+        stops:
+          type: array
+          items:
+            type: string
+        durationMinutes:
+          type: ["integer", "null"]
+        fare:
+          type: ["number", "null"]
+        currency:
+          type: string
+        transfers:
+          type: integer
+        transferDetails:
+          type: array
+          items:
+            type: string
+        tips:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - lineId
+        - lineName
+        - lineType
+        - lineColor
+        - city
+        - from
+        - to
+        - stops
+        - currency
+        - transfers
+        - transferDetails
         - createdAt
 
     Activity:

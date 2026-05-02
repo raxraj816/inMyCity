@@ -27,5 +27,6 @@ router.use(exploreRouter);
 router.use(moviesRouter);
 router.use(hotelsRouter);
 router.use(activitiesRouter);
+router.use(transitRouter);
 
 export default router;

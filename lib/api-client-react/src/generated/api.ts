@@ -34,13 +34,17 @@ import type {
   GetItinerariesParams,
   GetMoviesParams,
   GetPlacesParams,
+  GetTransitLinesParams,
   HealthStatus,
   Hotel,
   Itinerary,
   Movie,
   Place,
+  SearchTransitRoutesParams,
   SuccessResponse,
   SupportedCity,
+  TransitLine,
+  TransitRoute,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -2206,6 +2210,374 @@ export function useGetActivityById<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetActivityByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get transit lines for a city
+ */
+export const getGetTransitLinesUrl = (params?: GetTransitLinesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/transit/lines?${stringifiedParams}`
+    : `/api/transit/lines`;
+};
+
+export const getTransitLines = async (
+  params?: GetTransitLinesParams,
+  options?: RequestInit,
+): Promise<TransitLine[]> => {
+  return customFetch<TransitLine[]>(getGetTransitLinesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTransitLinesQueryKey = (params?: GetTransitLinesParams) => {
+  return [`/api/transit/lines`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetTransitLinesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTransitLines>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTransitLinesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransitLines>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTransitLinesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTransitLines>>> = ({
+    signal,
+  }) => getTransitLines(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTransitLines>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTransitLinesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTransitLines>>
+>;
+export type GetTransitLinesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get transit lines for a city
+ */
+
+export function useGetTransitLines<
+  TData = Awaited<ReturnType<typeof getTransitLines>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTransitLinesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransitLines>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTransitLinesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a transit line by ID
+ */
+export const getGetTransitLineByIdUrl = (id: number) => {
+  return `/api/transit/lines/${id}`;
+};
+
+export const getTransitLineById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<TransitLine> => {
+  return customFetch<TransitLine>(getGetTransitLineByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTransitLineByIdQueryKey = (id: number) => {
+  return [`/api/transit/lines/${id}`] as const;
+};
+
+export const getGetTransitLineByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTransitLineById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransitLineById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTransitLineByIdQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTransitLineById>>
+  > = ({ signal }) => getTransitLineById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTransitLineById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTransitLineByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTransitLineById>>
+>;
+export type GetTransitLineByIdQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a transit line by ID
+ */
+
+export function useGetTransitLineById<
+  TData = Awaited<ReturnType<typeof getTransitLineById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransitLineById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTransitLineByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Search transit routes between stops
+ */
+export const getSearchTransitRoutesUrl = (
+  params?: SearchTransitRoutesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/transit/search?${stringifiedParams}`
+    : `/api/transit/search`;
+};
+
+export const searchTransitRoutes = async (
+  params?: SearchTransitRoutesParams,
+  options?: RequestInit,
+): Promise<TransitRoute[]> => {
+  return customFetch<TransitRoute[]>(getSearchTransitRoutesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getSearchTransitRoutesQueryKey = (
+  params?: SearchTransitRoutesParams,
+) => {
+  return [`/api/transit/search`, ...(params ? [params] : [])] as const;
+};
+
+export const getSearchTransitRoutesQueryOptions = <
+  TData = Awaited<ReturnType<typeof searchTransitRoutes>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: SearchTransitRoutesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchTransitRoutes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getSearchTransitRoutesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof searchTransitRoutes>>
+  > = ({ signal }) =>
+    searchTransitRoutes(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof searchTransitRoutes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type SearchTransitRoutesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof searchTransitRoutes>>
+>;
+export type SearchTransitRoutesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Search transit routes between stops
+ */
+
+export function useSearchTransitRoutes<
+  TData = Awaited<ReturnType<typeof searchTransitRoutes>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: SearchTransitRoutesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchTransitRoutes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getSearchTransitRoutesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a transit route by ID
+ */
+export const getGetTransitRouteByIdUrl = (id: number) => {
+  return `/api/transit/routes/${id}`;
+};
+
+export const getTransitRouteById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<TransitRoute> => {
+  return customFetch<TransitRoute>(getGetTransitRouteByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTransitRouteByIdQueryKey = (id: number) => {
+  return [`/api/transit/routes/${id}`] as const;
+};
+
+export const getGetTransitRouteByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTransitRouteById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransitRouteById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTransitRouteByIdQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTransitRouteById>>
+  > = ({ signal }) => getTransitRouteById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTransitRouteById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTransitRouteByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTransitRouteById>>
+>;
+export type GetTransitRouteByIdQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a transit route by ID
+ */
+
+export function useGetTransitRouteById<
+  TData = Awaited<ReturnType<typeof getTransitRouteById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransitRouteById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTransitRouteByIdQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

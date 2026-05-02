@@ -45,6 +45,10 @@ function RootLayoutNav() {
       <Stack.Screen name="hotel/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="activities" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="activity/[id]" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="transit" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="transit/plan" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="transit/line/[id]" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="transit/route/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="profile" options={{ headerShown: false, presentation: "modal" }} />
     </Stack>
   );

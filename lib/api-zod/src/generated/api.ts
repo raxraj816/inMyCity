@@ -740,6 +740,119 @@ export const GetActivityByIdResponse = zod.object({
 });
 
 /**
+ * @summary Get transit lines for a city
+ */
+export const GetTransitLinesQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  type: zod.coerce.string().optional(),
+});
+
+export const GetTransitLinesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  shortName: zod.string().nullish(),
+  type: zod.string(),
+  city: zod.string(),
+  color: zod.string(),
+  from: zod.string(),
+  to: zod.string(),
+  stops: zod.array(zod.string()),
+  frequency: zod.string().nullish(),
+  firstTrain: zod.string().nullish(),
+  lastTrain: zod.string().nullish(),
+  fare: zod.number().nullish(),
+  currency: zod.string(),
+  operatedBy: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  createdAt: zod.string(),
+});
+export const GetTransitLinesResponse = zod.array(GetTransitLinesResponseItem);
+
+/**
+ * @summary Get a transit line by ID
+ */
+export const GetTransitLineByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetTransitLineByIdResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  shortName: zod.string().nullish(),
+  type: zod.string(),
+  city: zod.string(),
+  color: zod.string(),
+  from: zod.string(),
+  to: zod.string(),
+  stops: zod.array(zod.string()),
+  frequency: zod.string().nullish(),
+  firstTrain: zod.string().nullish(),
+  lastTrain: zod.string().nullish(),
+  fare: zod.number().nullish(),
+  currency: zod.string(),
+  operatedBy: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Search transit routes between stops
+ */
+export const SearchTransitRoutesQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  from: zod.coerce.string().optional(),
+  to: zod.coerce.string().optional(),
+});
+
+export const SearchTransitRoutesResponseItem = zod.object({
+  id: zod.number(),
+  lineId: zod.number(),
+  lineName: zod.string(),
+  lineType: zod.string(),
+  lineColor: zod.string(),
+  city: zod.string(),
+  from: zod.string(),
+  to: zod.string(),
+  stops: zod.array(zod.string()),
+  durationMinutes: zod.number().nullish(),
+  fare: zod.number().nullish(),
+  currency: zod.string(),
+  transfers: zod.number(),
+  transferDetails: zod.array(zod.string()),
+  tips: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const SearchTransitRoutesResponse = zod.array(
+  SearchTransitRoutesResponseItem,
+);
+
+/**
+ * @summary Get a transit route by ID
+ */
+export const GetTransitRouteByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetTransitRouteByIdResponse = zod.object({
+  id: zod.number(),
+  lineId: zod.number(),
+  lineName: zod.string(),
+  lineType: zod.string(),
+  lineColor: zod.string(),
+  city: zod.string(),
+  from: zod.string(),
+  to: zod.string(),
+  stops: zod.array(zod.string()),
+  durationMinutes: zod.number().nullish(),
+  fare: zod.number().nullish(),
+  currency: zod.string(),
+  transfers: zod.number(),
+  transferDetails: zod.array(zod.string()),
+  tips: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
  * @summary Get category summary counts for a location
  */
 export const GetExploreSummaryQueryParams = zod.object({

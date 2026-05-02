@@ -273,6 +273,54 @@ export interface Hotel {
   createdAt: string;
 }
 
+export interface TransitLine {
+  id: number;
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  type: string;
+  city: string;
+  color: string;
+  from: string;
+  to: string;
+  stops: string[];
+  /** @nullable */
+  frequency?: string | null;
+  /** @nullable */
+  firstTrain?: string | null;
+  /** @nullable */
+  lastTrain?: string | null;
+  /** @nullable */
+  fare?: number | null;
+  currency: string;
+  /** @nullable */
+  operatedBy?: string | null;
+  tags: string[];
+  createdAt: string;
+}
+
+export interface TransitRoute {
+  id: number;
+  lineId: number;
+  lineName: string;
+  lineType: string;
+  lineColor: string;
+  city: string;
+  from: string;
+  to: string;
+  stops: string[];
+  /** @nullable */
+  durationMinutes?: number | null;
+  /** @nullable */
+  fare?: number | null;
+  currency: string;
+  transfers: number;
+  transferDetails: string[];
+  /** @nullable */
+  tips?: string | null;
+  createdAt: string;
+}
+
 export interface Activity {
   id: number;
   name: string;
@@ -373,6 +421,17 @@ export type GetActivitiesParams = {
   category?: string;
   limit?: number;
   offset?: number;
+};
+
+export type GetTransitLinesParams = {
+  city?: string;
+  type?: string;
+};
+
+export type SearchTransitRoutesParams = {
+  city?: string;
+  from?: string;
+  to?: string;
 };
 
 export type GetExploreSummaryParams = {

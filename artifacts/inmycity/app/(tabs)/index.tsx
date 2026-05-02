@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Platform,
   Text,
-  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -25,7 +24,7 @@ export default function ExploreScreen() {
   const { selectedCity } = useCity();
 
   const cityName = selectedCity?.name;
-  const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
+  const topPadding = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
   const {
@@ -41,24 +40,16 @@ export default function ExploreScreen() {
 
   const trending = (places || []).slice(0, 10);
 
-  const renderHeader = () => (
+  // Scrollable section header — grid + trending label
+  const ListHeader = () => (
     <View>
-      <AppHeader
-        subtitle="City At Your Fingertips"
-        topPadding={topPadding}
-        showCityPicker
-      />
-
-      {/* Category grid */}
       <View style={styles.sectionRow}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Explore</Text>
       </View>
       <CategoryGrid />
-
-      {/* Trending */}
       <View style={styles.sectionRow}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Trending in {selectedCity?.name ?? "City"}
+          Trending in {cityName ?? "City"}
         </Text>
         <Feather name="trending-up" size={15} color={colors.amber} />
       </View>
@@ -67,9 +58,18 @@ export default function ExploreScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
+      {/* ── Sticky header — never scrolls ── */}
+      <AppHeader
+        subtitle="City At Your Fingertips"
+        topPadding={topPadding}
+        showCityPicker
+      />
+
+      {/* ── Scrollable content ── */}
       {placesLoading ? (
-        <View style={styles.loadingContainer}>
-          {renderHeader()}
+        <View style={styles.loadingArea}>
+          <ListHeader />
           <SkeletonCard height={180} style={styles.skeleton} />
           <SkeletonCard height={180} style={styles.skeleton} />
         </View>
@@ -78,7 +78,7 @@ export default function ExploreScreen() {
           data={trending}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => <PlaceCard place={item} />}
-          ListHeaderComponent={renderHeader}
+          ListHeaderComponent={ListHeader}
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
           onRefresh={refetchPlaces}
@@ -96,6 +96,7 @@ export default function ExploreScreen() {
           }
         />
       )}
+
       <CityPicker />
     </View>
   );
@@ -103,51 +104,8 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  loadingContainer: { flex: 1 },
+  loadingArea: { flex: 1 },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-  topBar: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  appName: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 24,
-    letterSpacing: -0.5,
-  },
-  appMotto: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 11,
-    marginTop: 1,
-    letterSpacing: 0.2,
-  },
-  profileBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-  },
-  cityBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  cityBtnText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
-  },
   sectionRow: {
     flexDirection: "row",
     alignItems: "center",

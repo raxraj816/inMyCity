@@ -82,12 +82,11 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: "30.5%",
-    aspectRatio: 0.88,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
-    paddingVertical: 0,
+    gap: 6,
     borderWidth: StyleSheet.hairlineWidth,
     position: "relative",
     ...Platform.select({

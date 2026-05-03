@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     }),
   },
   imageWrap: { position: "relative" },
-  cardImage: { width: "100%", height: 180 },
+  cardImage: { width: "100%", height: 160 },
   typeBadge: {
     position:          "absolute",
     top:               10,

@@ -846,11 +846,11 @@ function CompactStat({ icon, label, value, colors }: { icon: string; label: stri
   );
 }
 
-function ActivityCard({ activity, colors }: { activity: Activity; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; }) {
+function ActivityCard({ activity, colors, sort }: { activity: Activity; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; sort?: string; }) {
+  const router = useRouter();
   const isINR = activity.currency === "INR";
-  const priceStr = activity.price != null
-    ? `${isINR ? "₹" : "$"}${activity.price.toLocaleString()}`
-    : "Free";
+  const isFree = !activity.price || activity.price === 0;
+  const priceStr = isFree ? "Free" : `${isINR ? "₹" : "$"}${activity.price!.toLocaleString()}`;
   const durationStr = activity.durationMinutes != null
     ? activity.durationMinutes >= 60
       ? `${Math.floor(activity.durationMinutes / 60)}h${activity.durationMinutes % 60 > 0 ? ` ${activity.durationMinutes % 60}m` : ""}`
@@ -859,10 +859,21 @@ function ActivityCard({ activity, colors }: { activity: Activity; colors: Return
   const catColors: Record<string, string> = {
     tours: "#6366f1", cultural: "#ec4899", sports: "#10b981",
     fitness: "#f97316", adventure: "#0ea5e9", wellness: "#8b5cf6",
+    tour: "#ec4899", workshop: "#f59e0b",
   };
   const catColor = catColors[activity.category] ?? "#6366f1";
+  const isTopRated = (activity.rating ?? 0) >= 4.5;
+  const badge = isFree
+    ? { label: "FREE", bg: "#10b981" }
+    : isTopRated
+    ? { label: "TOP RATED", bg: "#f59e0b" }
+    : null;
   return (
-    <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      onPress={() => router.push(`/activity/${activity.id}` as any)}
+    >
       <View style={styles.activityImageBox}>
         {activity.imageUrl
           ? <Image source={{ uri: activity.imageUrl }} style={styles.activityImage} contentFit="cover" transition={200} />
@@ -870,6 +881,11 @@ function ActivityCard({ activity, colors }: { activity: Activity; colors: Return
         <View style={[styles.activityCatBadge, { backgroundColor: catColor }]}>
           <Text style={styles.activityCatText}>{activity.category}</Text>
         </View>
+        {badge && (
+          <View style={[styles.activityBadge, { backgroundColor: badge.bg }]}>
+            <Text style={styles.activityBadgeText}>{badge.label}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.activityBody}>
         <Text style={[styles.activityName, { color: colors.foreground }]} numberOfLines={2}>{activity.name}</Text>
@@ -894,13 +910,13 @@ function ActivityCard({ activity, colors }: { activity: Activity; colors: Return
           )}
         </View>
         <View style={[styles.activityPriceRow, { borderTopColor: colors.border }]}>
-          <Text style={[styles.activityPrice, { color: colors.amber }]}>{priceStr}</Text>
+          <Text style={[styles.activityPrice, { color: isFree ? "#10b981" : colors.amber }]}>{priceStr}</Text>
           <View style={[styles.activityExploreBtn, { backgroundColor: catColor }]}>
             <Text style={styles.activityExploreTxt}>Explore</Text>
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -1080,4 +1096,41 @@ const styles = StyleSheet.create({
   modalTipText: { flex: 1 },
   modalTipLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
   modalTipValue: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 2 },
+
+  activityBadge: { position: "absolute", top: 8, right: 8, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  activityBadgeText: { fontFamily: "Inter_700Bold", fontSize: 8, color: "#fff", letterSpacing: 0.5 },
+
+  audienceScroll: { paddingHorizontal: 16, paddingBottom: 6, gap: 8 },
+  audiencePill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  audiencePillText: { fontFamily: "Inter_500Medium", fontSize: 12 },
+
+  actFilterRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
+  durationScroll: { gap: 6 },
+  durationPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1 },
+  durationPillText: { fontFamily: "Inter_500Medium", fontSize: 11 },
+  sortBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, flexShrink: 0 },
+  sortBtnText: { fontFamily: "Inter_500Medium", fontSize: 11 },
+  sortMenuRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 14, borderRadius: 12, borderWidth: 1 },
+  sortMenuLabel: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+
+  freeSection: { marginHorizontal: 16, marginTop: 12, marginBottom: 4, borderRadius: 18, borderWidth: 1, paddingTop: 14, paddingBottom: 14 },
+  freeSectionHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, marginBottom: 12 },
+  freeIconBox: { width: 38, height: 38, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  freeSectionTitle: { fontFamily: "Inter_700Bold", fontSize: 16 },
+  freeSectionSub: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 1 },
+  freeScroll: { paddingHorizontal: 14, gap: 10 },
+  freeCard: { width: 140, borderRadius: 14, overflow: "hidden", borderWidth: 1, ...Platform.select({ web: { boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2 } }) },
+  freeCardImg: { width: "100%", height: 90 },
+  freeCardBody: { padding: 8, gap: 5 },
+  freeCardName: { fontFamily: "Inter_600SemiBold", fontSize: 12, lineHeight: 16 },
+  freeCardMeta: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  freeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+  freeBadgeText: { fontFamily: "Inter_700Bold", fontSize: 9, color: "#fff", letterSpacing: 0.3 },
+  freeRating: { flexDirection: "row", alignItems: "center", gap: 3 },
+  freeRatingText: { fontFamily: "Inter_500Medium", fontSize: 10 },
+
+  todTabRow: { flexDirection: "row", paddingHorizontal: 16, gap: 8, marginBottom: 12 },
+  todTab: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1 },
+  todTabLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  todTabHint: { fontFamily: "Inter_400Regular", fontSize: 10, marginTop: 1 },
 });

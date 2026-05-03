@@ -186,6 +186,17 @@ export default function CityGuideScreen() {
           </View>
         </View>
 
+        <TouchableOpacity activeOpacity={0.85} style={[styles.transitCard, { backgroundColor: "#06b6d4" }]} onPress={() => router.push("/transit")}>
+          <View style={[styles.transitIconBox, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+            <MaterialCommunityIcons name="train-variant" size={22} color="#fff" />
+          </View>
+          <View style={styles.transitText}>
+            <Text style={styles.transitTitle}>Getting Around</Text>
+            <Text style={styles.transitSub}>Metro, bus & train routes for visitors</Text>
+          </View>
+          <Feather name="arrow-right" size={18} color="#fff" />
+        </TouchableOpacity>
+
         <View style={styles.section}>
           <SectionHeader title="Build Your Guide" icon="clock" colors={colors} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guideFilterScroll}>
@@ -292,17 +303,6 @@ export default function CityGuideScreen() {
             </ScrollView>
           )}
         </View>
-
-        <TouchableOpacity activeOpacity={0.85} style={[styles.transitCard, { backgroundColor: "#06b6d4" }]} onPress={() => router.push("/transit")}>
-          <View style={[styles.transitIconBox, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-            <MaterialCommunityIcons name="train-variant" size={22} color="#fff" />
-          </View>
-          <View style={styles.transitText}>
-            <Text style={styles.transitTitle}>Getting Around</Text>
-            <Text style={styles.transitSub}>Metro, bus & train routes for visitors</Text>
-          </View>
-          <Feather name="arrow-right" size={18} color="#fff" />
-        </TouchableOpacity>
 
         <View style={styles.section}>
           <SectionHeader title="Explore Places" icon="map-pin" colors={colors} onSeeAll={() => router.push("/places")} />

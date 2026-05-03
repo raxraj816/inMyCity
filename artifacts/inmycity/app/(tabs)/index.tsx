@@ -230,7 +230,7 @@ export default function ExploreScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        contentContainerStyle={{ paddingTop: 12, paddingBottom: bottomPadding }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

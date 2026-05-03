@@ -42,6 +42,12 @@ const BADGE: Record<TrendingType, { label: string; color: string; icon: string }
 
 const H_PAD = 16;
 const CAP   = 5;
+const WEEKEND_GOALS = [
+  { id: "family", label: "Family day", icon: "heart", color: "#ef4444", route: "/activities" },
+  { id: "food", label: "Food crawl", icon: "coffee", color: "#f97316", route: "/dining" },
+  { id: "fun", label: "Fun plans", icon: "zap", color: "#8b5cf6", route: "/activities" },
+  { id: "rain", label: "Rain-safe", icon: "cloud-rain", color: "#0ea5e9", route: "/movies" },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -242,6 +248,39 @@ export default function ExploreScreen() {
       >
         <CategoryGrid />
 
+        <View style={styles.weekendCard}>
+          <View style={styles.weekendHeader}>
+            <View>
+              <Text style={[styles.weekendEyebrow, { color: colors.amber }]}>This weekend</Text>
+              <Text style={[styles.weekendTitle, { color: colors.foreground }]}>
+                {cityName ?? "Your city"} weekend plans
+              </Text>
+              <Text style={[styles.weekendSub, { color: colors.mutedForeground }]}>
+                Pick a vibe and jump straight into the best things to do.
+              </Text>
+            </View>
+            <View style={[styles.weekendIcon, { backgroundColor: colors.amber + "18" }]}>
+              <Feather name="calendar" size={18} color={colors.amber} />
+            </View>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekendGoalsScroll}>
+            {WEEKEND_GOALS.map((goal) => (
+              <TouchableOpacity
+                key={goal.id}
+                style={[styles.weekendGoalPill, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push(goal.route as any)}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.weekendGoalIcon, { backgroundColor: goal.color + "18" }]}>
+                  <Feather name={goal.icon as any} size={14} color={goal.color} />
+                </View>
+                <Text style={[styles.weekendGoalText, { color: colors.foreground }]}>{goal.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* ── Trending ── */}
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
@@ -293,6 +332,42 @@ const styles = StyleSheet.create({
     paddingBottom:     8,
   },
   sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
+
+  weekendCard: {
+    marginHorizontal: H_PAD,
+    marginTop: 4,
+    marginBottom: 6,
+    borderRadius: 18,
+    padding: 16,
+    backgroundColor: "#fff7ed",
+    ...Platform.select({
+      web: { boxShadow: "0 2px 12px rgba(0,0,0,0.06)" } as any,
+      default: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 2,
+      },
+    }),
+  },
+  weekendHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  weekendEyebrow: { fontFamily: "Inter_700Bold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 },
+  weekendTitle: { fontFamily: "Inter_700Bold", fontSize: 18, marginTop: 2 },
+  weekendSub: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 4, lineHeight: 18 },
+  weekendIcon: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  weekendGoalsScroll: { gap: 10, paddingTop: 14 },
+  weekendGoalPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  weekendGoalIcon: { width: 28, height: 28, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  weekendGoalText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
 
   // ── Single-column list ──
   list: {

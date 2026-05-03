@@ -23,10 +23,13 @@ import {
   useGetPlaces,
   useGetEvents,
   useGetHotels,
+  useGetActivities,
   type Itinerary,
+  type ItineraryStop,
   type Place,
   type Event,
   type Hotel,
+  type Activity,
 } from "@workspace/api-client-react";
 
 const CITY_META: Record<string, { tagline: string; tips: { icon: string; label: string; value: string }[] }> = {
@@ -125,6 +128,22 @@ const NEIGHBORHOODS: Record<string, { name: string; vibe: string; color: string 
   ],
 };
 
+const QUICK_JUMPS: { label: string; icon: string; color: string; route: string }[] = [
+  { label: "Itineraries", icon: "book-open", color: "#6366f1", route: "/itineraries" },
+  { label: "Places", icon: "map-pin", color: "#0ea5e9", route: "/places" },
+  { label: "Dining", icon: "coffee", color: "#f97316", route: "/dining" },
+  { label: "Hotels", icon: "home", color: "#10b981", route: "/hotels" },
+  { label: "Events", icon: "calendar", color: "#ec4899", route: "/events" },
+];
+
+const CITY_AT_A_GLANCE: Record<string, { currency: string; timezone: string; knownFor: string; tripLength: string }> = {
+  Mumbai: { currency: "INR (₹)", timezone: "IST +5:30", knownFor: "Bollywood & Finance", tripLength: "3–5 Days" },
+  Bangalore: { currency: "INR (₹)", timezone: "IST +5:30", knownFor: "Tech Hub & Gardens", tripLength: "2–3 Days" },
+  "New York City": { currency: "USD ($)", timezone: "EST −5:00", knownFor: "Culture & Skyline", tripLength: "5–7 Days" },
+  "San Francisco": { currency: "USD ($)", timezone: "PST −8:00", knownFor: "Tech & Bay Views", tripLength: "3–4 Days" },
+};
+const DEFAULT_GLANCE = { currency: "Local Currency", timezone: "Local Time", knownFor: "Discover & Explore", tripLength: "2–4 Days" };
+
 const HIGHLIGHT_LIMITS = { places: 4, food: 3 };
 
 export default function CityGuideScreen() {
@@ -140,11 +159,14 @@ export default function CityGuideScreen() {
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
+  const glance = (cityName ? CITY_AT_A_GLANCE[cityName] : undefined) ?? DEFAULT_GLANCE;
+
   const { data: itineraries = [], isLoading: iLoading, error: iError, refetch: iRefetch } =
     useGetItineraries({ city: cityName });
   const { data: allPlaces = [], isLoading: pLoading } = useGetPlaces({ city: cityName });
   const { data: events = [], isLoading: eLoading } = useGetEvents({ city: cityName });
   const { data: allHotels = [], isLoading: hLoading } = useGetHotels({ city: cityName });
+  const { data: activities = [], isLoading: actLoading } = useGetActivities({ city: cityName });
 
   if (iError) return <ErrorFallback error={iError as Error} resetError={iRefetch} />;
 
@@ -169,6 +191,15 @@ export default function CityGuideScreen() {
     () => [...allHotels].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 4),
     [allHotels]
   );
+  const topActivities = useMemo(
+    () => [...activities].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 6),
+    [activities]
+  );
+  const day1Stops = useMemo(() => {
+    const top = itineraries[0];
+    if (!top?.stops) return [];
+    return top.stops.filter((s) => s.day === 1).sort((a, b) => a.order - b.order).slice(0, 4);
+  }, [itineraries]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -197,6 +228,22 @@ export default function CityGuideScreen() {
           <Feather name="arrow-right" size={18} color="#fff" />
         </TouchableOpacity>
 
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickJumpScroll}>
+          {QUICK_JUMPS.map((jump) => (
+            <TouchableOpacity
+              key={jump.label}
+              style={[styles.quickJumpTile, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push(jump.route as any)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.quickJumpIcon, { backgroundColor: jump.color + "22" }]}>
+                <Feather name={jump.icon as any} size={20} color={jump.color} />
+              </View>
+              <Text style={[styles.quickJumpLabel, { color: colors.foreground }]}>{jump.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         <View style={styles.section}>
           <SectionHeader title="Quick Tips" icon="info" colors={colors} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipsScroll}>
@@ -210,6 +257,16 @@ export default function CityGuideScreen() {
               </View>
             ))}
           </ScrollView>
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="City at a Glance" icon="globe" colors={colors} />
+          <View style={[styles.glanceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <GlanceStat icon="credit-card" label="Currency" value={glance.currency} colors={colors} />
+            <GlanceStat icon="clock" label="Timezone" value={glance.timezone} colors={colors} />
+            <GlanceStat icon="trending-up" label="Known For" value={glance.knownFor} colors={colors} />
+            <GlanceStat icon="calendar" label="Best Trip" value={glance.tripLength} colors={colors} />
+          </View>
         </View>
 
         {neighborhoods.length > 0 && (
@@ -245,6 +302,24 @@ export default function CityGuideScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
               {placeHighlights.map((place) => (
                 <PlaceGuideCard key={place.id} place={place} colors={colors} onPress={() => router.push(`/place/${place.id}` as any)} />
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="Things to Do" icon="activity" colors={colors} />
+          {actLoading ? (
+            <View style={styles.skeletonRow}>
+              <SkeletonCard height={260} style={styles.guideSkeletonCard} />
+              <SkeletonCard height={260} style={styles.guideSkeletonCard} />
+            </View>
+          ) : topActivities.length === 0 ? (
+            <EmptySection icon="activity" message="No activities listed yet." colors={colors} />
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
+              {topActivities.map((activity) => (
+                <ActivityCard key={activity.id} activity={activity} colors={colors} />
               ))}
             </ScrollView>
           )}
@@ -336,6 +411,13 @@ export default function CityGuideScreen() {
               );
             })}
           </ScrollView>
+          {!iLoading && day1Stops.length > 0 && (
+            <DayPlanPreview
+              stops={day1Stops}
+              colors={colors}
+              onPress={() => itineraries[0] && router.push(`/itinerary/${itineraries[0].id}` as any)}
+            />
+          )}
           {iLoading ? (
             <View style={styles.skeletonRow}>
               <SkeletonCard height={220} style={styles.guideSkeletonCard} />
@@ -480,6 +562,102 @@ function HotelGuideCard({ hotel, colors, onPress }: { hotel: Hotel; colors: Retu
   );
 }
 
+function GlanceStat({ icon, label, value, colors }: { icon: string; label: string; value: string; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; }) {
+  return (
+    <View style={styles.glanceStat}>
+      <View style={[styles.glanceStatIcon, { backgroundColor: colors.accent }]}>
+        <Feather name={icon as any} size={14} color={colors.amber} />
+      </View>
+      <View style={styles.glanceStatText}>
+        <Text style={[styles.glanceStatLabel, { color: colors.mutedForeground }]}>{label}</Text>
+        <Text style={[styles.glanceStatValue, { color: colors.foreground }]}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function ActivityCard({ activity, colors }: { activity: Activity; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; }) {
+  const isINR = activity.currency === "INR";
+  const priceStr = activity.price != null
+    ? `${isINR ? "₹" : "$"}${activity.price.toLocaleString()}`
+    : "Free";
+  const durationStr = activity.durationMinutes != null
+    ? activity.durationMinutes >= 60
+      ? `${Math.floor(activity.durationMinutes / 60)}h${activity.durationMinutes % 60 > 0 ? ` ${activity.durationMinutes % 60}m` : ""}`
+      : `${activity.durationMinutes}m`
+    : null;
+  const catColors: Record<string, string> = {
+    tours: "#6366f1", cultural: "#ec4899", sports: "#10b981",
+    fitness: "#f97316", adventure: "#0ea5e9", wellness: "#8b5cf6",
+  };
+  const catColor = catColors[activity.category] ?? "#6366f1";
+  return (
+    <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={styles.activityImageBox}>
+        {activity.imageUrl
+          ? <Image source={{ uri: activity.imageUrl }} style={styles.activityImage} contentFit="cover" transition={200} />
+          : <View style={[styles.activityImage, { backgroundColor: colors.muted }]} />}
+        <View style={[styles.activityCatBadge, { backgroundColor: catColor }]}>
+          <Text style={styles.activityCatText}>{activity.category}</Text>
+        </View>
+      </View>
+      <View style={styles.activityBody}>
+        <Text style={[styles.activityName, { color: colors.foreground }]} numberOfLines={2}>{activity.name}</Text>
+        {activity.description != null && (
+          <Text style={[styles.activityDesc, { color: colors.mutedForeground }]} numberOfLines={2}>{activity.description}</Text>
+        )}
+        <View style={styles.activityMeta}>
+          {durationStr && (
+            <View style={styles.activityMetaItem}>
+              <Feather name="clock" size={11} color={colors.mutedForeground} />
+              <Text style={[styles.activityMetaText, { color: colors.mutedForeground }]}>{durationStr}</Text>
+            </View>
+          )}
+          {activity.rating != null && (
+            <View style={styles.activityMetaItem}>
+              <Feather name="star" size={11} color="#f59e0b" />
+              <Text style={[styles.activityMetaText, { color: colors.mutedForeground }]}>{activity.rating.toFixed(1)}</Text>
+              {activity.reviewCount != null && (
+                <Text style={[styles.activityMetaText, { color: colors.mutedForeground }]}>({activity.reviewCount.toLocaleString()})</Text>
+              )}
+            </View>
+          )}
+        </View>
+        <View style={[styles.activityPriceRow, { borderTopColor: colors.border }]}>
+          <Text style={[styles.activityPrice, { color: colors.amber }]}>{priceStr}</Text>
+          <View style={[styles.activityExploreBtn, { backgroundColor: catColor }]}>
+            <Text style={styles.activityExploreTxt}>Explore</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function DayPlanPreview({ stops, colors, onPress }: { stops: ItineraryStop[]; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
+  return (
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[styles.dayPlanCard, { backgroundColor: colors.accent, borderColor: colors.border }]}>
+      <View style={styles.dayPlanHeader}>
+        <Feather name="map" size={14} color={colors.amber} />
+        <Text style={[styles.dayPlanTitle, { color: colors.foreground }]}>Day 1 Snapshot</Text>
+        <Text style={[styles.dayPlanHint, { color: colors.mutedForeground }]}>Tap to open guide</Text>
+        <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+      </View>
+      <View style={styles.dayPlanStops}>
+        {stops.map((stop, idx) => (
+          <View key={stop.id} style={styles.dayPlanStopRow}>
+            <View style={styles.dayPlanConnector}>
+              <View style={[styles.dayPlanDot, { backgroundColor: colors.amber }]} />
+              {idx < stops.length - 1 && <View style={[styles.dayPlanLine, { backgroundColor: colors.border }]} />}
+            </View>
+            <Text style={[styles.dayPlanStopName, { color: colors.foreground }]} numberOfLines={1}>{stop.place.name}</Text>
+          </View>
+        ))}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function EventRow({ event, colors, onPress }: { event: Event; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
   const dateStr = event.startDate ? new Date(event.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null;
   return (
@@ -574,4 +752,39 @@ const styles = StyleSheet.create({
   eventVenue: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
   emptyBox: { marginHorizontal: 20, borderRadius: 14, padding: 20, flexDirection: "row", alignItems: "center", gap: 10 },
   emptyText: { fontFamily: "Inter_400Regular", fontSize: 13, flex: 1 },
+  quickJumpScroll: { paddingHorizontal: 20, paddingVertical: 14, gap: 10 },
+  quickJumpTile: { width: 76, alignItems: "center", borderRadius: 16, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 8, gap: 8 },
+  quickJumpIcon: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  quickJumpLabel: { fontFamily: "Inter_500Medium", fontSize: 11, textAlign: "center" },
+  glanceCard: { marginHorizontal: 20, borderRadius: 18, borderWidth: 1, padding: 16, flexDirection: "row", flexWrap: "wrap", gap: 14 },
+  glanceStat: { width: "45%", flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  glanceStatIcon: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  glanceStatText: { flex: 1 },
+  glanceStatLabel: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  glanceStatValue: { fontFamily: "Inter_600SemiBold", fontSize: 13, lineHeight: 18, marginTop: 1 },
+  activityCard: { width: 210, borderRadius: 18, overflow: "hidden", borderWidth: 1, ...Platform.select({ web: { boxShadow: "0 2px 10px rgba(0,0,0,0.08)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 } }) },
+  activityImageBox: { height: 120, position: "relative" },
+  activityImage: { width: "100%", height: "100%" },
+  activityCatBadge: { position: "absolute", bottom: 8, left: 8, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
+  activityCatText: { fontFamily: "Inter_600SemiBold", fontSize: 9, color: "#fff", textTransform: "capitalize" },
+  activityBody: { padding: 12, gap: 6 },
+  activityName: { fontFamily: "Inter_600SemiBold", fontSize: 13, lineHeight: 17 },
+  activityDesc: { fontFamily: "Inter_400Regular", fontSize: 11, lineHeight: 15 },
+  activityMeta: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
+  activityMetaItem: { flexDirection: "row", alignItems: "center", gap: 3 },
+  activityMetaText: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  activityPriceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, paddingTop: 8, marginTop: 2 },
+  activityPrice: { fontFamily: "Inter_700Bold", fontSize: 14 },
+  activityExploreBtn: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 9 },
+  activityExploreTxt: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "#fff" },
+  dayPlanCard: { marginHorizontal: 20, marginBottom: 10, borderRadius: 16, borderWidth: 1, padding: 14 },
+  dayPlanHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
+  dayPlanTitle: { fontFamily: "Inter_700Bold", fontSize: 14, flex: 1 },
+  dayPlanHint: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  dayPlanStops: {},
+  dayPlanStopRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 2 },
+  dayPlanConnector: { alignItems: "center", width: 8, paddingTop: 4 },
+  dayPlanDot: { width: 8, height: 8, borderRadius: 4 },
+  dayPlanLine: { width: 1, height: 16, marginTop: 2 },
+  dayPlanStopName: { fontFamily: "Inter_500Medium", fontSize: 13, flex: 1, paddingBottom: 14 },
 });

@@ -383,21 +383,6 @@ export default function ExploreScreen() {
     [allTrending, trendFilter]
   );
 
-  // ── Hot picks — top-rated activities (compact horizontal strip) ───────────
-  const hotPicks: TrendingItem[] = useMemo(() => {
-    const top = [...activities]
-      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-      .slice(0, 6);
-    return top.map(a => ({
-      key: `hp-${a.id}`,
-      type: (a.category === "sports" || a.category === "fitness" ? "sport" : "activity") as TrendingType,
-      title: a.name,
-      imageUrl: a.imageUrl,
-      meta1: a.rating != null ? `⭐ ${a.rating.toFixed(1)}` : (fmtDur(a.durationMinutes) || "Activity"),
-      route: `/activity/${a.id}`,
-    }));
-  }, [activities]);
-
   const weekendPicks: TrendingItem[] = useMemo(() => {
     const pickSet = new Map<string, TrendingItem>();
     allTrending.forEach(item => {
@@ -469,41 +454,6 @@ export default function ExploreScreen() {
             </ScrollView>
           ) : null}
         </View>
-
-        {/* ── Hot Picks strip ── */}
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Hot Picks</Text>
-          <TouchableOpacity onPress={() => router.push("/activities")}>
-            <Text style={[styles.seeAllLink, { color: colors.amber }]}>See all</Text>
-          </TouchableOpacity>
-        </View>
-
-        {acLoad ? (
-          <HotPickSkeletons colors={colors} />
-        ) : hotPicks.length === 0 ? null : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hotPicksScroll}>
-            {hotPicks.map(item => (
-              <HotPickCard key={item.key} item={item} colors={colors} />
-            ))}
-          </ScrollView>
-        )}
-
-        {/* ── Today's Deals strip ── */}
-        {!dlLoad && deals.length > 0 && (
-          <>
-            <View style={styles.sectionRow}>
-              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Today's Deals</Text>
-              <TouchableOpacity onPress={() => router.push("/deals" as any)}>
-                <Text style={[styles.seeAllLink, { color: colors.amber }]}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hotPicksScroll}>
-              {deals.slice(0, 6).map(deal => (
-                <DealStripCard key={deal.id} deal={deal} colors={colors} />
-              ))}
-            </ScrollView>
-          </>
-        )}
 
         {/* ── Trending header + filter tabs ── */}
         <View style={styles.sectionRow}>

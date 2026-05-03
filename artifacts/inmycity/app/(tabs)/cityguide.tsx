@@ -667,35 +667,6 @@ export default function CityGuideScreen() {
           )}
         </View>
 
-        {/* ── Insider Tips section ── */}
-        {(() => {
-          const tips = (cityName ? INSIDER_TIPS[cityName] : undefined) ?? DEFAULT_INSIDER_TIPS;
-          return (
-            <View style={[styles.insiderSection, { backgroundColor: colors.navy }]}>
-              <View style={styles.insiderHeader}>
-                <View style={[styles.insiderIconBox, { backgroundColor: "rgba(249,115,22,0.18)" }]}>
-                  <Feather name="zap" size={16} color="#f97316" />
-                </View>
-                <View style={styles.insiderHeaderText}>
-                  <Text style={styles.insiderTitle}>Insider Tips</Text>
-                  <Text style={styles.insiderSub}>Local knowledge, not in the guidebooks</Text>
-                </View>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.insiderScroll}>
-                {tips.map((t, i) => (
-                  <View key={i} style={[styles.insiderCard, { backgroundColor: "rgba(255,255,255,0.07)" }]}>
-                    <View style={[styles.insiderCardIcon, { backgroundColor: t.color + "22" }]}>
-                      <Feather name={t.icon as any} size={15} color={t.color} />
-                    </View>
-                    <Text style={styles.insiderCardLabel}>{t.label}</Text>
-                    <Text style={styles.insiderCardTip}>{t.tip}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          );
-        })()}
-
         <View style={styles.section}>
           <SectionHeader title="Events in the City" icon="calendar" colors={colors} onSeeAll={() => router.push("/events")} />
           {eLoading ? (
@@ -1194,18 +1165,6 @@ const styles = StyleSheet.create({
   freeBadgeText: { fontFamily: "Inter_700Bold", fontSize: 9, color: "#fff", letterSpacing: 0.3 },
   freeRating: { flexDirection: "row", alignItems: "center", gap: 3 },
   freeRatingText: { fontFamily: "Inter_500Medium", fontSize: 10 },
-
-  insiderSection: { marginHorizontal: 16, marginTop: 12, marginBottom: 4, borderRadius: 20, paddingVertical: 16 },
-  insiderHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, marginBottom: 14 },
-  insiderIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  insiderHeaderText: { flex: 1 },
-  insiderTitle: { fontFamily: "Inter_700Bold", fontSize: 16, color: "#fff" },
-  insiderSub: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 },
-  insiderScroll: { paddingHorizontal: 16, gap: 10, paddingBottom: 2 },
-  insiderCard: { width: 200, borderRadius: 16, padding: 14, gap: 8 },
-  insiderCardIcon: { width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-  insiderCardLabel: { fontFamily: "Inter_700Bold", fontSize: 11, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 0.5 },
-  insiderCardTip: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 17 },
 
   todTabRow: { flexDirection: "row", paddingHorizontal: 16, gap: 8, marginBottom: 12 },
   todTab: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1 },

@@ -853,6 +853,22 @@ export const GetTransitRouteByIdResponse = zod.object({
 });
 
 /**
+ * @summary Chat with the city AI assistant (SSE streaming)
+ */
+export const AiChatBody = zod.object({
+  message: zod.string(),
+  city: zod.string(),
+  history: zod
+    .array(
+      zod.object({
+        role: zod.enum(["user", "assistant"]),
+        content: zod.string(),
+      }),
+    )
+    .optional(),
+});
+
+/**
  * @summary Get category summary counts for a location
  */
 export const GetExploreSummaryQueryParams = zod.object({

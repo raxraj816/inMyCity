@@ -8,6 +8,9 @@
 
 export * from "./activity";
 export * from "./addPlaceToCollectionInput";
+export * from "./aiChatRequest";
+export * from "./aiChatRequestHistoryItem";
+export * from "./aiChatRequestHistoryItemRole";
 export * from "./categoryCount";
 export * from "./collection";
 export * from "./createCollectionInput";

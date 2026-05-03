@@ -8,3 +8,5 @@ export * from "./movies";
 export * from "./hotels";
 export * from "./activities";
 export * from "./transit";
+export * from "./conversations";
+export * from "./messages";

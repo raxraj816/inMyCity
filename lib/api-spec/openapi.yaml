@@ -33,6 +33,8 @@ tags:
     description: Activity operations
   - name: transit
     description: Transit operations
+  - name: ai
+    description: AI assistant operations
 paths:
   /healthz:
     get:
@@ -740,6 +742,29 @@ paths:
         "404":
           description: Not found
 
+  /ai/chat:
+    post:
+      operationId: aiChat
+      tags: [ai]
+      summary: Chat with the city AI assistant (SSE streaming)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChatRequest"
+      responses:
+        "200":
+          description: SSE stream of AI response chunks
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          description: Bad request
+        "500":
+          description: AI service error
+
   /explore/summary:
     get:
       operationId: getExploreSummary
@@ -772,6 +797,30 @@ paths:
 
 components:
   schemas:
+    AiChatRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        city:
+          type: string
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+            required:
+              - role
+              - content
+      required:
+        - message
+        - city
+
     HealthStatus:
       type: object
       properties:

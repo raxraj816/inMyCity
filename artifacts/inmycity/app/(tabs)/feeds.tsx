@@ -19,6 +19,7 @@ import { useCity } from "@/context/CityContext";
 import { EventCard } from "@/components/EventCard";
 import { DealCard } from "@/components/DealCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
+import { AiChatFab } from "@/components/AiChatFab";
 
 type MainTab = "pulse" | "news" | "community" | "qa";
 type PosterTier = "official" | "local_expert" | "creator" | "business";
@@ -667,6 +668,7 @@ export default function FeedsScreen() {
       {activeTab === "news" && renderNewsTab()}
       {activeTab === "community" && renderCommunityTab()}
       {activeTab === "qa" && renderQATab()}
+      <AiChatFab />
     </View>
   );
 }

@@ -12,6 +12,7 @@ import moviesRouter from "./movies";
 import hotelsRouter from "./hotels";
 import activitiesRouter from "./activities";
 import transitRouter from "./transit";
+import aiRouter from "./ai";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(moviesRouter);
 router.use(hotelsRouter);
 router.use(activitiesRouter);
 router.use(transitRouter);
+router.use(aiRouter);
 
 export default router;

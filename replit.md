@@ -55,6 +55,15 @@ Smart city explorer app. City-by-city rollout: Mumbai, Bangalore, New York City,
 - Sports: `#22c55e` (green)
 - Nightlife: `#ec4899` (pink)
 
+### AI Assistant Feature
+- **Endpoint**: `POST /api/ai/chat` — SSE streaming, accepts `{ message, city, history[] }`
+- **AI Provider**: OpenAI via Replit AI Integrations (gpt-5.4, no API key needed)
+- **City context**: Deep system prompt with neighborhood/food/transit/culture knowledge for Mumbai, Bangalore, NYC, SF
+- **Frontend**: `/ai-chat` modal screen (slides up from bottom) with streaming text bubbles
+- **Entry point**: "Ask AI" floating action button (bottom-right) on Explore, Pulse, and City Guide tabs
+- **Lib**: `@workspace/integrations-openai-ai-server` — pre-configured OpenAI SDK client
+- **DB tables added**: `conversations`, `messages` (for future persistence; chat is currently stateless)
+
 ### Critical Notes
 - `Link asChild` crashes web — always use `useRouter` + `router.push()`
 - No `python3` in env — use `node -e` for scripting

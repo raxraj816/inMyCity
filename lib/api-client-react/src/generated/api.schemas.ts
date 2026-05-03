@@ -5,6 +5,25 @@
  * inMyCity API specification
  * OpenAPI spec version: 0.1.0
  */
+export type AiChatRequestHistoryItemRole =
+  (typeof AiChatRequestHistoryItemRole)[keyof typeof AiChatRequestHistoryItemRole];
+
+export const AiChatRequestHistoryItemRole = {
+  user: "user",
+  assistant: "assistant",
+} as const;
+
+export type AiChatRequestHistoryItem = {
+  role: AiChatRequestHistoryItemRole;
+  content: string;
+};
+
+export interface AiChatRequest {
+  message: string;
+  city: string;
+  history?: AiChatRequestHistoryItem[];
+}
+
 export interface HealthStatus {
   status: string;
 }

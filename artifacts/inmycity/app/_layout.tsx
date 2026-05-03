@@ -55,6 +55,7 @@ function RootLayoutNav() {
       <Stack.Screen name="transit/line/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="transit/route/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="profile" options={{ headerShown: false, presentation: "modal" }} />
+      <Stack.Screen name="ai-chat" options={{ headerShown: false, presentation: "modal", animation: "slide_from_bottom" }} />
     </Stack>
   );
 }

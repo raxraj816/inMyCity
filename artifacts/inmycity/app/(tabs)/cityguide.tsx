@@ -19,6 +19,7 @@ import { CityPicker } from "@/components/CityPicker";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { AppHeader } from "@/components/AppHeader";
+import { AiChatFab } from "@/components/AiChatFab";
 import {
   useGetItineraries,
   useGetPlaces,
@@ -496,6 +497,7 @@ export default function CityGuideScreen() {
       </Modal>
 
       <CityPicker />
+      <AiChatFab />
     </View>
   );
 }

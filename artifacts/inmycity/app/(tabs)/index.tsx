@@ -16,6 +16,7 @@ import { useCity } from "@/context/CityContext";
 import { CityPicker } from "@/components/CityPicker";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { AppHeader } from "@/components/AppHeader";
+import { AiChatFab } from "@/components/AiChatFab";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -273,6 +274,7 @@ export default function ExploreScreen() {
       </ScrollView>
 
       <CityPicker />
+      <AiChatFab />
     </View>
   );
 }

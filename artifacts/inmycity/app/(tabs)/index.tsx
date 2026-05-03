@@ -200,42 +200,6 @@ function HotPickCard({
   );
 }
 
-function WeekendCard({
-  item,
-  colors,
-}: {
-  item: TrendingItem;
-  colors: ReturnType<typeof useColors>;
-}) {
-  const router = useRouter();
-  const cfg = BADGE[item.type];
-
-  return (
-    <TouchableOpacity
-      style={[styles.weekendPickCard, { backgroundColor: colors.background, borderColor: colors.border }]}
-      onPress={() => router.push(item.route as any)}
-      activeOpacity={0.85}
-    >
-      <Image
-        source={{ uri: item.imageUrl ?? "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800" }}
-        style={styles.weekendPickImage}
-        contentFit="cover"
-      />
-      <View style={styles.weekendPickBody}>
-        <View style={[styles.weekendPickBadge, { backgroundColor: cfg.color }]}>
-          <Text style={styles.weekendPickBadgeText}>{cfg.label}</Text>
-        </View>
-        <Text style={[styles.weekendPickTitle, { color: colors.foreground }]} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <Text style={[styles.weekendPickMeta, { color: colors.mutedForeground }]} numberOfLines={1}>
-          {item.meta2 ?? WEEKEND_HINTS[item.type]}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
 // ─── Trending card (full-width) ───────────────────────────────────────────────
 
 function TrendingCard({
@@ -383,14 +347,6 @@ export default function ExploreScreen() {
     [allTrending, trendFilter]
   );
 
-  const weekendPicks: TrendingItem[] = useMemo(() => {
-    const pickSet = new Map<string, TrendingItem>();
-    allTrending.forEach(item => {
-      if (!pickSet.has(item.type)) pickSet.set(item.type, item);
-    });
-    return Array.from(pickSet.values()).slice(0, 4);
-  }, [allTrending]);
-
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -446,13 +402,6 @@ export default function ExploreScreen() {
             ))}
           </ScrollView>
 
-          {weekendPicks.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekendPicksScroll}>
-              {weekendPicks.map(item => (
-                <WeekendCard key={item.key} item={item} colors={colors} />
-              ))}
-            </ScrollView>
-          ) : null}
         </View>
 
         {/* ── Trending header + filter tabs ── */}
@@ -604,20 +553,6 @@ const styles = StyleSheet.create({
   },
   weekendGoalIcon: { width: 28, height: 28, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   weekendGoalText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
-  weekendPicksScroll: { gap: 12, paddingTop: 14 },
-  weekendPickCard: {
-    width: 168,
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  weekendPickImage: { width: "100%", height: 92 },
-  weekendPickBody: { padding: 10, gap: 6 },
-  weekendPickBadge: { alignSelf: "flex-start", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  weekendPickBadgeText: { fontFamily: "Inter_600SemiBold", fontSize: 10, color: "#fff" },
-  weekendPickTitle: { fontFamily: "Inter_700Bold", fontSize: 13, lineHeight: 17 },
-  weekendPickMeta: { fontFamily: "Inter_400Regular", fontSize: 11 },
-
   // ── Hot Picks ──
   hotPicksScroll: { paddingHorizontal: H_PAD, gap: 12 },
   hotPickCard: {

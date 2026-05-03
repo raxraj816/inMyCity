@@ -291,15 +291,15 @@ const styles = StyleSheet.create({
     alignItems:        "center",
     justifyContent:    "space-between",
     paddingHorizontal: H_PAD,
-    paddingTop:        16,
-    paddingBottom:     10,
+    paddingTop:        12,
+    paddingBottom:     8,
   },
   sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
 
   // ── Single-column list ──
   list: {
     paddingHorizontal: H_PAD,
-    gap:               14,
+    gap:               12,
     paddingBottom:     8,
   },
 
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     }),
   },
   imageWrap: { position: "relative" },
-  cardImage: { width: "100%", height: 160 },
+  cardImage: { width: "100%", height: 150 },
   typeBadge: {
     position:          "absolute",
     top:               10,

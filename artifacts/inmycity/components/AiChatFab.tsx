@@ -1,6 +1,6 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, Platform } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -24,7 +24,7 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
       onPress={() => router.push("/ai-chat" as any)}
       activeOpacity={0.85}
     >
-      <Feather name="cpu" size={16} color="#fff" />
+      <MaterialCommunityIcons name="robot-happy-outline" size={16} color="#fff" />
       <Feather name="zap" size={12} color="#fff" style={styles.spark} />
       <Text style={styles.fabLabel}>CityPilot</Text>
     </TouchableOpacity>

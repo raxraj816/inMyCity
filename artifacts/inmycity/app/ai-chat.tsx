@@ -12,7 +12,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
@@ -182,29 +182,29 @@ export default function AiChatScreen() {
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isUser = item.role === "user";
     return (
-      <View style={[styles.messageRow, isUser ? styles.messageRowUser : styles.messageRowAssistant]}>
+      <View style={[s.messageRow, isUser ? s.messageRowUser : s.messageRowAssistant]}>
         {!isUser && (
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}> 
-            <Feather name="map" size={14} color="#fff" />
+          <View style={[s.avatar, { backgroundColor: colors.primary }]}> 
+            <MaterialCommunityIcons name="robot-happy-outline" size={14} color="#fff" />
           </View>
         )}
         <View
           style={[
-            styles.bubble,
+            s.bubble,
             isUser
-              ? [styles.bubbleUser, { backgroundColor: colors.primary }]
-              : [styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border }],
+              ? [s.bubbleUser, { backgroundColor: colors.primary }]
+              : [s.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border }],
           ]}
         >
           {item.content ? (
-            <Text style={[styles.bubbleText, { color: isUser ? "#fff" : colors.text }]}>
+            <Text style={[s.bubbleText, { color: isUser ? "#fff" : colors.text }]}>
               {item.content}
               {item.streaming && <Text style={{ color: isUser ? "rgba(255,255,255,0.6)" : colors.mutedForeground }}>▌</Text>}
             </Text>
           ) : (
-            <View style={styles.typingRow}>
+            <View style={s.typingRow}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.typingText, { color: colors.mutedForeground }]}>Thinking…</Text>
+              <Text style={[s.typingText, { color: colors.mutedForeground }]}>Thinking…</Text>
             </View>
           )}
         </View>
@@ -222,7 +222,7 @@ export default function AiChatScreen() {
         </TouchableOpacity>
         <View style={s.headerCenter}>
           <View style={[s.headerIcon, { backgroundColor: colors.accent }]}> 
-            <Feather name="map" size={16} color={colors.primary} />
+            <MaterialCommunityIcons name="robot-happy-outline" size={16} color={colors.primary} />
           </View>
           <View>
             <Text style={[s.headerTitle, { color: colors.text }]}>CityPilot</Text>
@@ -240,7 +240,7 @@ export default function AiChatScreen() {
         {messages.length === 0 ? (
           <View style={s.emptyState}>
             <View style={[s.emptyIcon, { backgroundColor: colors.accent }]}> 
-              <Feather name="map" size={32} color={colors.primary} />
+              <MaterialCommunityIcons name="robot-happy-outline" size={32} color={colors.primary} />
             </View>
             <Text style={[s.emptyTitle, { color: colors.text }]}>Ask me anything about {cityName}</Text>
             <Text style={[s.emptySubtitle, { color: colors.mutedForeground }]}> 

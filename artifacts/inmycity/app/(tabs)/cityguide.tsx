@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -143,6 +144,13 @@ const CITY_AT_A_GLANCE: Record<string, { currency: string; timezone: string; kno
   "San Francisco": { currency: "USD ($)", timezone: "PST −8:00", knownFor: "Tech & Bay Views", tripLength: "3–4 Days" },
 };
 const DEFAULT_GLANCE = { currency: "Local Currency", timezone: "Local Time", knownFor: "Discover & Explore", tripLength: "2–4 Days" };
+const EXTRA_TIPS = [
+  { icon: "shield", label: "Safety", value: "Keep valuables secure" },
+  { icon: "wifi", label: "Connectivity", value: "eSIM / local SIM" },
+  { icon: "credit-card", label: "Payments", value: "UPI & cards accepted" },
+  { icon: "coffee", label: "Food", value: "Try local street food" },
+  { icon: "cloud-rain", label: "Weather", value: "Pack for humidity" },
+];
 
 const HIGHLIGHT_LIMITS = { places: 4, food: 3 };
 
@@ -153,6 +161,7 @@ export default function CityGuideScreen() {
   const { selectedCity } = useCity();
   const [placeFilter, setPlaceFilter] = useState("all");
   const [guideFilter, setGuideFilter] = useState("all");
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const cityName = selectedCity?.name;
   const meta = (cityName ? CITY_META[cityName] : undefined) ?? DEFAULT_META;
@@ -228,45 +237,42 @@ export default function CityGuideScreen() {
           <Feather name="arrow-right" size={18} color="#fff" />
         </TouchableOpacity>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickJumpScroll}>
-          {QUICK_JUMPS.map((jump) => (
-            <TouchableOpacity
-              key={jump.label}
-              style={[styles.quickJumpTile, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(jump.route as any)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.quickJumpIcon, { backgroundColor: jump.color + "22" }]}>
-                <Feather name={jump.icon as any} size={20} color={jump.color} />
+        <View style={styles.heroQuickPanel}>
+          <View style={styles.heroQuickHeader}>
+            <View style={styles.heroQuickInfo}>
+              <View style={[styles.heroQuickBadge, { backgroundColor: "rgba(255,255,255,0.14)" }]}>
+                <Feather name="info" size={13} color="#fff" />
               </View>
-              <Text style={[styles.quickJumpLabel, { color: colors.foreground }]}>{jump.label}</Text>
+              <View>
+                <Text style={styles.heroQuickLabel}>Quick Info</Text>
+                <Text style={styles.heroQuickValue}>{glance.knownFor}</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[styles.heroDetailsButton, { backgroundColor: "rgba(255,255,255,0.12)" }]}
+              onPress={() => setDetailsOpen(true)}
+            >
+              <Feather name="more-horizontal" size={16} color="#fff" />
+              <Text style={styles.heroDetailsButtonText}>City details</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <View style={styles.section}>
-          <SectionHeader title="Quick Tips" icon="info" colors={colors} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipsScroll}>
-            {meta.tips.map((tip) => (
-              <View key={tip.label} style={[styles.tipCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={[styles.tipIconBox, { backgroundColor: colors.accent }]}>
-                  <Feather name={tip.icon as any} size={16} color={colors.amber} />
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.heroFactsScroll}>
+            {[
+              { icon: "sun", label: "Best season", value: meta.tips.find((t) => t.label === "Best Season")?.value ?? "Check locally" },
+              { icon: "navigation", label: "Getting around", value: meta.tips.find((t) => t.label === "Getting Around")?.value ?? "Transit" },
+              { icon: "clock", label: "Timezone", value: glance.timezone },
+              { icon: "calendar", label: "Trip length", value: glance.tripLength },
+            ].map((item) => (
+              <View key={item.label} style={styles.heroFactPill}>
+                <Feather name={item.icon as any} size={12} color={colors.amber} />
+                <View>
+                  <Text style={styles.heroFactLabel}>{item.label}</Text>
+                  <Text style={styles.heroFactValue}>{item.value}</Text>
                 </View>
-                <Text style={[styles.tipLabel, { color: colors.mutedForeground }]}>{tip.label}</Text>
-                <Text style={[styles.tipValue, { color: colors.foreground }]}>{tip.value}</Text>
               </View>
             ))}
           </ScrollView>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="City at a Glance" icon="globe" colors={colors} />
-          <View style={[styles.glanceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <GlanceStat icon="credit-card" label="Currency" value={glance.currency} colors={colors} />
-            <GlanceStat icon="clock" label="Timezone" value={glance.timezone} colors={colors} />
-            <GlanceStat icon="trending-up" label="Known For" value={glance.knownFor} colors={colors} />
-            <GlanceStat icon="calendar" label="Best Trip" value={glance.tripLength} colors={colors} />
-          </View>
         </View>
 
         {neighborhoods.length > 0 && (
@@ -302,24 +308,6 @@ export default function CityGuideScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
               {placeHighlights.map((place) => (
                 <PlaceGuideCard key={place.id} place={place} colors={colors} onPress={() => router.push(`/place/${place.id}` as any)} />
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Things to Do" icon="activity" colors={colors} />
-          {actLoading ? (
-            <View style={styles.skeletonRow}>
-              <SkeletonCard height={260} style={styles.guideSkeletonCard} />
-              <SkeletonCard height={260} style={styles.guideSkeletonCard} />
-            </View>
-          ) : topActivities.length === 0 ? (
-            <EmptySection icon="activity" message="No activities listed yet." colors={colors} />
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
-              {topActivities.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} colors={colors} />
               ))}
             </ScrollView>
           )}
@@ -449,6 +437,37 @@ export default function CityGuideScreen() {
         </View>
       </ScrollView>
 
+      <Modal visible={detailsOpen} transparent animationType="fade" onRequestClose={() => setDetailsOpen(false)}>
+        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setDetailsOpen(false)}>
+          <TouchableOpacity activeOpacity={1} style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>City details</Text>
+              <TouchableOpacity onPress={() => setDetailsOpen(false)}>
+                <Feather name="x" size={20} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalGlanceGrid}>
+              <GlanceStat icon="credit-card" label="Currency" value={glance.currency} colors={colors} />
+              <GlanceStat icon="clock" label="Timezone" value={glance.timezone} colors={colors} />
+              <GlanceStat icon="trending-up" label="Known For" value={glance.knownFor} colors={colors} />
+              <GlanceStat icon="calendar" label="Best Trip" value={glance.tripLength} colors={colors} />
+            </View>
+            <View style={styles.modalTipList}>
+              {[...meta.tips.slice(0, 3), ...EXTRA_TIPS.slice(0, 2)].map((tip) => (
+                <View key={`${tip.label}-${tip.value}`} style={[styles.modalTipRow, { borderBottomColor: colors.border }]}>
+                  <Feather name={tip.icon as any} size={14} color={colors.amber} />
+                  <View style={styles.modalTipText}>
+                    <Text style={[styles.modalTipLabel, { color: colors.foreground }]}>{tip.label}</Text>
+                    <Text style={[styles.modalTipValue, { color: colors.mutedForeground }]}>{tip.value}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       <CityPicker />
     </View>
   );
@@ -576,6 +595,18 @@ function GlanceStat({ icon, label, value, colors }: { icon: string; label: strin
   );
 }
 
+function CompactStat({ icon, label, value, colors }: { icon: string; label: string; value: string; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; }) {
+  return (
+    <View style={styles.compactStat}>
+      <Feather name={icon as any} size={12} color={colors.amber} />
+      <View style={styles.compactStatText}>
+        <Text style={[styles.compactStatLabel, { color: colors.mutedForeground }]}>{label}</Text>
+        <Text style={[styles.compactStatValue, { color: colors.foreground }]} numberOfLines={1}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
 function ActivityCard({ activity, colors }: { activity: Activity; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; }) {
   const isINR = activity.currency === "INR";
   const priceStr = activity.price != null
@@ -682,6 +713,18 @@ const styles = StyleSheet.create({
   heroCity: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#fff", marginTop: 2 },
   heroTagline: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 },
   heroIconBox: { width: 68, height: 68, borderRadius: 20, alignItems: "center", justifyContent: "center", marginLeft: 16 },
+  heroQuickPanel: { marginHorizontal: 20, marginTop: -8, marginBottom: 4, borderRadius: 18, padding: 14, backgroundColor: "rgba(255,255,255,0.12)" },
+  heroQuickHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 },
+  heroQuickInfo: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  heroQuickBadge: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  heroQuickLabel: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.7)" },
+  heroQuickValue: { fontFamily: "Inter_700Bold", fontSize: 14, color: "#fff", marginTop: 1 },
+  heroDetailsButton: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
+  heroDetailsButtonText: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#fff" },
+  heroFactsScroll: { gap: 8 },
+  heroFactPill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 14, minWidth: 150 },
+  heroFactLabel: { fontFamily: "Inter_500Medium", fontSize: 10, color: "rgba(255,255,255,0.65)", textTransform: "uppercase" },
+  heroFactValue: { fontFamily: "Inter_700Bold", fontSize: 12, color: "#fff", marginTop: 1 },
   section: { marginTop: 8 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
   sectionHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 7 },
@@ -787,4 +830,19 @@ const styles = StyleSheet.create({
   dayPlanDot: { width: 8, height: 8, borderRadius: 4 },
   dayPlanLine: { width: 1, height: 16, marginTop: 2 },
   dayPlanStopName: { fontFamily: "Inter_500Medium", fontSize: 13, flex: 1, paddingBottom: 14 },
+  compactStat: { flexDirection: "row", alignItems: "center", gap: 8 },
+  compactStatText: { flex: 1 },
+  compactStatLabel: { fontFamily: "Inter_400Regular", fontSize: 10 },
+  compactStatValue: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "flex-end" },
+  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18, borderWidth: 1 },
+  modalHandle: { width: 42, height: 4, borderRadius: 2, alignSelf: "center", backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 14 },
+  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  modalTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
+  modalGlanceGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 14 },
+  modalTipList: { gap: 10 },
+  modalTipRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingBottom: 10, borderBottomWidth: 1 },
+  modalTipText: { flex: 1 },
+  modalTipLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  modalTipValue: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 2 },
 });

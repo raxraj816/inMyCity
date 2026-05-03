@@ -59,8 +59,6 @@ export default function TabLayout() {
       {/* Hidden routes */}
       <Tabs.Screen name="search"  options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
-      <Tabs.Screen name="events"  options={{ href: null }} />
-      <Tabs.Screen name="deals"   options={{ href: null }} />
       <Tabs.Screen name="saved"   options={{ href: null }} />
       <Tabs.Screen name="tourist" options={{ href: null }} />
     </Tabs>

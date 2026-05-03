@@ -11,7 +11,7 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { DealCard } from "@/components/DealCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
-import { AppHeader } from "@/components/AppHeader";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 
 const CATEGORIES = ["food", "attraction", "retail", "wellness", "nightlife", "fitness"];
@@ -36,7 +36,6 @@ export default function DealsScreen() {
   const topPadding = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
-  // Build trending strip — top 8 deals
   const trendingItems: TrendingStripItem[] = (deals ?? []).slice(0, 8).map(d => ({
     id:       String(d.id),
     title:    d.title,
@@ -62,17 +61,14 @@ export default function DealsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
-      {/* ── Sticky header ── */}
-      <AppHeader subtitle="Deals" topPadding={topPadding} />
+      <ScreenHeader title="Deals" topPadding={topPadding} />
 
-      {/* ── Sticky category filter bar ── */}
       <CategoryFilter
         categories={CATEGORIES}
         selectedCategory={selectedCategory}
         onSelect={setSelectedCategory}
       />
 
-      {/* ── Scrollable content ── */}
       {isLoading && !deals ? (
         <>
           {ListHeader}

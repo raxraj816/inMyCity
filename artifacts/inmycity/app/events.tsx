@@ -11,7 +11,7 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { EventCard } from "@/components/EventCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
-import { AppHeader } from "@/components/AppHeader";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 
 const CATEGORIES = ["music", "food", "art", "comedy", "film", "wellness", "networking", "sports"];
@@ -41,7 +41,6 @@ export default function EventsScreen() {
   const topPadding = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
-  // Build trending strip — top 8 events regardless of category filter
   const trendingItems: TrendingStripItem[] = (events ?? []).slice(0, 8).map(e => ({
     id:       String(e.id),
     title:    e.name,
@@ -67,17 +66,14 @@ export default function EventsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
-      {/* ── Sticky header ── */}
-      <AppHeader subtitle="Events" topPadding={topPadding} />
+      <ScreenHeader title="Events" topPadding={topPadding} />
 
-      {/* ── Sticky category filter bar ── */}
       <CategoryFilter
         categories={CATEGORIES}
         selectedCategory={selectedCategory}
         onSelect={setSelectedCategory}
       />
 
-      {/* ── Scrollable content ── */}
       {isLoading && !events ? (
         <>
           {ListHeader}

@@ -19,14 +19,14 @@ const CATEGORIES: Category[] = [
   // Row 1 — Discovery (What's on today?)
   { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#f97316", active: true, route: "/dining"                  },
   { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#ef4444", active: true, route: "/activities"               },
-  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true, route: "/(tabs)/events"            },
+  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true, route: "/events"                   },
   // Row 2 — Lifestyle (How I spend my week)
   { id: "shops",      label: "Shops",      icon: "shopping-outline",      color: "#f97316", active: true, route: "/shops"                    },
   { id: "sports",     label: "Sports &\nFitness", icon: "dumbbell",      color: "#22c55e", active: true, route: "/sports"                   },
   { id: "hotels",     label: "Hotels",     icon: "hanger",                color: "#f59e0b", active: true, route: "/hotels"                   },
   // Row 3 — Practical (Utility + entertainment)
   { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true, route: "/transit"                  },
-  { id: "deals",      label: "Deals",      icon: "percent",               color: "#10b981", active: true, route: "/(tabs)/deals"             },
+  { id: "deals",      label: "Deals",      icon: "percent",               color: "#10b981", active: true, route: "/deals"                    },
   { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#8b5cf6", active: true, route: "/movies"                   },
 ];
 

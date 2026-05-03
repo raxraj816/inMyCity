@@ -45,34 +45,32 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
         </Text>
       </View>
 
-      {/* Right slot: optional override, or city pill + profile */}
+      {/* Right slot: optional extra element + always-visible city pill + profile */}
       <View style={styles.rightSlot}>
-        {rightElement ?? (
-          <>
-            <TouchableOpacity
-              style={[styles.cityPill, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={showPicker}
-              activeOpacity={0.75}
-            >
-              <Feather name="map-pin" size={11} color={colors.amber} />
-              <Text
-                style={[styles.cityPillText, { color: colors.foreground }]}
-                numberOfLines={1}
-              >
-                {selectedCity?.name ?? "City"}
-              </Text>
-              <Feather name="chevron-down" size={11} color={colors.mutedForeground} />
-            </TouchableOpacity>
+        {rightElement}
 
-            <TouchableOpacity
-              onPress={() => router.push("/profile")}
-              activeOpacity={0.75}
-              style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <Feather name="user" size={17} color={colors.foreground} />
-            </TouchableOpacity>
-          </>
-        )}
+        <TouchableOpacity
+          style={[styles.cityPill, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={showPicker}
+          activeOpacity={0.75}
+        >
+          <Feather name="map-pin" size={11} color={colors.amber} />
+          <Text
+            style={[styles.cityPillText, { color: colors.foreground }]}
+            numberOfLines={1}
+          >
+            {selectedCity?.name ?? "City"}
+          </Text>
+          <Feather name="chevron-down" size={11} color={colors.mutedForeground} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push("/profile")}
+          activeOpacity={0.75}
+          style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <Feather name="user" size={17} color={colors.foreground} />
+        </TouchableOpacity>
       </View>
     </View>
   );

@@ -542,7 +542,7 @@ export default function FeedsScreen() {
   );
 
   const renderNewsTab = () => {
-    const orderedNews = [...filteredNews].sort((a, b) => a.minutesAgo - b.minutesAgo);
+    const orderedNews = [...news].sort((a, b) => a.minutesAgo - b.minutesAgo);
     const topStory = orderedNews[0];
     const rest = orderedNews.slice(1);
 
@@ -570,7 +570,7 @@ export default function FeedsScreen() {
         )}
 
         <View style={styles.newsList}>
-          {news.map((item, index) => {
+          {rest.map((item) => {
             const meta = NEWS_CATEGORY_META[item.category];
             return (
               <TouchableOpacity key={item.id} activeOpacity={0.86} style={[styles.newsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>

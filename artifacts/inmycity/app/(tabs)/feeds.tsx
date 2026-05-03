@@ -21,22 +21,24 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 
 // ─── Types ────────────────────────────────────────────────────
 
-type MainTab = "all" | "news" | "community" | "qa";
+type MainTab = "pulse" | "all" | "news" | "community" | "qa";
 
-type FeedPosterType = "brand" | "guide" | "local" | "creator";
-type FeedMediaType = "image" | "video";
+type PosterTier = "official" | "local_expert" | "creator" | "business";
 
 interface PulsePost {
   id: number;
-  posterType: FeedPosterType;
+  tier: PosterTier;
   author: string;
-  role: string;
-  city?: string;
+  handle: string;
+  location: string;
   title: string;
   caption: string;
-  mediaType: FeedMediaType;
+  mediaType: "image" | "video";
   mediaUrl: string;
-  timeAgo: number;
+  videoDuration?: string;
+  neighborhood?: string;
+  tags: string[];
+  minutesAgo: number;
   likes: number;
   comments: number;
   saves: number;
@@ -73,7 +75,147 @@ interface QAItem {
   minutesAgo: number;
 }
 
-const ALLOWED_POSTER_TYPES: FeedPosterType[] = ["brand", "guide", "local", "creator"];
+// ─── Poster Tier Config ───────────────────────────────────────
+
+const TIER_CONFIG: Record<PosterTier, { label: string; color: string; bg: string; icon: string; description: string }> = {
+  official:     { label: "Official",     color: "#f59e0b", bg: "#fef3c7", icon: "shield",     description: "inMyCity editorial, city tourism boards & verified government accounts" },
+  local_expert: { label: "Local Expert", color: "#3b82f6", bg: "#eff6ff", icon: "award",      description: "Verified residents approved after 6+ months in the city & community track record" },
+  creator:      { label: "Creator",      color: "#8b5cf6", bg: "#f5f3ff", icon: "video",      description: "City content creators with verified following in the Creator Program" },
+  business:     { label: "Business",     color: "#10b981", bg: "#f0fdf4", icon: "briefcase",  description: "Verified local businesses (max 2 posts/week to keep it relevant, not spammy)" },
+};
+
+// ─── Pulse content data ───────────────────────────────────────
+
+const PULSE_POSTS: Record<string, PulsePost[]> = {
+  Mumbai: [
+    {
+      id: 1, tier: "official", author: "inMyCity Mumbai", handle: "@inmycity.mumbai",
+      location: "Mumbai", title: "Street food map updated for 2025",
+      caption: "We've verified 40+ new stalls around Mohammad Ali Road, Juhu Beach, and Dharavi. Tap to explore the full interactive map.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "City-wide", tags: ["Street Food", "Map Update", "Verified"],
+      minutesAgo: 15, likes: 3102, comments: 88, saves: 412, isSponsored: false,
+    },
+    {
+      id: 2, tier: "creator", author: "Riya Desai", handle: "@riyaexplores",
+      location: "Bandra, Mumbai", title: "Golden hour at Bandstand is unmatched",
+      caption: "Spent 4 evenings testing different spots along Bandstand Promenade. Here's the exact bench with the best view — and which chai stall to pair it with.",
+      mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?auto=format&fit=crop&w=1200&q=80",
+      videoDuration: "0:47", neighborhood: "Bandra", tags: ["Sunset", "Bandra", "Chai"],
+      minutesAgo: 38, likes: 1840, comments: 54, saves: 233,
+    },
+    {
+      id: 3, tier: "local_expert", author: "Aarav Mehta", handle: "@aarav.trains",
+      location: "Western Line, Mumbai", title: "Beat the morning rush — my 2-year playbook",
+      caption: "Board at Borivali before 7:55am or after 9:20am. Avoid the third carriage from the engine. Ladies compartment hack at Kandivali saves 8 minutes.",
+      mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1514578915946-8b0a7c3f1f60?auto=format&fit=crop&w=1200&q=80",
+      videoDuration: "1:02", neighborhood: "Western Line", tags: ["Transit", "Local Train", "Tips"],
+      minutesAgo: 72, likes: 2211, comments: 97, saves: 388,
+    },
+    {
+      id: 4, tier: "business", author: "Bohri Kitchen", handle: "@bohrikitchen",
+      location: "Colaba, Mumbai", title: "Sunday lunch is back — limited seats",
+      caption: "Our pop-up home dining experience returns this Sunday. Bohri thaal for 8 pax. DM to reserve. ₹1,200 per head, all inclusive.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "Colaba", tags: ["Dining", "Pop-up", "Bohri Food"],
+      minutesAgo: 120, likes: 740, comments: 41, saves: 95, isSponsored: true,
+    },
+    {
+      id: 5, tier: "creator", author: "Mumbai Lens", handle: "@mumbailens",
+      location: "Dharavi, Mumbai", title: "Dharavi through a different lens",
+      caption: "What outsiders call a slum, insiders call a city within a city. 14 workshops, 3 schools, 1 cricket ground. Shot over 6 visits.",
+      mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80",
+      videoDuration: "0:58", neighborhood: "Dharavi", tags: ["Documentary", "Culture", "Photography"],
+      minutesAgo: 190, likes: 4120, comments: 203, saves: 688,
+    },
+  ],
+  Bangalore: [
+    {
+      id: 1, tier: "official", author: "inMyCity Bangalore", handle: "@inmycity.blr",
+      location: "Bangalore", title: "Namma Metro Phase 2 — what opens next month",
+      caption: "12 new stations, Whitefield to MG Road in 35 minutes. We mapped every interchange and exit so you don't have to.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "City-wide", tags: ["Metro", "Transit", "Guide"],
+      minutesAgo: 22, likes: 2840, comments: 112, saves: 540,
+    },
+    {
+      id: 2, tier: "creator", author: "Sneha Vishwanath", handle: "@snehavblr",
+      location: "Indiranagar, Bangalore", title: "The Indiranagar coffee crawl — 4 stops in 2 hours",
+      caption: "Starting at Matteo, ending at Third Wave roastery. Full walk with timings, prices, and which seat to grab at each spot.",
+      mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
+      videoDuration: "0:53", neighborhood: "Indiranagar", tags: ["Coffee", "Cafes", "Crawl"],
+      minutesAgo: 55, likes: 1320, comments: 48, saves: 177,
+    },
+    {
+      id: 3, tier: "local_expert", author: "Karthik Rajan", handle: "@kartik.blr",
+      location: "HSR Layout, Bangalore", title: "BBMP pothole map — HSR & Koramangala",
+      caption: "I've been tracking 22 stretch points since October. Here's which roads to avoid and which alternate routes hold up in rain.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "HSR Layout", tags: ["Civic", "Roads", "BBMP"],
+      minutesAgo: 130, likes: 980, comments: 67, saves: 144,
+    },
+  ],
+  "New York City": [
+    {
+      id: 1, tier: "official", author: "inMyCity NYC", handle: "@inmycity.nyc",
+      location: "New York City", title: "NYC Weekend subway changes — your cheat sheet",
+      caption: "A, C, E line changes this weekend. We mapped every shuttle bus and walking alternative so you can plan ahead.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "City-wide", tags: ["MTA", "Subway", "Weekend"],
+      minutesAgo: 10, likes: 2430, comments: 76, saves: 304,
+    },
+    {
+      id: 2, tier: "creator", author: "Maya Romano", handle: "@mayaroamanyc",
+      location: "Brooklyn, NYC", title: "Brooklyn Bridge sunset walk — the right way",
+      caption: "Start at DUMBO side at 6:30pm. Walk to Manhattan, grab a slice at Prince St Pizza, walk back. 90 minutes, zero tourist traps.",
+      mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1499092346302-fde68f2ccc83?auto=format&fit=crop&w=1200&q=80",
+      videoDuration: "0:44", neighborhood: "Brooklyn", tags: ["Walking", "Sunset", "DUMBO"],
+      minutesAgo: 28, likes: 3120, comments: 89, saves: 511,
+    },
+    {
+      id: 3, tier: "local_expert", author: "Jake Sullivan", handle: "@jakenyc.local",
+      location: "Queens, NYC", title: "Best bagels in NYC — a 3-month taste test",
+      caption: "I ate bagels from 31 spots across all 5 boroughs. Ranked by crust, chew, cream cheese ratio, and the walk-in wait. Results will surprise you.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "Multi-borough", tags: ["Food", "Bagels", "Guide"],
+      minutesAgo: 95, likes: 4880, comments: 234, saves: 722,
+    },
+    {
+      id: 4, tier: "business", author: "Levain Bakery", handle: "@levainbakery",
+      location: "Upper West Side, NYC", title: "New walnut chocolate chip — available this week",
+      caption: "Our newest cookie launched yesterday. All 5 locations have it. We've been testing this recipe for 8 months. Worth the wait.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "Upper West Side", tags: ["Bakery", "Cookies", "New Item"],
+      minutesAgo: 160, likes: 2150, comments: 88, saves: 340, isSponsored: true,
+    },
+  ],
+  "San Francisco": [
+    {
+      id: 1, tier: "official", author: "inMyCity SF", handle: "@inmycity.sf",
+      location: "San Francisco", title: "Golden Gate fog guide — when to go and when to skip",
+      caption: "We tracked fog patterns for 3 months. The bridge is clear 73% of mornings before 9am in September. Here's the full breakdown by month.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "Presidio", tags: ["Golden Gate", "Fog", "Timing"],
+      minutesAgo: 20, likes: 1890, comments: 63, saves: 287,
+    },
+    {
+      id: 2, tier: "creator", author: "Sofia Lin", handle: "@sofiasf.creates",
+      location: "Mission District, SF", title: "Mission murals — the ones nobody photographs",
+      caption: "47 blocks of art. I spent 6 Saturdays finding the murals that don't make it onto tourist lists. These are the 12 that floored me.",
+      mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80",
+      videoDuration: "0:56", neighborhood: "Mission", tags: ["Art", "Murals", "Culture"],
+      minutesAgo: 75, likes: 2340, comments: 102, saves: 418,
+    },
+    {
+      id: 3, tier: "local_expert", author: "Tom Hargreaves", handle: "@tomharg.sf",
+      location: "BART, San Francisco", title: "BART at night — what's actually safe and what isn't",
+      caption: "2 years of late-night BART rides. An honest breakdown by line, station, and time. Which exits to use and which cars to board.",
+      mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+      neighborhood: "City-wide", tags: ["BART", "Safety", "Transit"],
+      minutesAgo: 145, likes: 3210, comments: 178, saves: 566,
+    },
+  ],
+};
 
 // ─── Static city data ─────────────────────────────────────────
 
@@ -84,7 +226,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
     { id: 3, type: "weather",  headline: "Orange alert issued for Mumbai: heavy rain for 48 hrs", summary: "IMD warns of flooding in low-lying areas. Avoid coastal roads.", source: "IMD Mumbai", minutesAgo: 90 },
     { id: 4, type: "transit",  headline: "Central line disruption between Kurla and Thane", summary: "Services delayed by 15 min due to track maintenance at Vikhroli.", source: "CR Rail", minutesAgo: 130 },
     { id: 5, type: "breaking", headline: "Dharavi redevelopment project breaks ground officially", summary: "Maharashtra CM inaugurates the ₹20,000 Cr project with 350 acres to be redeveloped.", source: "Hindustan Times", minutesAgo: 200 },
-    { id: 6, type: "sports",   headline: "Mumbai Indians sell out Wankhede for IPL clash vs RCB", summary: "All 33,000 tickets sold within 90 minutes. MI vs RCB is the most anticipated home game of the season.", source: "Times of India Sport", minutesAgo: 65 },
+    { id: 6, type: "sports",   headline: "Mumbai Indians sell out Wankhede for IPL clash vs RCB", summary: "All 33,000 tickets sold within 90 minutes. MI vs RCB is the most anticipated home game.", source: "Times of India Sport", minutesAgo: 65 },
   ],
   Bangalore: [
     { id: 1, type: "civic",    headline: "Namma Metro Phase 2 Whitefield extension opens next month", summary: "The 13.71 km stretch will add 12 new stations, cutting Whitefield–MG Road to 35 min.", source: "BMRCL", minutesAgo: 20 },
@@ -92,7 +234,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
     { id: 3, type: "weather",  headline: "Bengaluru receives unseasonal heavy showers", summary: "Outer Ring Road and Sarjapur Road report waterlogging. Drive carefully.", source: "IMD Bengaluru", minutesAgo: 100 },
     { id: 4, type: "transit",  headline: "BMTC introduces 10 new AC bus routes in North Bangalore", summary: "Routes connect Hebbal, Yelahanka, and Kempegowda International Airport.", source: "BMTC", minutesAgo: 180 },
     { id: 5, type: "breaking", headline: "BBMP pothole repair drive begins in HSR Layout, Koramangala", summary: "Ward-level teams deployed with target to fix 2,000 potholes in 2 weeks.", source: "Deccan Herald", minutesAgo: 240 },
-    { id: 6, type: "sports",   headline: "Bengaluru FC qualifies for ISL semi-finals with comeback win", summary: "Sunil Chhetri's late goal seals a 2-1 victory over ATK Mohun Bagan at Kanteerava Stadium.", source: "Deccan Herald Sport", minutesAgo: 40 },
+    { id: 6, type: "sports",   headline: "Bengaluru FC qualifies for ISL semi-finals with comeback win", summary: "Sunil Chhetri's late goal seals a 2-1 victory over ATK Mohun Bagan.", source: "Deccan Herald Sport", minutesAgo: 40 },
   ],
   "New York City": [
     { id: 1, type: "transit",  headline: "MTA: Weekend subway service changes on A, C, E lines", summary: "No A train service between Howard Beach and Far Rockaway Sat–Sun.", source: "MTA", minutesAgo: 8 },
@@ -100,7 +242,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
     { id: 3, type: "civic",    headline: "Times Square pedestrian safety redesign unveiled", summary: "New protected lanes and wider sidewalks approved by City Council.", source: "NYC DOT", minutesAgo: 120 },
     { id: 4, type: "traffic",  headline: "BQE lane closures: expect delays toward Brooklyn Bridge", summary: "Two lanes closed for emergency deck repair. Use alternate bridge crossings.", source: "NYSDOT", minutesAgo: 160 },
     { id: 5, type: "breaking", headline: "NYC Marathon route closures announced for Sunday", summary: "Over 60 streets close from Staten Island Ferry terminal through Central Park.", source: "NYRR", minutesAgo: 210 },
-    { id: 6, type: "sports",   headline: "Knicks defeat Celtics in overtime thriller at MSG", summary: "Jalen Brunson drops 42 points in a historic comeback from 18 points down. The Garden goes electric.", source: "NY Post Sports", minutesAgo: 95 },
+    { id: 6, type: "sports",   headline: "Knicks defeat Celtics in overtime thriller at MSG", summary: "Jalen Brunson drops 42 points in a historic comeback from 18 points down.", source: "NY Post Sports", minutesAgo: 95 },
   ],
   "San Francisco": [
     { id: 1, type: "transit",  headline: "BART strike averted — service continues as normal", summary: "Union and BART management reach tentative agreement. All lines running.", source: "BART", minutesAgo: 15 },
@@ -108,7 +250,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
     { id: 3, type: "civic",    headline: "SF expands overnight shelter capacity by 300 beds", summary: "New Navigation Center opens in SOMA district under Mayor's winter plan.", source: "SF Chronicle", minutesAgo: 140 },
     { id: 4, type: "traffic",  headline: "Bay Bridge westbound lane closure: Friday evening", summary: "One lane closed from 8pm–5am for seismic sensor installation.", source: "Bay Bridge", minutesAgo: 190 },
     { id: 5, type: "breaking", headline: "PG&E Public Safety Power Shutoff possible this weekend", summary: "Fire weather watch issued. Up to 12,000 homes in fire risk zones may lose power.", source: "PG&E", minutesAgo: 250 },
-    { id: 6, type: "sports",   headline: "Warriors clinch playoff spot with dominant win over Lakers", summary: "Steph Curry's 38-point performance at Chase Center cements Golden State's top-4 seeding.", source: "SF Chronicle Sport", minutesAgo: 180 },
+    { id: 6, type: "sports",   headline: "Warriors clinch playoff spot with dominant win over Lakers", summary: "Steph Curry's 38-point performance at Chase Center cements Golden State's seeding.", source: "SF Chronicle Sport", minutesAgo: 180 },
   ],
 };
 
@@ -118,28 +260,28 @@ const COMMUNITY_DATA: Record<string, Community[]> = {
     { id: 2, name: "Mumbai Local Train Riders", description: "Tips, route hacks, and daily updates for local train commuters.", icon: "share-2", members: 31500, activity: "88 posts today", tags: ["Transit", "Commute", "Western", "Central"] },
     { id: 3, name: "Bandra Residents", description: "Hyperlocal updates, events, and community issues for Bandra folks.", icon: "home", members: 9200, activity: "24 posts today", tags: ["Bandra", "Local", "Events"] },
     { id: 4, name: "Mumbai Cricket Fans", description: "Live match discussions, Wankhede events, and cricket banter.", icon: "activity", members: 56000, activity: "310 posts today", tags: ["Cricket", "Sports", "IPL"] },
-    { id: 5, name: "Mumbai Runners Club", description: "Weekend running groups along Marine Drive, Bandra Bandstand, and Powai Lake. All paces welcome — 5K to ultra.", icon: "activity", members: 14200, activity: "45 posts today", tags: ["Running", "Fitness", "Marathon"] },
+    { id: 5, name: "Mumbai Runners Club", description: "Weekend running groups along Marine Drive, Bandra Bandstand, and Powai Lake.", icon: "activity", members: 14200, activity: "45 posts today", tags: ["Running", "Fitness", "Marathon"] },
   ],
   Bangalore: [
     { id: 1, name: "Namma Bengaluru Foodies", description: "From MTR to microbreweries — all things food in Bangalore.", icon: "coffee", members: 38200, activity: "95 posts today", tags: ["Food", "Restaurants", "Cafes"] },
     { id: 2, name: "Bangalore Tech Community", description: "Meetups, job postings, and startup news for Bangalore's tech scene.", icon: "code", members: 67400, activity: "210 posts today", tags: ["Tech", "Startups", "Jobs", "Meetups"] },
     { id: 3, name: "Koramangala Connect", description: "Residents and businesses of Koramangala sharing local updates.", icon: "home", members: 12100, activity: "41 posts today", tags: ["Koramangala", "Local", "Housing"] },
     { id: 4, name: "BLR Cyclists", description: "Weekend rides, routes, and cycling advocacy across Bangalore.", icon: "wind", members: 8700, activity: "18 posts today", tags: ["Cycling", "Fitness", "Outdoors"] },
-    { id: 5, name: "Bangalore Fitness Tribe", description: "CrossFit, calisthenics, and gym reviews across Bangalore. Plus marathon training groups and running routes.", icon: "activity", members: 11800, activity: "32 posts today", tags: ["Fitness", "Gym", "CrossFit", "Running"] },
+    { id: 5, name: "Bangalore Fitness Tribe", description: "CrossFit, calisthenics, and gym reviews across Bangalore.", icon: "activity", members: 11800, activity: "32 posts today", tags: ["Fitness", "Gym", "CrossFit", "Running"] },
   ],
   "New York City": [
     { id: 1, name: "NYC Food Scene", description: "Restaurant discoveries, chef news, and the best pizza debates.", icon: "coffee", members: 89600, activity: "450 posts today", tags: ["Food", "Restaurants", "Pizza", "Brunch"] },
     { id: 2, name: "Brooklyn Residents", description: "Community news, events, and neighbourhood updates for Brooklyn.", icon: "home", members: 43000, activity: "130 posts today", tags: ["Brooklyn", "Local", "Events"] },
     { id: 3, name: "NYC Photography Club", description: "Share your city shots, join photo walks, and get feedback.", icon: "aperture", members: 22300, activity: "76 posts today", tags: ["Photography", "Art", "Creative"] },
     { id: 4, name: "Commuter Warriors NYC", description: "Subway hacks, MTA complaints, and commuter solidarity.", icon: "share-2", members: 31800, activity: "195 posts today", tags: ["Transit", "MTA", "Subway", "Commute"] },
-    { id: 5, name: "NYC Runners", description: "Central Park loop runs, marathon training tips, and the city's best running routes. All levels welcome.", icon: "activity", members: 38600, activity: "150 posts today", tags: ["Running", "Marathon", "NYRR", "Central Park"] },
+    { id: 5, name: "NYC Runners", description: "Central Park loop runs, marathon training, and the city's best routes.", icon: "activity", members: 38600, activity: "150 posts today", tags: ["Running", "Marathon", "NYRR", "Central Park"] },
   ],
   "San Francisco": [
     { id: 1, name: "SF Bay Foodies", description: "Farm-to-table finds, Mission burritos, and Michelin guides.", icon: "coffee", members: 34500, activity: "110 posts today", tags: ["Food", "Restaurants", "Mission"] },
     { id: 2, name: "Mission District Community", description: "Hyperlocal issues, murals, events and housing news.", icon: "home", members: 11200, activity: "38 posts today", tags: ["Mission", "Local", "Housing"] },
     { id: 3, name: "SF Tech Founders", description: "Startup stories, investor intros, and SoMa office chatter.", icon: "code", members: 48900, activity: "220 posts today", tags: ["Tech", "Startups", "VC", "Founders"] },
     { id: 4, name: "Golden Gate Cyclists", description: "Bridge crossings, Marin trails, and bike commute tips.", icon: "wind", members: 9600, activity: "29 posts today", tags: ["Cycling", "Outdoors", "GGBP"] },
-    { id: 5, name: "Bay Area Fitness Community", description: "CrossFit, trail running, open water swimming, and Bay Area sports events. Your city's active lifestyle hub.", icon: "activity", members: 16400, activity: "52 posts today", tags: ["Fitness", "Trail Running", "CrossFit", "Swimming"] },
+    { id: 5, name: "Bay Area Fitness Community", description: "CrossFit, trail running, open water swimming, and Bay Area sports events.", icon: "activity", members: 16400, activity: "52 posts today", tags: ["Fitness", "Trail Running", "CrossFit"] },
   ],
 };
 
@@ -170,30 +312,13 @@ const QA_DATA: Record<string, QAItem[]> = {
     { id: 2, question: "Best neighborhoods for young professionals moving to SF?", author: "Ava C.", initials: "AC", tags: ["Housing", "Neighborhoods", "Moving"], upvotes: 198, answers: 43, minutesAgo: 60 },
     { id: 3, question: "How does the SF residential parking permit system work?", author: "Leo B.", initials: "LB", tags: ["Parking", "Permit", "Civic"], upvotes: 67, answers: 12, minutesAgo: 150 },
     { id: 4, question: "What's the deal with the SFMTA Muni app — is it accurate?", author: "Nora F.", initials: "NF", tags: ["Transit", "Muni", "App"], upvotes: 95, answers: 18, minutesAgo: 220 },
-    { id: 5, question: "Are Golden Gate Park tennis courts worth booking in advance vs just showing up?", author: "Chris P.", initials: "CP", tags: ["Tennis", "Golden Gate Park", "Sports"], upvotes: 76, answers: 13, minutesAgo: 85 },
+    { id: 5, question: "Are Golden Gate Park tennis courts worth booking in advance?", author: "Chris P.", initials: "CP", tags: ["Tennis", "Golden Gate Park", "Sports"], upvotes: 76, answers: 13, minutesAgo: 85 },
   ],
 };
 
 const DEFAULT_NEWS: NewsItem[] = [
   { id: 1, type: "civic", headline: "Select a city to see local news and alerts.", summary: "Use the city picker to view news relevant to your area.", source: "inMyCity", minutesAgo: 0 },
 ];
-
-const PULSE_POSTS: Record<string, PulsePost[]> = {
-  Mumbai: [
-    { id: 1, posterType: "guide", author: "inMyCity Guide", role: "City guide", city: "Mumbai", title: "48 hours in Bandra", caption: "Cafe stops, sea-facing walks, and an easy first-night plan.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?auto=format&fit=crop&w=1200&q=80", timeAgo: 18, likes: 1240, comments: 32, saves: 118 },
-    { id: 2, posterType: "local", author: "Aarav M.", role: "Local tipster", city: "Mumbai", title: "Best time for the Western Line", caption: "Leave before 8:10am or after 10:15am if you can.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1514578915946-8b0a7c3f1f60?auto=format&fit=crop&w=1200&q=80", timeAgo: 42, likes: 980, comments: 19, saves: 76 },
-    { id: 3, posterType: "brand", author: "inMyCity", role: "Official", city: "Mumbai", title: "Street food map update", caption: "New verified stalls around Mohammad Ali Road and Juhu.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=1200&q=80", timeAgo: 65, likes: 2104, comments: 58, saves: 244, isSponsored: true },
-  ],
-  Bangalore: [
-    { id: 1, posterType: "guide", author: "inMyCity Guide", role: "City guide", city: "Bangalore", title: "Indiranagar coffee crawl", caption: "Three excellent stops for a slow afternoon.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80", timeAgo: 25, likes: 860, comments: 21, saves: 84 },
-  ],
-  "New York City": [
-    { id: 1, posterType: "creator", author: "Maya R.", role: "Neighborhood creator", city: "NYC", title: "Best sunset walk in Brooklyn", caption: "A calm route with skyline views and a dessert stop.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=1200&q=80", timeAgo: 14, likes: 1540, comments: 44, saves: 162 },
-  ],
-  "San Francisco": [
-    { id: 1, posterType: "local", author: "Sofia L.", role: "Local tipster", city: "SF", title: "Golden Gate fog check", caption: "The bridge looked clear until noon, then fog rolled in fast.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1200&q=80", timeAgo: 31, likes: 740, comments: 18, saves: 63 },
-  ],
-};
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -212,28 +337,41 @@ function timeAgo(min: number) {
   return `${Math.floor(min / 1440)}d ago`;
 }
 
+function formatCount(n: number) {
+  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+  return n.toString();
+}
+
 function formatMembers(n: number) {
   if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
   return n.toString();
 }
 
-// ─── Main Component ───────────────────────────────────────────
+// ─── Tab config ───────────────────────────────────────────────
 
 const TABS: { id: MainTab; label: string; icon: string }[] = [
-  { id: "all",       label: "All",       icon: "grid"     },
-  { id: "news",      label: "News",      icon: "bell"     },
-  { id: "community", label: "Community", icon: "users"    },
+  { id: "pulse",     label: "Pulse",     icon: "zap"            },
+  { id: "all",       label: "Feed",      icon: "grid"           },
+  { id: "news",      label: "News",      icon: "bell"           },
+  { id: "community", label: "Community", icon: "users"          },
   { id: "qa",        label: "Q&A",       icon: "message-circle" },
 ];
+
+// ─── Main Component ───────────────────────────────────────────
 
 export default function FeedsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { selectedCity } = useCity();
-  const [activeTab, setActiveTab] = useState<MainTab>("all");
+  const [activeTab, setActiveTab] = useState<MainTab>("pulse");
   const [joinedCommunities, setJoinedCommunities] = useState<Set<number>>(new Set());
   const [upvotedQA, setUpvotedQA] = useState<Set<number>>(new Set());
   const [upvoteCounts, setUpvoteCounts] = useState<Record<number, number>>({});
+  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
+  const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
+  const [saveCounts, setSaveCounts] = useState<Record<number, number>>({});
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const cityName = selectedCity?.name;
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
@@ -267,7 +405,25 @@ export default function FeedsScreen() {
     });
   };
 
-  const allowedPulsePosts = pulsePosts.filter((post) => ALLOWED_POSTER_TYPES.includes(post.posterType));
+  const toggleLike = (id: number, base: number) => {
+    setLikedPosts((prev) => {
+      const next = new Set(prev);
+      const wasLiked = next.has(id);
+      wasLiked ? next.delete(id) : next.add(id);
+      setLikeCounts((c) => ({ ...c, [id]: wasLiked ? base : base + 1 }));
+      return next;
+    });
+  };
+
+  const toggleSave = (id: number, base: number) => {
+    setSavedPosts((prev) => {
+      const next = new Set(prev);
+      const wasSaved = next.has(id);
+      wasSaved ? next.delete(id) : next.add(id);
+      setSaveCounts((c) => ({ ...c, [id]: wasSaved ? base : base + 1 }));
+      return next;
+    });
+  };
 
   // ── ALL tab feed ──────────────────────────────────────────
   type FeedItem =
@@ -279,13 +435,11 @@ export default function FeedsScreen() {
 
   const allFeed: FeedItem[] = [];
   const maxLen = Math.max(events.length, deals.length);
-  // Inject news/community/qa in rotation after every 2 API-item pairs
   const injectOrder: Array<"news" | "community" | "qa"> = ["news", "community", "qa"];
   let ni = 0, ci = 0, qi = 0, injIdx = 0;
   for (let i = 0; i < maxLen; i++) {
     if (i < events.length) allFeed.push({ kind: "event", data: events[i] });
     if (i < deals.length)  allFeed.push({ kind: "deal", data: deals[i], promoted: i % 4 === 1 });
-    // After every pair of API items, splice in one content card
     if (i % 2 === 1) {
       const type = injectOrder[injIdx % injectOrder.length];
       if      (type === "news"      && ni < news.length)         allFeed.push({ kind: "news",      data: news[ni++] });
@@ -296,13 +450,15 @@ export default function FeedsScreen() {
   }
   const isAllLoading = eventsLoading || dealsLoading;
 
-  // ── Header (fixed) ────────────────────────────────────────
+  // ── Header ────────────────────────────────────────────────
   const header = (
     <View style={[styles.header, { paddingTop: topPadding, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
       <View style={styles.titleRow}>
         <View>
           <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
-          <Text style={[styles.wordmarkSub, { color: colors.mutedForeground }]}>What's Happening</Text>
+          <Text style={[styles.wordmarkSub, { color: colors.mutedForeground }]}>
+            {cityName ? `${cityName} · Pulse` : "What's Happening"}
+          </Text>
         </View>
         <View style={[styles.liveChip, { backgroundColor: "#ef444420" }]}>
           <View style={styles.liveDot} />
@@ -310,8 +466,7 @@ export default function FeedsScreen() {
         </View>
       </View>
 
-      {/* Tab bar */}
-      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBarScroll}>
         {TABS.map((tab) => {
           const active = activeTab === tab.id;
           return (
@@ -322,7 +477,7 @@ export default function FeedsScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.tabInner}>
-                <Feather name={tab.icon as any} size={14} color={active ? colors.amber : colors.mutedForeground} />
+                <Feather name={tab.icon as any} size={13} color={active ? colors.amber : colors.mutedForeground} />
                 <Text style={[styles.tabLabel, { color: active ? colors.amber : colors.mutedForeground }]}>
                   {tab.label}
                 </Text>
@@ -331,71 +486,220 @@ export default function FeedsScreen() {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
     </View>
   );
 
+  // ── PULSE tab ─────────────────────────────────────────────
   const renderPulseTab = () => (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingTop: 12, paddingBottom: bottomPadding, gap: 12 }}
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
     >
-      <View style={[styles.pulseComposer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.pulseComposerTop}>
-          <View style={[styles.pulseComposerAvatar, { backgroundColor: colors.amber + "20" }]}>
-            <Feather name="edit-3" size={16} color={colors.amber} />
+      {/* Posting policy banner */}
+      <TouchableOpacity
+        activeOpacity={0.88}
+        onPress={() => setPolicyOpen(!policyOpen)}
+        style={[styles.policyBanner, { backgroundColor: colors.navy }]}
+      >
+        <View style={styles.policyBannerTop}>
+          <View style={styles.policyBannerLeft}>
+            <View style={[styles.policyIcon, { backgroundColor: "rgba(255,255,255,0.12)" }]}>
+              <Feather name="shield" size={16} color={colors.amber} />
+            </View>
+            <View>
+              <Text style={styles.policyBannerTitle}>Trusted publisher feed</Text>
+              <Text style={styles.policyBannerSub}>Only verified accounts can post here</Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pulseComposerTitle, { color: colors.foreground }]}>Share a city pulse</Text>
-            <Text style={[styles.pulseComposerSub, { color: colors.mutedForeground }]}>
-              Brand, guide, local, and creator posts only
-            </Text>
-          </View>
-          <View style={[styles.pulseComposerBadge, { backgroundColor: colors.amber }]}>
-            <Text style={styles.pulseComposerBadgeText}>Video first</Text>
-          </View>
+          <Feather name={policyOpen ? "chevron-up" : "chevron-down"} size={16} color="rgba(255,255,255,0.5)" />
         </View>
-      </View>
 
-      {allowedPulsePosts.map((post) => (
-        <View key={post.id} style={[styles.pulseCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.pulseCardTop}>
-            <View style={[styles.pulseAvatar, { backgroundColor: colors.accent }]}>
-              <Text style={[styles.pulseAvatarText, { color: colors.amber }]}>{post.author.slice(0, 1)}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.pulseAuthor, { color: colors.foreground }]}>{post.author}</Text>
-              <Text style={[styles.pulseMeta, { color: colors.mutedForeground }]}>
-                {post.role}{post.city ? ` · ${post.city}` : ""} · {timeAgo(post.timeAgo)}
-              </Text>
-            </View>
-            {post.isSponsored && (
-              <View style={[styles.pulseSponsor, { backgroundColor: colors.accent }]}>
-                <Text style={[styles.pulseSponsorText, { color: colors.amber }]}>Sponsored</Text>
+        {policyOpen && (
+          <View style={styles.policyTiersWrap}>
+            {(Object.entries(TIER_CONFIG) as [PosterTier, typeof TIER_CONFIG[PosterTier]][]).map(([tier, cfg]) => (
+              <View key={tier} style={[styles.policyTierRow, { borderTopColor: "rgba(255,255,255,0.08)" }]}>
+                <View style={[styles.policyTierBadge, { backgroundColor: cfg.color }]}>
+                  <Feather name={cfg.icon as any} size={11} color="#fff" />
+                  <Text style={styles.policyTierBadgeText}>{cfg.label}</Text>
+                </View>
+                <Text style={styles.policyTierDesc} numberOfLines={2}>{cfg.description}</Text>
               </View>
-            )}
-          </View>
-
-          <Text style={[styles.pulseTitle, { color: colors.foreground }]}>{post.title}</Text>
-          <Text style={[styles.pulseCaption, { color: colors.mutedForeground }]}>{post.caption}</Text>
-
-          <View style={styles.pulseMediaWrap}>
-            <Image source={{ uri: post.mediaUrl }} style={styles.pulseMedia} />
-            <View style={[styles.pulseMediaBadge, { backgroundColor: colors.background }]}>
-              <Feather name={post.mediaType === "video" ? "play-circle" : "image"} size={12} color={colors.foreground} />
-              <Text style={[styles.pulseMediaBadgeText, { color: colors.foreground }]}>
-                {post.mediaType === "video" ? "Video" : "Photo"}
+            ))}
+            <View style={[styles.policyUserNote, { borderTopColor: "rgba(255,255,255,0.08)" }]}>
+              <Feather name="info" size={12} color="rgba(255,255,255,0.4)" />
+              <Text style={styles.policyUserNoteText}>
+                Regular users can like, save, share and comment — but can post directly in Q&A and Community.
               </Text>
             </View>
+            <TouchableOpacity style={[styles.policyApplyBtn, { backgroundColor: colors.amber }]}>
+              <Text style={styles.policyApplyText}>Apply to become a Creator</Text>
+              <Feather name="arrow-right" size={13} color="#fff" />
+            </TouchableOpacity>
           </View>
+        )}
+      </TouchableOpacity>
 
-          <View style={[styles.pulseActions, { borderTopColor: colors.border }]}>
-            <Text style={[styles.pulseActionText, { color: colors.mutedForeground }]}>♥ {post.likes}</Text>
-            <Text style={[styles.pulseActionText, { color: colors.mutedForeground }]}>💬 {post.comments}</Text>
-            <Text style={[styles.pulseActionText, { color: colors.mutedForeground }]}>⌁ {post.saves}</Text>
+      {/* Video rules chip row */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rulesChipScroll}>
+        {[
+          { icon: "video", label: "Videos ≤ 60 sec" },
+          { icon: "map-pin", label: "City-tagged only" },
+          { icon: "film", label: "Original content" },
+          { icon: "volume-x", label: "Auto-muted" },
+          { icon: "check-circle", label: "Verified only" },
+        ].map((rule) => (
+          <View key={rule.label} style={[styles.ruleChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name={rule.icon as any} size={11} color={colors.amber} />
+            <Text style={[styles.ruleChipText, { color: colors.mutedForeground }]}>{rule.label}</Text>
           </View>
+        ))}
+      </ScrollView>
+
+      {/* Pulse posts */}
+      {pulsePosts.length === 0 ? (
+        <EmptyState icon="zap" message={`No Pulse posts for ${cityName ?? "this city"} yet. Select a city above.`} colors={colors} />
+      ) : (
+        <View style={styles.pulseList}>
+          {pulsePosts.map((post) => {
+            const cfg = TIER_CONFIG[post.tier];
+            const isLiked = likedPosts.has(post.id);
+            const isSaved = savedPosts.has(post.id);
+            const likeCount = likeCounts[post.id] ?? post.likes;
+            const saveCount = saveCounts[post.id] ?? post.saves;
+
+            return (
+              <View key={post.id} style={[styles.pulseCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {/* Sponsored label */}
+                {post.isSponsored && (
+                  <View style={[styles.sponsoredBanner, { backgroundColor: colors.accent }]}>
+                    <Feather name="star" size={10} color={colors.amber} />
+                    <Text style={[styles.sponsoredText, { color: colors.amber }]}>Sponsored</Text>
+                  </View>
+                )}
+
+                {/* Author row */}
+                <View style={styles.pulseCardTop}>
+                  <View style={[styles.pulseAvatar, { backgroundColor: cfg.color + "22" }]}>
+                    <Text style={[styles.pulseAvatarText, { color: cfg.color }]}>
+                      {post.author.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.pulseAuthorInfo}>
+                    <View style={styles.pulseAuthorRow}>
+                      <Text style={[styles.pulseAuthorName, { color: colors.foreground }]}>{post.author}</Text>
+                      <Feather name="check-circle" size={13} color={cfg.color} />
+                    </View>
+                    <View style={styles.pulseMetaRow}>
+                      <View style={[styles.pulseTierBadge, { backgroundColor: cfg.bg }]}>
+                        <Feather name={cfg.icon as any} size={9} color={cfg.color} />
+                        <Text style={[styles.pulseTierText, { color: cfg.color }]}>{cfg.label}</Text>
+                      </View>
+                      <Text style={[styles.pulseHandle, { color: colors.mutedForeground }]}>
+                        {post.handle}
+                      </Text>
+                      <Text style={[styles.pulseDot, { color: colors.mutedForeground }]}>·</Text>
+                      <Text style={[styles.pulseTime, { color: colors.mutedForeground }]}>{timeAgo(post.minutesAgo)}</Text>
+                    </View>
+                  </View>
+                  <Feather name="more-horizontal" size={18} color={colors.mutedForeground} />
+                </View>
+
+                {/* Title + caption */}
+                <Text style={[styles.pulseTitle, { color: colors.foreground }]}>{post.title}</Text>
+                <Text style={[styles.pulseCaption, { color: colors.mutedForeground }]}>{post.caption}</Text>
+
+                {/* Tags */}
+                <View style={styles.pulseTags}>
+                  {post.neighborhood && (
+                    <View style={[styles.pulseNeighborhoodTag, { backgroundColor: colors.navy + "18" }]}>
+                      <Feather name="map-pin" size={10} color={colors.navy} />
+                      <Text style={[styles.pulseNeighborhoodText, { color: colors.navy }]}>{post.neighborhood}</Text>
+                    </View>
+                  )}
+                  {post.tags.slice(0, 2).map((tag) => (
+                    <View key={tag} style={[styles.pulseTag, { backgroundColor: colors.muted }]}>
+                      <Text style={[styles.pulseTagText, { color: colors.mutedForeground }]}>#{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Media */}
+                <View style={styles.pulseMediaWrap}>
+                  <Image source={{ uri: post.mediaUrl }} style={styles.pulseMedia} resizeMode="cover" />
+
+                  {/* Video overlay */}
+                  {post.mediaType === "video" && (
+                    <View style={styles.videoOverlay}>
+                      <View style={styles.videoPlayBtn}>
+                        <Feather name="play" size={20} color="#fff" />
+                      </View>
+                      {post.videoDuration && (
+                        <View style={styles.videoDurationBadge}>
+                          <Feather name="video" size={10} color="#fff" />
+                          <Text style={styles.videoDurationText}>{post.videoDuration}</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Photo badge */}
+                  {post.mediaType === "image" && (
+                    <View style={styles.photoBadge}>
+                      <Feather name="image" size={10} color="#fff" />
+                      <Text style={styles.photoBadgeText}>Photo</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Actions */}
+                <View style={[styles.pulseActions, { borderTopColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.pulseAction}
+                    onPress={() => toggleLike(post.id, post.likes)}
+                    activeOpacity={0.7}
+                  >
+                    <Feather
+                      name={isLiked ? "heart" : "heart"}
+                      size={18}
+                      color={isLiked ? "#ef4444" : colors.mutedForeground}
+                    />
+                    <Text style={[styles.pulseActionCount, { color: isLiked ? "#ef4444" : colors.mutedForeground }]}>
+                      {formatCount(likeCount)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.pulseAction} activeOpacity={0.7}>
+                    <Feather name="message-circle" size={18} color={colors.mutedForeground} />
+                    <Text style={[styles.pulseActionCount, { color: colors.mutedForeground }]}>
+                      {formatCount(post.comments)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.pulseAction}
+                    onPress={() => toggleSave(post.id, post.saves)}
+                    activeOpacity={0.7}
+                  >
+                    <Feather
+                      name="bookmark"
+                      size={18}
+                      color={isSaved ? colors.amber : colors.mutedForeground}
+                    />
+                    <Text style={[styles.pulseActionCount, { color: isSaved ? colors.amber : colors.mutedForeground }]}>
+                      {formatCount(saveCount)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.pulseAction} activeOpacity={0.7}>
+                    <Feather name="share-2" size={18} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
         </View>
-      ))}
+      )}
     </ScrollView>
   );
 
@@ -535,9 +839,7 @@ export default function FeedsScreen() {
                 <Feather name={meta.icon as any} size={11} color={meta.fg} />
                 <Text style={[styles.newsBadgeText, { color: meta.fg }]}>{meta.label}</Text>
               </View>
-              <Text style={[styles.newsTime, { color: colors.mutedForeground }]}>
-                {timeAgo(item.minutesAgo)}
-              </Text>
+              <Text style={[styles.newsTime, { color: colors.mutedForeground }]}>{timeAgo(item.minutesAgo)}</Text>
             </View>
             <Text style={[styles.newsHeadline, { color: colors.foreground }]}>{item.headline}</Text>
             <Text style={[styles.newsSummary, { color: colors.mutedForeground }]}>{item.summary}</Text>
@@ -580,10 +882,7 @@ export default function FeedsScreen() {
                   </View>
                 </View>
                 <TouchableOpacity
-                  style={[
-                    styles.joinBtn,
-                    { backgroundColor: joined ? colors.muted : colors.amber, borderColor: joined ? colors.border : colors.amber },
-                  ]}
+                  style={[styles.joinBtn, { backgroundColor: joined ? colors.muted : colors.amber, borderColor: joined ? colors.border : colors.amber }]}
                   onPress={() => toggleJoin(c.id)}
                   activeOpacity={0.8}
                 >
@@ -616,7 +915,6 @@ export default function FeedsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: 12, paddingBottom: bottomPadding, paddingHorizontal: 16, gap: 12 }}
       >
-        {/* Ask CTA */}
         <TouchableOpacity style={[styles.askCta, { backgroundColor: colors.accent, borderColor: colors.border }]} activeOpacity={0.8}>
           <View style={[styles.askCtaAvatar, { backgroundColor: colors.muted }]}>
             <Feather name="user" size={16} color={colors.mutedForeground} />
@@ -657,21 +955,13 @@ export default function FeedsScreen() {
               </View>
 
               <View style={[styles.qaFooter, { borderTopColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.qaUpvote}
-                  onPress={() => toggleUpvote(item.id, item.upvotes)}
-                  activeOpacity={0.7}
-                >
+                <TouchableOpacity style={styles.qaUpvote} onPress={() => toggleUpvote(item.id, item.upvotes)} activeOpacity={0.7}>
                   <Feather name="arrow-up" size={14} color={isUpvoted ? colors.amber : colors.mutedForeground} />
-                  <Text style={[styles.qaUpvoteText, { color: isUpvoted ? colors.amber : colors.mutedForeground }]}>
-                    {count}
-                  </Text>
+                  <Text style={[styles.qaUpvoteText, { color: isUpvoted ? colors.amber : colors.mutedForeground }]}>{count}</Text>
                 </TouchableOpacity>
                 <View style={styles.qaAnswerCount}>
                   <Feather name="message-square" size={14} color={colors.mutedForeground} />
-                  <Text style={[styles.qaAnswerText, { color: colors.mutedForeground }]}>
-                    {item.answers} {item.answers === 1 ? "answer" : "answers"}
-                  </Text>
+                  <Text style={[styles.qaAnswerText, { color: colors.mutedForeground }]}>{item.answers} {item.answers === 1 ? "answer" : "answers"}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -684,6 +974,7 @@ export default function FeedsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {header}
+      {activeTab === "pulse"     && renderPulseTab()}
       {activeTab === "all"       && renderAllTab()}
       {activeTab === "news"      && renderNewsTab()}
       {activeTab === "community" && renderCommunityTab()}
@@ -692,7 +983,7 @@ export default function FeedsScreen() {
   );
 }
 
-// ─── Shared sub-component ────────────────────────────────────
+// ─── Shared sub-components ────────────────────────────────────
 
 function EmptyState({
   icon, message, colors,
@@ -723,6 +1014,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   skeleton: { marginHorizontal: 16, marginBottom: 12 },
 
+  // Header
   header: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 20,
@@ -732,9 +1024,6 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between",
     paddingBottom: 10,
   },
-  screenTitle: { fontFamily: "Inter_700Bold", fontSize: 26, letterSpacing: -0.3 },
-  cityRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  cityName: { fontFamily: "Inter_500Medium", fontSize: 12 },
   wordmark: { fontFamily: "Inter_700Bold", fontSize: 24, letterSpacing: -0.5 },
   wordmarkSub: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 1 },
   liveChip: {
@@ -744,13 +1033,9 @@ const styles = StyleSheet.create({
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#ef4444" },
   liveText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
 
-  tabBar: {
-    flexDirection: "row",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  tabItem: {
-    flex: 1, alignItems: "center",
-  },
+  // Tab bar — now scrollable
+  tabBarScroll: { gap: 4, paddingBottom: 0 },
+  tabItem: { alignItems: "center", paddingHorizontal: 6 },
   tabInner: {
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingVertical: 10,
@@ -760,6 +1045,127 @@ const styles = StyleSheet.create({
     height: 2, width: "100%", borderTopLeftRadius: 2, borderTopRightRadius: 2,
   },
 
+  // ── Pulse tab
+  policyBanner: {
+    marginHorizontal: 16, marginTop: 14, marginBottom: 4,
+    borderRadius: 18, padding: 14, overflow: "hidden",
+  },
+  policyBannerTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  policyBannerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  policyIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  policyBannerTitle: { fontFamily: "Inter_700Bold", fontSize: 14, color: "#fff" },
+  policyBannerSub: { fontFamily: "Inter_400Regular", fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 },
+  policyTiersWrap: { marginTop: 14, gap: 0 },
+  policyTierRow: {
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    paddingVertical: 11, borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  policyTierBadge: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+    flexShrink: 0,
+  },
+  policyTierBadgeText: { fontFamily: "Inter_700Bold", fontSize: 10, color: "#fff" },
+  policyTierDesc: { fontFamily: "Inter_400Regular", fontSize: 11, color: "rgba(255,255,255,0.65)", flex: 1, lineHeight: 16 },
+  policyUserNote: {
+    flexDirection: "row", alignItems: "flex-start", gap: 8,
+    paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, marginTop: 2,
+  },
+  policyUserNoteText: { fontFamily: "Inter_400Regular", fontSize: 11, color: "rgba(255,255,255,0.45)", flex: 1, lineHeight: 16 },
+  policyApplyBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+    marginTop: 12, borderRadius: 12, paddingVertical: 10,
+  },
+  policyApplyText: { fontFamily: "Inter_700Bold", fontSize: 13, color: "#fff" },
+
+  rulesChipScroll: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  ruleChip: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1,
+  },
+  ruleChipText: { fontFamily: "Inter_500Medium", fontSize: 11 },
+
+  pulseList: { paddingHorizontal: 16, gap: 14, paddingBottom: 8 },
+
+  pulseCard: {
+    borderRadius: 20, borderWidth: 1, overflow: "hidden",
+    ...Platform.select({
+      web: { boxShadow: "0 2px 12px rgba(0,0,0,0.08)" },
+      default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
+    }),
+  },
+
+  sponsoredBanner: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 14, paddingVertical: 6,
+  },
+  sponsoredText: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
+
+  pulseCardTop: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, paddingBottom: 10 },
+  pulseAvatar: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  pulseAvatarText: { fontFamily: "Inter_700Bold", fontSize: 16 },
+  pulseAuthorInfo: { flex: 1 },
+  pulseAuthorRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 },
+  pulseAuthorName: { fontFamily: "Inter_700Bold", fontSize: 14 },
+  pulseMetaRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  pulseTierBadge: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7,
+  },
+  pulseTierText: { fontFamily: "Inter_700Bold", fontSize: 10 },
+  pulseHandle: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  pulseDot: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  pulseTime: { fontFamily: "Inter_400Regular", fontSize: 11 },
+
+  pulseTitle: { fontFamily: "Inter_700Bold", fontSize: 15, lineHeight: 21, paddingHorizontal: 14, marginBottom: 5 },
+  pulseCaption: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, paddingHorizontal: 14, marginBottom: 10 },
+
+  pulseTags: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 14, marginBottom: 12 },
+  pulseNeighborhoodTag: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8,
+  },
+  pulseNeighborhoodText: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
+  pulseTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 7 },
+  pulseTagText: { fontFamily: "Inter_500Medium", fontSize: 11 },
+
+  pulseMediaWrap: { position: "relative" },
+  pulseMedia: { width: "100%", height: 220 },
+
+  videoOverlay: {
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  videoPlayBtn: {
+    width: 54, height: 54, borderRadius: 27,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center", justifyContent: "center",
+    paddingLeft: 3,
+  },
+  videoDurationBadge: {
+    position: "absolute", bottom: 10, right: 10,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "rgba(0,0,0,0.65)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+  },
+  videoDurationText: { fontFamily: "Inter_700Bold", fontSize: 11, color: "#fff" },
+
+  photoBadge: {
+    position: "absolute", bottom: 10, right: 10,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "rgba(0,0,0,0.45)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+  },
+  photoBadgeText: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "#fff" },
+
+  pulseActions: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth, gap: 4,
+  },
+  pulseAction: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
+  pulseActionCount: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
+
+  // Feed / All tab
   promotedBanner: {
     flexDirection: "row", alignItems: "center", gap: 5,
     marginHorizontal: 16, marginTop: 6, marginBottom: -4,
@@ -779,8 +1185,7 @@ const styles = StyleSheet.create({
 
   // News
   newsCard: {
-    borderRadius: 16, borderWidth: 1, padding: 16,
-    gap: 8,
+    borderRadius: 16, borderWidth: 1, padding: 16, gap: 8,
     ...Platform.select({
       web: { boxShadow: "0 1px 6px rgba(0,0,0,0.06)" },
       default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
@@ -810,9 +1215,7 @@ const styles = StyleSheet.create({
   communityMeta: { flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "wrap" },
   communityMetaText: { fontFamily: "Inter_400Regular", fontSize: 11 },
   communityDot: { fontFamily: "Inter_400Regular", fontSize: 11 },
-  joinBtn: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1,
-  },
+  joinBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   joinBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
   communityDesc: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, marginBottom: 10 },
   communityTags: { flexDirection: "row", flexWrap: "wrap", gap: 6 },

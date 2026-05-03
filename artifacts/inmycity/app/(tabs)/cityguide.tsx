@@ -131,6 +131,43 @@ const GUIDE_FILTERS = [
   { id: "4", label: "4 Days" },
 ];
 
+const INSIDER_TIPS: Record<string, { icon: string; color: string; tip: string; label: string }[]> = {
+  Mumbai: [
+    { icon: "clock",       color: "#f59e0b", label: "Best timing",    tip: "Visit Juhu Beach at sunrise — you'll have the whole beach to yourself before vendors arrive." },
+    { icon: "navigation",  color: "#0ea5e9", label: "Local hack",     tip: "The first carriage on Western Line is always less crowded during rush hour. A local secret." },
+    { icon: "coffee",      color: "#f97316", label: "Food tip",       tip: "Chai at Yazdani Bakery in Fort costs ₹10 and beats any coffee shop. Locals have known since 1953." },
+    { icon: "map-pin",     color: "#10b981", label: "Hidden gem",     tip: "Banganga Tank in Walkeshwar is peaceful and less photographed than the Gateway. Skip the crowds." },
+    { icon: "cloud-rain",  color: "#6366f1", label: "Monsoon tip",    tip: "Pre-book Bandra Worli Sealink photos for 30 min after rain — the city glistens unlike any other time." },
+  ],
+  Bangalore: [
+    { icon: "clock",       color: "#f59e0b", label: "Best timing",    tip: "Cubbon Park is best on weekday mornings — the city's open-air office before 9am." },
+    { icon: "coffee",      color: "#f97316", label: "Coffee tip",     tip: "Blue Tokai roastery in Indiranagar lets you taste before you buy. Free cuppings every Saturday." },
+    { icon: "map-pin",     color: "#10b981", label: "Hidden gem",     tip: "Lalbagh's Botanical Garden glass house section is rarely crowded on Tuesday afternoons." },
+    { icon: "navigation",  color: "#0ea5e9", label: "Getting around", tip: "Auto-rickshaws on Indiranagar 100 Feet Road ignore apps. Just wave — they charge meter rates." },
+    { icon: "cloud-rain",  color: "#6366f1", label: "Weather tip",    tip: "Keep a light jacket — Bangalore evenings drop by 8–10°C even in summer, unlike the rest of India." },
+  ],
+  "New York City": [
+    { icon: "navigation",  color: "#0ea5e9", label: "Subway tip",     tip: "The 7 train is the world's cheapest food tour — from Times Sq to Jackson Heights, every stop is a cuisine." },
+    { icon: "clock",       color: "#f59e0b", label: "Best timing",    tip: "Go to MoMA on a Friday evening after 5:30pm — entrance is free and attendance drops sharply." },
+    { icon: "map-pin",     color: "#10b981", label: "Hidden gem",     tip: "Wave Hill in the Bronx has better Hudson River views than most Manhattan rooftops. No tourist crowds." },
+    { icon: "coffee",      color: "#f97316", label: "Food tip",       tip: "New York bagels are best at places that haven't changed their water or ovens since the 80s. Ask locals." },
+    { icon: "dollar-sign", color: "#8b5cf6", label: "Money tip",      tip: "The Staten Island Ferry is free and gives you a front-row view of the Statue of Liberty both ways." },
+  ],
+  "San Francisco": [
+    { icon: "cloud-rain",  color: "#6366f1", label: "Weather tip",    tip: "Pack a layer even in summer — SF micro-climates mean the Mission can be 18°C while the Sunset is 10°C." },
+    { icon: "clock",       color: "#f59e0b", label: "Best timing",    tip: "The Golden Gate Bridge is clear before 9am most days. Fog rolls in after 10am and stays until early afternoon." },
+    { icon: "map-pin",     color: "#10b981", label: "Hidden gem",     tip: "Lands End trail at sunset is extraordinary and barely on tourist itineraries. Free, 30-min drive from Downtown." },
+    { icon: "navigation",  color: "#0ea5e9", label: "Transit tip",    tip: "BART to the Mission is faster than any rideshare on weekends. 24th Street station is a 1-minute walk to good tacos." },
+    { icon: "coffee",      color: "#f97316", label: "Food tip",       tip: "Tartine Bakery's bread goes on sale at 5pm if any is left. Croissants sell out before 9am." },
+  ],
+};
+
+const DEFAULT_INSIDER_TIPS = [
+  { icon: "clock",    color: "#f59e0b", label: "Best timing",  tip: "Early mornings before 9am are universally the best time to visit major attractions." },
+  { icon: "coffee",   color: "#f97316", label: "Food tip",     tip: "Ask locals where they eat — not where tourists eat. The best food is rarely near the landmarks." },
+  { icon: "map-pin",  color: "#10b981", label: "Hidden gem",   tip: "Walk 2–3 blocks off the main tourist strip — that's where the city actually lives." },
+];
+
 const NEIGHBORHOODS: Record<string, { name: string; vibe: string; color: string }[]> = {
   Mumbai: [
     { name: "Colaba", vibe: "Heritage & cafes", color: "#0ea5e9" },
@@ -630,6 +667,35 @@ export default function CityGuideScreen() {
           )}
         </View>
 
+        {/* ── Insider Tips section ── */}
+        {(() => {
+          const tips = (cityName ? INSIDER_TIPS[cityName] : undefined) ?? DEFAULT_INSIDER_TIPS;
+          return (
+            <View style={[styles.insiderSection, { backgroundColor: colors.navy }]}>
+              <View style={styles.insiderHeader}>
+                <View style={[styles.insiderIconBox, { backgroundColor: "rgba(249,115,22,0.18)" }]}>
+                  <Feather name="zap" size={16} color="#f97316" />
+                </View>
+                <View style={styles.insiderHeaderText}>
+                  <Text style={styles.insiderTitle}>Insider Tips</Text>
+                  <Text style={styles.insiderSub}>Local knowledge, not in the guidebooks</Text>
+                </View>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.insiderScroll}>
+                {tips.map((t, i) => (
+                  <View key={i} style={[styles.insiderCard, { backgroundColor: "rgba(255,255,255,0.07)" }]}>
+                    <View style={[styles.insiderCardIcon, { backgroundColor: t.color + "22" }]}>
+                      <Feather name={t.icon as any} size={15} color={t.color} />
+                    </View>
+                    <Text style={styles.insiderCardLabel}>{t.label}</Text>
+                    <Text style={styles.insiderCardTip}>{t.tip}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        })()}
+
         <View style={styles.section}>
           <SectionHeader title="Events in the City" icon="calendar" colors={colors} onSeeAll={() => router.push("/events")} />
           {eLoading ? (
@@ -1128,6 +1194,18 @@ const styles = StyleSheet.create({
   freeBadgeText: { fontFamily: "Inter_700Bold", fontSize: 9, color: "#fff", letterSpacing: 0.3 },
   freeRating: { flexDirection: "row", alignItems: "center", gap: 3 },
   freeRatingText: { fontFamily: "Inter_500Medium", fontSize: 10 },
+
+  insiderSection: { marginHorizontal: 16, marginTop: 12, marginBottom: 4, borderRadius: 20, paddingVertical: 16 },
+  insiderHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, marginBottom: 14 },
+  insiderIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  insiderHeaderText: { flex: 1 },
+  insiderTitle: { fontFamily: "Inter_700Bold", fontSize: 16, color: "#fff" },
+  insiderSub: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 },
+  insiderScroll: { paddingHorizontal: 16, gap: 10, paddingBottom: 2 },
+  insiderCard: { width: 200, borderRadius: 16, padding: 14, gap: 8 },
+  insiderCardIcon: { width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  insiderCardLabel: { fontFamily: "Inter_700Bold", fontSize: 11, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 0.5 },
+  insiderCardTip: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 17 },
 
   todTabRow: { flexDirection: "row", paddingHorizontal: 16, gap: 8, marginBottom: 12 },
   todTab: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1 },

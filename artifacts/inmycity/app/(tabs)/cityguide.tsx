@@ -22,9 +22,11 @@ import {
   useGetItineraries,
   useGetPlaces,
   useGetEvents,
+  useGetHotels,
   type Itinerary,
   type Place,
   type Event,
+  type Hotel,
 } from "@workspace/api-client-react";
 
 const CITY_META: Record<string, { tagline: string; tips: { icon: string; label: string; value: string }[] }> = {
@@ -142,6 +144,7 @@ export default function CityGuideScreen() {
     useGetItineraries({ city: cityName });
   const { data: allPlaces = [], isLoading: pLoading } = useGetPlaces({ city: cityName });
   const { data: events = [], isLoading: eLoading } = useGetEvents({ city: cityName });
+  const { data: allHotels = [], isLoading: hLoading } = useGetHotels({ city: cityName });
 
   if (iError) return <ErrorFallback error={iError as Error} resetError={iRefetch} />;
 
@@ -161,6 +164,10 @@ export default function CityGuideScreen() {
   const foodHighlights = useMemo(
     () => [...allPlaces].filter((p) => p.category?.toLowerCase() === "food").sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, HIGHLIGHT_LIMITS.food),
     [allPlaces]
+  );
+  const topHotels = useMemo(
+    () => [...allHotels].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 4),
+    [allHotels]
   );
 
   return (
@@ -217,11 +224,16 @@ export default function CityGuideScreen() {
             <SectionHeader title="Neighborhoods" icon="map" colors={colors} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.neighborhoodsScroll}>
               {neighborhoods.map((hood) => (
-                <View key={hood.name} style={[styles.neighborhoodCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  key={hood.name}
+                  activeOpacity={0.8}
+                  style={[styles.neighborhoodCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => router.push("/places")}
+                >
                   <View style={[styles.neighborhoodDot, { backgroundColor: hood.color }]} />
                   <Text style={[styles.neighborhoodName, { color: colors.foreground }]}>{hood.name}</Text>
                   <Text style={[styles.neighborhoodVibe, { color: colors.mutedForeground }]}>{hood.vibe}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
@@ -258,6 +270,24 @@ export default function CityGuideScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
               {foodHighlights.map((place) => (
                 <PlaceGuideCard key={place.id} place={place} colors={colors} onPress={() => router.push(`/place/${place.id}` as any)} />
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="Where to Stay" icon="home" colors={colors} onSeeAll={() => router.push("/hotels")} />
+          {hLoading ? (
+            <View style={styles.skeletonRow}>
+              <SkeletonCard height={200} style={styles.guideSkeletonCard} />
+              <SkeletonCard height={200} style={styles.guideSkeletonCard} />
+            </View>
+          ) : topHotels.length === 0 ? (
+            <EmptySection icon="home" message="No hotels listed yet." colors={colors} />
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
+              {topHotels.map((hotel) => (
+                <HotelGuideCard key={hotel.id} hotel={hotel} colors={colors} onPress={() => router.push(`/hotel/${hotel.id}` as any)} />
               ))}
             </ScrollView>
           )}
@@ -309,7 +339,7 @@ export default function CityGuideScreen() {
         </View>
 
         <View style={styles.section}>
-          <SectionHeader title="Curated Guides" icon="map" colors={colors} />
+          <SectionHeader title="Curated Guides" icon="map" colors={colors} onSeeAll={() => router.push("/itineraries" as any)} />
           {iLoading ? (
             <View style={styles.skeletonRow}>
               <SkeletonCard height={220} style={styles.guideSkeletonCard} />
@@ -416,6 +446,44 @@ function ItineraryGuideCard({ itinerary, colors, onPress }: { itinerary: Itinera
   );
 }
 
+const HOTEL_CAT_COLORS: Record<string, string> = {
+  budget: "#10b981",
+  "mid-range": "#0ea5e9",
+  luxury: "#f59e0b",
+  boutique: "#ec4899",
+};
+
+function HotelGuideCard({ hotel, colors, onPress }: { hotel: Hotel; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
+  const catColor = HOTEL_CAT_COLORS[hotel.category] ?? colors.mutedForeground;
+  const isINR = hotel.currency === "INR";
+  const priceStr = hotel.pricePerNight != null
+    ? `${isINR ? "₹" : "$"}${hotel.pricePerNight.toLocaleString()}/night`
+    : null;
+  return (
+    <TouchableOpacity activeOpacity={0.85} style={[styles.hotelCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress}>
+      <View style={styles.hotelImageBox}>
+        {hotel.imageUrl
+          ? <Image source={{ uri: hotel.imageUrl }} style={styles.hotelImage} contentFit="cover" transition={200} />
+          : <View style={[styles.hotelImage, { backgroundColor: colors.muted }]} />
+        }
+        <View style={[styles.hotelCatBadge, { backgroundColor: catColor }]}>
+          <Text style={styles.hotelCatText}>{hotel.category}</Text>
+        </View>
+      </View>
+      <View style={styles.hotelBody}>
+        <Text style={[styles.hotelName, { color: colors.foreground }]} numberOfLines={2}>{hotel.name}</Text>
+        {hotel.rating != null && (
+          <View style={styles.hotelRatingRow}>
+            <Feather name="star" size={11} color="#f59e0b" />
+            <Text style={[styles.hotelRatingText, { color: colors.mutedForeground }]}>{hotel.rating.toFixed(1)}</Text>
+          </View>
+        )}
+        {priceStr && <Text style={[styles.hotelPrice, { color: colors.amber }]}>{priceStr}</Text>}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function EventRow({ event, colors, onPress }: { event: Event; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
   const dateStr = event.startDate ? new Date(event.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null;
   return (
@@ -496,6 +564,16 @@ const styles = StyleSheet.create({
   eventDateBox: { width: 54, height: 54, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   eventDateText: { fontFamily: "Inter_700Bold", fontSize: 12, textAlign: "center" },
   eventInfo: { flex: 1 },
+  hotelCard: { width: 190, borderRadius: 16, overflow: "hidden", borderWidth: 1, ...Platform.select({ web: { boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 } }) },
+  hotelImageBox: { height: 120, position: "relative" },
+  hotelImage: { width: "100%", height: "100%" },
+  hotelCatBadge: { position: "absolute", bottom: 8, left: 8, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
+  hotelCatText: { fontFamily: "Inter_600SemiBold", fontSize: 9, color: "#fff", textTransform: "capitalize" },
+  hotelBody: { padding: 10, gap: 4 },
+  hotelName: { fontFamily: "Inter_600SemiBold", fontSize: 13, lineHeight: 17 },
+  hotelRatingRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  hotelRatingText: { fontFamily: "Inter_500Medium", fontSize: 11 },
+  hotelPrice: { fontFamily: "Inter_700Bold", fontSize: 12 },
   eventName: { fontFamily: "Inter_600SemiBold", fontSize: 14 },
   eventVenue: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
   emptyBox: { marginHorizontal: 20, borderRadius: 14, padding: 20, flexDirection: "row", alignItems: "center", gap: 10 },

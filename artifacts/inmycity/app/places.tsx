@@ -45,7 +45,7 @@ export default function PlacesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Nightlife" topPadding={Math.max(insets.top, 20)} />
+      <ScreenHeader title="Places" topPadding={Math.max(insets.top, 20)} />
 
       {/* Filter Pills */}
       <ScrollView

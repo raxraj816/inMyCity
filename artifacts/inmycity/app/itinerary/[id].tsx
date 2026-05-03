@@ -64,7 +64,7 @@ export default function ItineraryDetailScreen() {
           </View>
         </View>
 
-        <View style={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
+        <View style={[styles.content, { paddingBottom: insets.bottom + 40, backgroundColor: colors.background }]}>
           <Text style={[styles.cityText, { color: colors.primary }]}>{itinerary.city}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>{itinerary.title}</Text>
           
@@ -195,7 +195,6 @@ const styles = StyleSheet.create({
     marginTop: -30,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    backgroundColor: "#fff",
   },
   cityText: {
     fontFamily: "Inter_700Bold",

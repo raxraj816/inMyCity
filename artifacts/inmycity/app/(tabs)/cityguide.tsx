@@ -95,6 +95,34 @@ const PLACE_FILTERS = [
   { id: "essentials", label: "Essentials" },
 ];
 
+const ACTIVITY_SORT_OPTIONS = [
+  { id: "popular", label: "Popular" },
+  { id: "top_rated", label: "Top Rated" },
+  { id: "free_first", label: "Free First" },
+  { id: "price_low", label: "Price ↑" },
+];
+
+const ACTIVITY_DURATION_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "short", label: "< 2 hrs" },
+  { id: "half", label: "Half Day" },
+  { id: "full", label: "Full Day" },
+];
+
+const AUDIENCE_FILTERS = [
+  { id: "all", label: "All Visitors", icon: "users" },
+  { id: "families", label: "Families", icon: "heart" },
+  { id: "couples", label: "Couples", icon: "github" },
+  { id: "solo", label: "Solo", icon: "user" },
+  { id: "outdoor", label: "Outdoor", icon: "sun" },
+];
+
+const TIME_OF_DAY = [
+  { id: "morning",   label: "Morning",   icon: "sunrise",  color: "#f59e0b", hint: "Before noon",   categories: ["wellness", "sports", "tour"] },
+  { id: "afternoon", label: "Afternoon", icon: "sun",      color: "#f97316", hint: "12 pm – 6 pm",  categories: ["cultural", "adventure", "tours"] },
+  { id: "evening",   label: "Evening",   icon: "moon",     color: "#6366f1", hint: "After 6 pm",    categories: ["nightlife", "workshop"] },
+];
+
 const GUIDE_FILTERS = [
   { id: "all", label: "All" },
   { id: "1", label: "1 Day" },
@@ -163,6 +191,11 @@ export default function CityGuideScreen() {
   const [placeFilter, setPlaceFilter] = useState("all");
   const [guideFilter, setGuideFilter] = useState("all");
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [activitySort, setActivitySort] = useState("popular");
+  const [activityDuration, setActivityDuration] = useState("all");
+  const [audienceFilter, setAudienceFilter] = useState("all");
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [todTime, setTodTime] = useState("morning");
 
   const cityName = selectedCity?.name;
   const meta = (cityName ? CITY_META[cityName] : undefined) ?? DEFAULT_META;
@@ -201,10 +234,33 @@ export default function CityGuideScreen() {
     () => [...allHotels].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 4),
     [allHotels]
   );
-  const topActivities = useMemo(
-    () => [...activities].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 6),
+  const topActivities = useMemo(() => {
+    let filtered = [...activities];
+    if (activityDuration === "short") filtered = filtered.filter((a) => (a.durationMinutes ?? 0) > 0 && (a.durationMinutes ?? 0) <= 120);
+    else if (activityDuration === "half") filtered = filtered.filter((a) => (a.durationMinutes ?? 0) > 120 && (a.durationMinutes ?? 0) <= 240);
+    else if (activityDuration === "full") filtered = filtered.filter((a) => (a.durationMinutes ?? 0) > 240);
+    if (audienceFilter === "families") filtered = filtered.filter((a) => ["cultural", "tour", "tours", "sports"].includes(a.category));
+    else if (audienceFilter === "couples") filtered = filtered.filter((a) => ["wellness", "cultural", "adventure"].includes(a.category));
+    else if (audienceFilter === "solo") filtered = filtered.filter((a) => ["adventure", "workshop", "sports"].includes(a.category));
+    else if (audienceFilter === "outdoor") filtered = filtered.filter((a) => ["adventure", "sports", "tour", "tours"].includes(a.category));
+    if (activitySort === "top_rated") filtered = filtered.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    else if (activitySort === "free_first") filtered = filtered.sort((a, b) => (a.price ?? 999) - (b.price ?? 999));
+    else if (activitySort === "price_low") filtered = filtered.sort((a, b) => (a.price ?? 999) - (b.price ?? 999));
+    else filtered = filtered.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
+    return filtered.slice(0, 8);
+  }, [activities, activitySort, activityDuration, audienceFilter]);
+
+  const freeActivities = useMemo(
+    () => [...activities].filter((a) => !a.price || a.price === 0).slice(0, 5),
     [activities]
   );
+
+  const todActivities = useMemo(() => {
+    const slot = TIME_OF_DAY.find((t) => t.id === todTime);
+    if (!slot) return [];
+    return [...activities].filter((a) => slot.categories.includes(a.category)).slice(0, 4);
+  }, [activities, todTime]);
+
   const day1Stops = useMemo(() => {
     const top = itineraries[0];
     if (!top?.stops) return [];
@@ -324,22 +380,146 @@ export default function CityGuideScreen() {
         </View>
 
         <View style={styles.section}>
-          <SectionHeader title="Things to Do" icon="activity" colors={colors} />
+          <SectionHeader title="Things to Do" icon="activity" colors={colors} onSeeAll={() => router.push("/activities")} />
+
+          {/* Audience chips */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.audienceScroll}>
+            {AUDIENCE_FILTERS.map((f) => {
+              const active = audienceFilter === f.id;
+              return (
+                <TouchableOpacity
+                  key={f.id}
+                  style={[styles.audiencePill, { backgroundColor: active ? "#ef4444" : colors.card, borderColor: active ? "#ef4444" : colors.border }]}
+                  onPress={() => setAudienceFilter(f.id)}
+                >
+                  <Feather name={f.icon as any} size={12} color={active ? "#fff" : colors.mutedForeground} />
+                  <Text style={[styles.audiencePillText, { color: active ? "#fff" : colors.foreground }]}>{f.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Duration + Sort row */}
+          <View style={styles.actFilterRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.durationScroll}>
+              {ACTIVITY_DURATION_FILTERS.map((f) => {
+                const active = activityDuration === f.id;
+                return (
+                  <TouchableOpacity
+                    key={f.id}
+                    style={[styles.durationPill, { backgroundColor: active ? "#0ea5e9" : colors.muted, borderColor: active ? "#0ea5e9" : "transparent" }]}
+                    onPress={() => setActivityDuration(f.id)}
+                  >
+                    <Text style={[styles.durationPillText, { color: active ? "#fff" : colors.mutedForeground }]}>{f.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.sortBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => setSortMenuOpen(true)}
+            >
+              <Feather name="sliders" size={13} color={colors.mutedForeground} />
+              <Text style={[styles.sortBtnText, { color: colors.foreground }]}>
+                {ACTIVITY_SORT_OPTIONS.find((s) => s.id === activitySort)?.label ?? "Sort"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {actLoading ? (
             <View style={styles.skeletonRow}>
               <SkeletonCard height={260} style={styles.guideSkeletonCard} />
               <SkeletonCard height={260} style={styles.guideSkeletonCard} />
             </View>
           ) : topActivities.length === 0 ? (
-            <EmptySection icon="activity" message="No activities listed yet." colors={colors} />
+            <EmptySection icon="activity" message="No activities match this filter." colors={colors} />
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
               {topActivities.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} colors={colors} />
+                <ActivityCard key={activity.id} activity={activity} colors={colors} sort={activitySort} />
               ))}
             </ScrollView>
           )}
         </View>
+
+        {/* FREE EXPERIENCES SECTION */}
+        {!actLoading && freeActivities.length > 0 && (
+          <View style={[styles.freeSection, { backgroundColor: "#10b981" + "12", borderColor: "#10b98133" }]}>
+            <View style={styles.freeSectionHeader}>
+              <View style={[styles.freeIconBox, { backgroundColor: "#10b981" }]}>
+                <Feather name="gift" size={16} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.freeSectionTitle, { color: colors.foreground }]}>Free Experiences</Text>
+                <Text style={[styles.freeSectionSub, { color: colors.mutedForeground }]}>Explore {cityName ?? "the city"} at no cost</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push("/activities")}>
+                <Text style={[styles.seeAll, { color: "#10b981" }]}>See all</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.freeScroll}>
+              {freeActivities.map((act) => (
+                <TouchableOpacity
+                  key={act.id}
+                  style={[styles.freeCard, { backgroundColor: colors.card, borderColor: "#10b98133" }]}
+                  onPress={() => router.push(`/activity/${act.id}` as any)}
+                  activeOpacity={0.85}
+                >
+                  {act.imageUrl ? (
+                    <Image source={{ uri: act.imageUrl }} style={styles.freeCardImg} contentFit="cover" />
+                  ) : (
+                    <View style={[styles.freeCardImg, { backgroundColor: colors.muted }]} />
+                  )}
+                  <View style={styles.freeCardBody}>
+                    <Text style={[styles.freeCardName, { color: colors.foreground }]} numberOfLines={2}>{act.name}</Text>
+                    <View style={styles.freeCardMeta}>
+                      <View style={[styles.freeBadge, { backgroundColor: "#10b981" }]}>
+                        <Text style={styles.freeBadgeText}>FREE</Text>
+                      </View>
+                      {act.rating != null && (
+                        <View style={styles.freeRating}>
+                          <Feather name="star" size={10} color="#f59e0b" />
+                          <Text style={[styles.freeRatingText, { color: colors.mutedForeground }]}>{act.rating.toFixed(1)}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* PLAN YOUR DAY SECTION */}
+        {!actLoading && activities.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader title="Plan Your Day" icon="clock" colors={colors} />
+            <View style={styles.todTabRow}>
+              {TIME_OF_DAY.map((slot) => (
+                <TouchableOpacity
+                  key={slot.id}
+                  style={[styles.todTab, { backgroundColor: todTime === slot.id ? slot.color : colors.card, borderColor: todTime === slot.id ? slot.color : colors.border }]}
+                  onPress={() => setTodTime(slot.id)}
+                >
+                  <Feather name={slot.icon as any} size={14} color={todTime === slot.id ? "#fff" : colors.mutedForeground} />
+                  <View>
+                    <Text style={[styles.todTabLabel, { color: todTime === slot.id ? "#fff" : colors.foreground }]}>{slot.label}</Text>
+                    <Text style={[styles.todTabHint, { color: todTime === slot.id ? "rgba(255,255,255,0.7)" : colors.mutedForeground }]}>{slot.hint}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {todActivities.length === 0 ? (
+              <EmptySection icon="clock" message="No activities for this time slot yet." colors={colors} />
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
+                {todActivities.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} colors={colors} sort={activitySort} />
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
 
         <View style={styles.section}>
           <SectionHeader title="Taste of the City" icon="coffee" colors={colors} onSeeAll={() => router.push("/dining")} />
@@ -464,6 +644,36 @@ export default function CityGuideScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Sort Menu Modal */}
+      <Modal visible={sortMenuOpen} transparent animationType="fade" onRequestClose={() => setSortMenuOpen(false)}>
+        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setSortMenuOpen(false)}>
+          <TouchableOpacity activeOpacity={1} style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Sort Activities</Text>
+              <TouchableOpacity onPress={() => setSortMenuOpen(false)}>
+                <Feather name="x" size={20} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ gap: 8 }}>
+              {ACTIVITY_SORT_OPTIONS.map((opt) => {
+                const selected = activitySort === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[styles.sortMenuRow, { backgroundColor: selected ? "#ef4444" + "15" : colors.muted, borderColor: selected ? "#ef4444" : colors.border }]}
+                    onPress={() => { setActivitySort(opt.id); setSortMenuOpen(false); }}
+                  >
+                    <Text style={[styles.sortMenuLabel, { color: selected ? "#ef4444" : colors.foreground }]}>{opt.label}</Text>
+                    {selected && <Feather name="check" size={16} color="#ef4444" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal visible={detailsOpen} transparent animationType="fade" onRequestClose={() => setDetailsOpen(false)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setDetailsOpen(false)}>

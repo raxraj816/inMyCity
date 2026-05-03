@@ -274,14 +274,6 @@ const QA_DATA: Record<string, QAItem[]> = {
   ],
 };
 
-const NEWS_FEED_STYLE = {
-  topStory: { tint: "#0f172a", accent: "#f97316" },
-};
-
-const DEFAULT_NEWS: NewsItem[] = [
-  { id: 1, category: "local", headline: "Select a city to see local news and alerts.", summary: "Use the city picker to view news relevant to your area.", source: "inMyCity", sourceKind: "publisher", minutesAgo: 0 },
-];
-
 const NEWS_CATEGORY_ORDER: NewsCategory[] = ["traffic", "weather", "civic", "local", "sports", "business"];
 
 const NEWS_CATEGORY_FILTERS = ["all", ...NEWS_CATEGORY_ORDER] as const;
@@ -880,8 +872,6 @@ const styles = StyleSheet.create({
   newsHeroSummary: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
   newsHeroFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   newsSourceRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  newsSourceText: { fontFamily: "Inter_500Medium", fontSize: 11 },
-  newsReadText: { fontFamily: "Inter_700Bold", fontSize: 12 },
   newsList: { paddingHorizontal: 16, gap: 10 },
   newsCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 8, ...Platform.select({ web: { boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 } }) },
   newsCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

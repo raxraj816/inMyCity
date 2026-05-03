@@ -132,7 +132,7 @@ export default function ExploreScreen() {
   const { selectedCity } = useCity();
   const cityName = selectedCity?.name;
 
-  const topPadding    = Math.max(insets.top, 20);
+  const topPadding    = Math.max(insets.top, 8);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
   // ── Parallel data fetches ─────────────────────────────────────────────────
@@ -239,10 +239,6 @@ export default function ExploreScreen() {
           />
         }
       >
-        {/* ── Explore ── */}
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Explore</Text>
-        </View>
         <CategoryGrid />
 
         {/* ── Trending ── */}

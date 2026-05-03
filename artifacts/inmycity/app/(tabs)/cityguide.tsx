@@ -256,18 +256,17 @@ export default function CityGuideScreen() {
             <Text style={styles.heroDetailsButtonText}>Full city details</Text>
             <Feather name="chevron-right" size={12} color="rgba(255,255,255,0.4)" />
           </TouchableOpacity>
+          <TouchableOpacity activeOpacity={0.85} style={[styles.transitCard, { backgroundColor: "#06b6d4" }]} onPress={() => router.push("/transit")}>
+            <View style={[styles.transitIconBox, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+              <MaterialCommunityIcons name="train-variant" size={22} color="#fff" />
+            </View>
+            <View style={styles.transitText}>
+              <Text style={styles.transitTitle}>Getting Around</Text>
+              <Text style={styles.transitSub}>Metro, bus & train routes for visitors</Text>
+            </View>
+            <Feather name="arrow-right" size={18} color="#fff" />
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity activeOpacity={0.85} style={[styles.transitCard, { backgroundColor: "#06b6d4" }]} onPress={() => router.push("/transit")}>
-          <View style={[styles.transitIconBox, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-            <MaterialCommunityIcons name="train-variant" size={22} color="#fff" />
-          </View>
-          <View style={styles.transitText}>
-            <Text style={styles.transitTitle}>Getting Around</Text>
-            <Text style={styles.transitSub}>Metro, bus & train routes for visitors</Text>
-          </View>
-          <Feather name="arrow-right" size={18} color="#fff" />
-        </TouchableOpacity>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickJumpScroll}>
           {QUICK_JUMPS.map((jump) => (
@@ -735,7 +734,7 @@ function EventRow({ event, colors, onPress }: { event: Event; colors: ReturnType
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  heroBanner: { marginHorizontal: 20, marginBottom: 8, borderRadius: 20, padding: 20, overflow: "hidden" },
+  heroBanner: { marginHorizontal: 20, marginBottom: 8, borderRadius: 20, padding: 20, overflow: "hidden", flexDirection: "column" },
   heroTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
   heroContent: { flex: 1 },
   heroEyebrow: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1 },

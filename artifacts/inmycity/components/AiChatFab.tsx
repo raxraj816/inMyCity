@@ -103,16 +103,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 30,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#f97316",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 10,
-      },
-      android: { elevation: 8 },
-      web: { boxShadow: "0 4px 20px rgba(249,115,22,0.4)" } as any,
-    }),
   },
   fabLabel: {
     fontFamily: "Inter_700Bold",

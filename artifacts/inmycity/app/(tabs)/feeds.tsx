@@ -308,7 +308,6 @@ export default function FeedsScreen() {
   const { selectedCity } = useCity();
   const [activeTab, setActiveTab] = useState<MainTab>("pulse");
   const [activeFilter, setActiveFilter] = useState<PulseFilter>("all");
-  const [activeNewsFilter, setActiveNewsFilter] = useState<typeof NEWS_CATEGORY_FILTERS[number]>("all");
   const [joinedCommunities, setJoinedCommunities] = useState<Set<number>>(new Set());
   const [upvotedQA, setUpvotedQA] = useState<Set<number>>(new Set());
   const [upvoteCounts, setUpvoteCounts] = useState<Record<number, number>>({});
@@ -332,8 +331,6 @@ export default function FeedsScreen() {
   const happeningNow = (cityName ? HAPPENING_NOW[cityName] : undefined) ?? [];
 
   const filteredPulse = activeFilter === "all" ? allPulse : allPulse.filter((p) => p.filterTags.includes(activeFilter));
-  const filteredNews = activeNewsFilter === "all" ? news : news.filter((item) => item.category === activeNewsFilter);
-
   const toggleJoin = (id: number) => setJoinedCommunities((prev) => {
     const n = new Set(prev);
     n.has(id) ? n.delete(id) : n.add(id);
@@ -551,39 +548,7 @@ export default function FeedsScreen() {
 
     return (
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPad }}>
-        <View style={styles.newsIntro}>
-          <Text style={[styles.newsIntroTitle, { color: colors.foreground }]}>Local headlines for {cityName ?? "your city"}</Text>
-          <Text style={[styles.newsIntroBody, { color: colors.mutedForeground }]}>Short, scannable news cards inspired by Inshorts — city-local headlines from publishers, government, traffic, weather and trusted city sources.</Text>
-        </View>
-
-        <View style={styles.newsFilterWrap}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.newsFilterScroll}>
-            {NEWS_CATEGORY_FILTERS.map((category) => {
-              const active = activeNewsFilter === category;
-              const label = category === "all" ? "All" : NEWS_CATEGORY_META[category].label;
-              const icon = category === "all" ? "layers" : NEWS_CATEGORY_META[category].icon;
-              return (
-                <TouchableOpacity
-                  key={category}
-                  onPress={() => setActiveNewsFilter(category)}
-                  activeOpacity={0.75}
-                  style={[
-                    styles.newsFilterChip,
-                    {
-                      backgroundColor: active ? colors.navy : colors.card,
-                      borderColor: active ? colors.navy : colors.border,
-                    },
-                  ]}
-                >
-                  <Feather name={icon as any} size={11} color={active ? "#fff" : colors.mutedForeground} />
-                  <Text style={[styles.newsFilterText, { color: active ? "#fff" : colors.mutedForeground }]}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {topStory && (
+      {topStory && (
           <TouchableOpacity activeOpacity={0.9} style={[styles.newsHeroCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.newsHeroStrip, { backgroundColor: NEWS_CATEGORY_META[topStory.category].color + "14" }]}>
               <View style={[styles.newsHeroBadge, { backgroundColor: NEWS_CATEGORY_META[topStory.category].bg }]}>
@@ -605,7 +570,7 @@ export default function FeedsScreen() {
         )}
 
         <View style={styles.newsList}>
-          {rest.map((item) => {
+          {news.map((item, index) => {
             const meta = NEWS_CATEGORY_META[item.category];
             return (
               <TouchableOpacity key={item.id} activeOpacity={0.86} style={[styles.newsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -856,13 +821,6 @@ const styles = StyleSheet.create({
   trendingScroll: { gap: 8 },
   trendingChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   trendingChipText: { fontFamily: "Inter_500Medium", fontSize: 12 },
-  newsIntro: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, gap: 6 },
-  newsIntroTitle: { fontFamily: "Inter_700Bold", fontSize: 20, letterSpacing: -0.2 },
-  newsIntroBody: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
-  newsFilterWrap: { paddingTop: 2, paddingBottom: 10 },
-  newsFilterScroll: { paddingHorizontal: 16, gap: 8 },
-  newsFilterChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
-  newsFilterText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
   newsHeroCard: { marginHorizontal: 16, borderRadius: 18, borderWidth: 1, padding: 14, gap: 10, marginBottom: 12 },
   newsHeroStrip: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 10, borderRadius: 14 },
   newsHeroBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },

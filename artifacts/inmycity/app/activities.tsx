@@ -14,6 +14,7 @@ import { useCity } from "@/context/CityContext";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { SkeletonCard } from "@/components/SkeletonCard";
+import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ const NIGHTLIFE_FILTERS = [
   { id: "pub",      label: "Pubs"       },
 ];
 
-const ACT_COLOR = "#ef4444";
+const ACT_COLOR   = "#ef4444";
 const NIGHT_COLOR = "#ec4899";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -60,6 +61,14 @@ const CATEGORY_ICONS: Record<string, string> = {
   tour:      "map",
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function fmtDur(mins: number | null | undefined) {
+  if (!mins) return "";
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+}
+
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function ActivitiesScreen() {
@@ -68,8 +77,8 @@ export default function ActivitiesScreen() {
   const insets = useSafeAreaInsets();
   const { selectedCity } = useCity();
 
-  const [mainTab, setMainTab]               = useState<MainTab>("activities");
-  const [activityFilter, setActivityFilter] = useState("all");
+  const [mainTab, setMainTab]                 = useState<MainTab>("activities");
+  const [activityFilter, setActivityFilter]   = useState("all");
   const [nightlifeFilter, setNightlifeFilter] = useState("all");
 
   const topPadding    = Math.max(insets.top, 20);
@@ -85,6 +94,11 @@ export default function ActivitiesScreen() {
     city: cityName,
     category: activityFilter !== "all" ? activityFilter : undefined,
   });
+
+  // Unfiltered activities for the trending strip
+  const {
+    data: allActivities = [],
+  } = useGetActivities({ city: cityName });
 
   const {
     data: nightlifePlaces = [], isLoading: nightLoading, error: nightError, refetch: refetchNight,
@@ -102,6 +116,26 @@ export default function ActivitiesScreen() {
   if (currentError) {
     return <ErrorFallback error={currentError as Error} resetError={currentRefetch} />;
   }
+
+  // ── Trending strip items ─────────────────────────────────────────────────
+
+  const actTrendingItems: TrendingStripItem[] = allActivities.slice(0, 8).map(a => ({
+    id:       String(a.id),
+    title:    a.name,
+    imageUrl: a.imageUrl,
+    meta1:    fmtDur(a.durationMinutes) || (a.category.charAt(0).toUpperCase() + a.category.slice(1)),
+    meta2:    a.rating != null ? `⭐ ${a.rating.toFixed(1)}` : undefined,
+    route:    `/activity/${a.id}`,
+  }));
+
+  const nightTrendingItems: TrendingStripItem[] = nightlifePlaces.slice(0, 8).map(p => ({
+    id:       String(p.id),
+    title:    p.name,
+    imageUrl: p.imageUrl,
+    meta1:    (p.tags ?? []).slice(0, 2).join(" · ") || "Nightlife",
+    meta2:    p.rating != null ? `⭐ ${p.rating.toFixed(1)}` : undefined,
+    route:    `/place/${p.id}`,
+  }));
 
   // ── Renders ─────────────────────────────────────────────────────────────
 
@@ -360,13 +394,29 @@ export default function ActivitiesScreen() {
       {/* Content */}
       {mainTab === "activities" ? (
         actLoading ? (
-          <View style={styles.skeletonWrap}>
-            <SkeletonCard height={160} />
-            <SkeletonCard height={160} />
-            <SkeletonCard height={160} />
-          </View>
+          <>
+            <TrendingStrip
+              items={actTrendingItems}
+              accentColor={ACT_COLOR}
+              isLoading={true}
+              label="Trending Activities"
+            />
+            <View style={styles.skeletonWrap}>
+              <SkeletonCard height={160} />
+              <SkeletonCard height={160} />
+              <SkeletonCard height={160} />
+            </View>
+          </>
         ) : activities.length === 0 ? (
-          renderEmpty("zap", "No activities found")
+          <>
+            <TrendingStrip
+              items={actTrendingItems}
+              accentColor={ACT_COLOR}
+              isLoading={false}
+              label="Trending Activities"
+            />
+            {renderEmpty("zap", "No activities found")}
+          </>
         ) : (
           <FlatList
             data={activities}
@@ -374,17 +424,43 @@ export default function ActivitiesScreen() {
             contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
             showsVerticalScrollIndicator={false}
             renderItem={renderActivityCard}
+            ListHeaderComponent={
+              <TrendingStrip
+                items={actTrendingItems}
+                accentColor={ACT_COLOR}
+                isLoading={false}
+                label="Trending Activities"
+              />
+            }
           />
         )
       ) : (
         nightLoading ? (
-          <View style={styles.skeletonWrap}>
-            <SkeletonCard height={260} />
-            <SkeletonCard height={260} />
-            <SkeletonCard height={260} />
-          </View>
+          <>
+            <TrendingStrip
+              items={nightTrendingItems}
+              accentColor={NIGHT_COLOR}
+              isLoading={true}
+              label="Trending Nightlife"
+            />
+            <View style={styles.skeletonWrap}>
+              <SkeletonCard height={260} />
+              <SkeletonCard height={260} />
+              <SkeletonCard height={260} />
+            </View>
+          </>
         ) : filteredNightlife.length === 0 ? (
-          renderEmpty("moon", cityName ? `No nightlife venues in ${cityName} yet` : "Select a city to browse nightlife")
+          <>
+            <TrendingStrip
+              items={nightTrendingItems}
+              accentColor={NIGHT_COLOR}
+              isLoading={false}
+              label="Trending Nightlife"
+            />
+            {renderEmpty("moon", cityName
+              ? `No nightlife venues in ${cityName} yet`
+              : "Select a city to browse nightlife")}
+          </>
         ) : (
           <FlatList
             data={filteredNightlife}
@@ -392,6 +468,14 @@ export default function ActivitiesScreen() {
             contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
             showsVerticalScrollIndicator={false}
             renderItem={renderNightlifeCard}
+            ListHeaderComponent={
+              <TrendingStrip
+                items={nightTrendingItems}
+                accentColor={NIGHT_COLOR}
+                isLoading={false}
+                label="Trending Nightlife"
+              />
+            }
           />
         )
       )}

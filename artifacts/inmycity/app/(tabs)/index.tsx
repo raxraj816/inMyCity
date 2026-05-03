@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Platform,
+  RefreshControl, Platform, useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -39,8 +39,8 @@ const BADGE: Record<TrendingType, { label: string; color: string; icon: string }
   sport:    { label: "Sport",    color: "#22c55e", icon: "activity" },
 };
 
-const CARD_W     = 164;
-const CARD_IMG_H = 140;
+const GRID_H_PAD = 16;
+const GRID_GAP   = 12;
 const CAP        = 5;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -56,37 +56,50 @@ function fmtDur(mins: number | null | undefined) {
   return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
 }
 
-// ─── Skeleton row ─────────────────────────────────────────────────────────────
+// ─── Skeleton grid ────────────────────────────────────────────────────────────
 
-function TrendingSkeletons({ colors }: { colors: ReturnType<typeof useColors> }) {
+function TrendingSkeletons({
+  colors,
+  cardWidth,
+}: {
+  colors: ReturnType<typeof useColors>;
+  cardWidth: number;
+}) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.carouselContent}
-      scrollEnabled={false}
-    >
+    <View style={styles.grid}>
       {[1, 2, 3, 4].map(i => (
-        <View key={i} style={[styles.skeletonCard, { backgroundColor: colors.card }]} />
+        <View
+          key={i}
+          style={[
+            styles.skeletonCard,
+            { backgroundColor: colors.card, width: cardWidth },
+          ]}
+        />
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
 // ─── Trending card ────────────────────────────────────────────────────────────
 
 function TrendingCard({
-  item, colors,
+  item,
+  colors,
+  cardWidth,
 }: {
-  item: TrendingItem;
-  colors: ReturnType<typeof useColors>;
+  item:      TrendingItem;
+  colors:    ReturnType<typeof useColors>;
+  cardWidth: number;
 }) {
   const router = useRouter();
   const cfg    = BADGE[item.type];
 
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[
+        styles.card,
+        { backgroundColor: colors.card, borderColor: colors.border, width: cardWidth },
+      ]}
       onPress={() => router.push(item.route as any)}
       activeOpacity={0.85}
     >
@@ -97,7 +110,7 @@ function TrendingCard({
             uri: item.imageUrl
               ?? "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400",
           }}
-          style={styles.cardImage}
+          style={[styles.cardImage, { width: cardWidth }]}
           contentFit="cover"
         />
         <View style={[styles.typeBadge, { backgroundColor: cfg.color }]}>
@@ -134,11 +147,15 @@ function TrendingCard({
 export default function ExploreScreen() {
   const colors    = useColors();
   const insets    = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const { selectedCity } = useCity();
   const cityName  = selectedCity?.name;
 
   const topPadding    = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
+
+  // Card width for 2-column grid
+  const cardWidth = Math.floor((screenWidth - GRID_H_PAD * 2 - GRID_GAP) / 2);
 
   // ── Parallel data fetches ─────────────────────────────────────────────────
   const { data: events = [],     isLoading: evLoad, refetch: refEv } =
@@ -259,7 +276,7 @@ export default function ExploreScreen() {
         </View>
 
         {isLoading ? (
-          <TrendingSkeletons colors={colors} />
+          <TrendingSkeletons colors={colors} cardWidth={cardWidth} />
         ) : trending.length === 0 ? (
           <View style={styles.emptyBox}>
             <View style={[styles.emptyIconWrap, { backgroundColor: colors.muted }]}>
@@ -273,33 +290,15 @@ export default function ExploreScreen() {
             </Text>
           </View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.carouselContent}
-            decelerationRate="fast"
-            snapToInterval={CARD_W + 12}
-            snapToAlignment="start"
-          >
+          <View style={styles.grid}>
             {trending.map(item => (
-              <TrendingCard key={item.key} item={item} colors={colors} />
+              <TrendingCard
+                key={item.key}
+                item={item}
+                colors={colors}
+                cardWidth={cardWidth}
+              />
             ))}
-          </ScrollView>
-        )}
-
-        {/* Bottom legend — type key */}
-        {!isLoading && trending.length > 0 && (
-          <View style={styles.legendRow}>
-            {(Object.entries(BADGE) as [TrendingType, typeof BADGE[TrendingType]][]).map(
-              ([type, cfg]) => (
-                <View key={type} style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: cfg.color }]} />
-                  <Text style={[styles.legendText, { color: colors.mutedForeground }]}>
-                    {cfg.label}
-                  </Text>
-                </View>
-              )
-            )}
           </View>
         )}
       </ScrollView>
@@ -318,23 +317,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
+    paddingHorizontal: GRID_H_PAD,
     paddingTop: 16,
     paddingBottom: 10,
   },
   sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
 
-  // ── Carousel ──
-  carouselContent: {
-    paddingHorizontal: 16,
-    gap: 12,
-    paddingBottom: 4,
-    paddingTop: 2,
+  // ── 2-column grid ──
+  grid: {
+    flexDirection:   "row",
+    flexWrap:        "wrap",
+    paddingHorizontal: GRID_H_PAD,
+    gap:             GRID_GAP,
+    paddingBottom:   8,
   },
 
   // ── Card ──
   card: {
-    width: CARD_W,
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
@@ -349,8 +348,8 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  imageWrap:  { position: "relative" },
-  cardImage:  { width: CARD_W, height: CARD_IMG_H },
+  imageWrap: { position: "relative" },
+  cardImage: { height: 140 },
   typeBadge: {
     position:       "absolute",
     top:            8,
@@ -376,8 +375,7 @@ const styles = StyleSheet.create({
 
   // ── Skeleton ──
   skeletonCard: {
-    width:        CARD_W,
-    height:       CARD_IMG_H + 72,
+    height:       140 + 72,
     borderRadius: 16,
   },
 
@@ -397,17 +395,4 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontFamily: "Inter_700Bold",    fontSize: 16 },
   emptyText:  { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 20 },
-
-  // ── Legend ──
-  legendRow: {
-    flexDirection:  "row",
-    flexWrap:       "wrap",
-    gap:            12,
-    paddingHorizontal: 20,
-    paddingTop:     12,
-    paddingBottom:   4,
-  },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  legendDot:  { width: 7, height: 7, borderRadius: 3.5 },
-  legendText: { fontFamily: "Inter_400Regular", fontSize: 11 },
 });

@@ -12,8 +12,15 @@ import { EventCard } from "@/components/EventCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { AppHeader } from "@/components/AppHeader";
+import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 
 const CATEGORIES = ["music", "food", "art", "comedy", "film", "wellness", "networking", "sports"];
+const ACCENT = "#6366f1";
+
+function fmtDate(d: string | null | undefined) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 export default function EventsScreen() {
   const colors = useColors();
@@ -34,9 +41,28 @@ export default function EventsScreen() {
   const topPadding = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
+  // Build trending strip — top 8 events regardless of category filter
+  const trendingItems: TrendingStripItem[] = (events ?? []).slice(0, 8).map(e => ({
+    id:       String(e.id),
+    title:    e.name,
+    imageUrl: e.imageUrl,
+    meta1:    fmtDate(e.date) || "Upcoming",
+    meta2:    e.venue ?? undefined,
+    route:    `/event/${e.id}`,
+  }));
+
   if (error) {
     return <ErrorFallback error={error as Error} resetError={refetch} />;
   }
+
+  const ListHeader = (
+    <TrendingStrip
+      items={trendingItems}
+      accentColor={ACCENT}
+      isLoading={isLoading && !events}
+      label="Trending Events"
+    />
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -53,17 +79,21 @@ export default function EventsScreen() {
 
       {/* ── Scrollable content ── */}
       {isLoading && !events ? (
-        <View style={styles.loadingArea}>
-          <SkeletonCard height={160} style={styles.skeleton} />
-          <SkeletonCard height={160} style={styles.skeleton} />
-          <SkeletonCard height={160} style={styles.skeleton} />
-        </View>
+        <>
+          {ListHeader}
+          <View style={styles.loadingArea}>
+            <SkeletonCard height={160} style={styles.skeleton} />
+            <SkeletonCard height={160} style={styles.skeleton} />
+            <SkeletonCard height={160} style={styles.skeleton} />
+          </View>
+        </>
       ) : (
         <FlatList
           data={events || []}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => <EventCard event={item} />}
-          contentContainerStyle={{ paddingBottom: bottomPadding, paddingTop: 8 }}
+          ListHeaderComponent={ListHeader}
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
           refreshing={isLoading}

@@ -12,8 +12,10 @@ import { DealCard } from "@/components/DealCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { AppHeader } from "@/components/AppHeader";
+import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 
 const CATEGORIES = ["food", "attraction", "retail", "wellness", "nightlife", "fitness"];
+const ACCENT = "#10b981";
 
 export default function DealsScreen() {
   const colors = useColors();
@@ -34,9 +36,28 @@ export default function DealsScreen() {
   const topPadding = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
+  // Build trending strip — top 8 deals
+  const trendingItems: TrendingStripItem[] = (deals ?? []).slice(0, 8).map(d => ({
+    id:       String(d.id),
+    title:    d.title,
+    imageUrl: d.imageUrl,
+    meta1:    d.discountText ?? "Deal",
+    meta2:    d.placeName ?? undefined,
+    route:    `/deal/${d.id}`,
+  }));
+
   if (error) {
     return <ErrorFallback error={error as Error} resetError={refetch} />;
   }
+
+  const ListHeader = (
+    <TrendingStrip
+      items={trendingItems}
+      accentColor={ACCENT}
+      isLoading={isLoading && !deals}
+      label="Trending Deals"
+    />
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -53,17 +74,21 @@ export default function DealsScreen() {
 
       {/* ── Scrollable content ── */}
       {isLoading && !deals ? (
-        <View style={styles.loadingArea}>
-          <SkeletonCard height={140} style={styles.skeleton} />
-          <SkeletonCard height={140} style={styles.skeleton} />
-          <SkeletonCard height={140} style={styles.skeleton} />
-        </View>
+        <>
+          {ListHeader}
+          <View style={styles.loadingArea}>
+            <SkeletonCard height={140} style={styles.skeleton} />
+            <SkeletonCard height={140} style={styles.skeleton} />
+            <SkeletonCard height={140} style={styles.skeleton} />
+          </View>
+        </>
       ) : (
         <FlatList
           data={deals || []}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => <DealCard deal={item} />}
-          contentContainerStyle={{ paddingBottom: bottomPadding, paddingTop: 8 }}
+          ListHeaderComponent={ListHeader}
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
           refreshing={isLoading}

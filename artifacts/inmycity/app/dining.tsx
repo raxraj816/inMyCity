@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, FlatList
+  Platform, FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,6 +14,7 @@ import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 
 const FILTERS = [
   { id: "all",         label: "All"         },
@@ -41,7 +42,29 @@ export default function DiningScreen() {
     ? places
     : places.filter(p => p.subcategory?.toLowerCase() === activeFilter);
 
+  // Build trending strip items from all places (unfiltered)
+  const trendingItems: TrendingStripItem[] = places.slice(0, 8).map(p => ({
+    id:       String(p.id),
+    title:    p.name,
+    imageUrl: p.imageUrl,
+    meta1:    p.subcategory
+      ? p.subcategory.charAt(0).toUpperCase() + p.subcategory.slice(1)
+      : "Dining",
+    meta2:    p.rating != null ? `⭐ ${p.rating.toFixed(1)}` : undefined,
+    route:    `/place/${p.id}`,
+  }));
+
   if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+
+  // Header injected into FlatList so it scrolls with content
+  const ListHeader = (
+    <TrendingStrip
+      items={trendingItems}
+      accentColor={ACCENT}
+      isLoading={isLoading}
+      label="Trending Dining"
+    />
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -61,11 +84,13 @@ export default function DiningScreen() {
               key={f.id}
               style={[
                 styles.pill,
-                { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border }
+                { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border },
               ]}
               onPress={() => setActiveFilter(f.id)}
             >
-              <Text style={[styles.pillText, { color: active ? "#fff" : colors.foreground }]}>{f.label}</Text>
+              <Text style={[styles.pillText, { color: active ? "#fff" : colors.foreground }]}>
+                {f.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -73,27 +98,34 @@ export default function DiningScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          {[1, 2, 3].map(i => <SkeletonCard key={i} height={240} style={styles.skeleton} />)}
-        </View>
-      ) : filtered.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIcon, { backgroundColor: ACCENT + "15" }]}>
-            <Feather name="coffee" size={32} color={ACCENT} />
+        <>
+          {ListHeader}
+          <View style={styles.loadingContainer}>
+            {[1, 2, 3].map(i => <SkeletonCard key={i} height={240} style={styles.skeleton} />)}
           </View>
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No restaurants found</Text>
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            {activeFilter !== "all"
-              ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
-              : `No dining spots in ${selectedCity?.name ?? "this city"} yet.`}
-          </Text>
-        </View>
+        </>
+      ) : filtered.length === 0 ? (
+        <>
+          {ListHeader}
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIcon, { backgroundColor: ACCENT + "15" }]}>
+              <Feather name="coffee" size={32} color={ACCENT} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No restaurants found</Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+              {activeFilter !== "all"
+                ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
+                : `No dining spots in ${selectedCity?.name ?? "this city"} yet.`}
+            </Text>
+          </View>
+        </>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={item => String(item.id)}
           renderItem={({ item }) => <PlaceCard place={item} />}
-          contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 32 }}
+          ListHeaderComponent={ListHeader}
+          contentContainerStyle={{ paddingTop: 0, paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
           refreshing={isLoading}
@@ -105,17 +137,6 @@ export default function DiningScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  headerCenter: { flex: 1, alignItems: "center" },
-  headerTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
-  headerSub: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 1 },
   filtersScroll: { flexGrow: 0, flexShrink: 0 },
   filtersContent: {
     flexDirection: "row",

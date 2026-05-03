@@ -53,12 +53,12 @@ export default function DealDetailScreen() {
               style={[styles.circleButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]} 
               onPress={() => router.back()}
             >
-              <Feather name="x" size={24} color="#fff" />
+              <Feather name="arrow-left" size={22} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
+        <View style={[styles.content, { backgroundColor: colors.background, paddingBottom: insets.bottom + 40 }]}>
           <View style={styles.header}>
             <View style={[styles.discountBadge, { backgroundColor: colors.destructive }]}>
               <Text style={styles.discountText}>{deal.discountText}</Text>
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   topActions: {
     position: "absolute",
     top: 0,
-    right: 0,
+    left: 0,
     paddingHorizontal: 20,
   },
   circleButton: {
@@ -153,7 +153,6 @@ const styles = StyleSheet.create({
     marginTop: -20,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: "#fff",
   },
   header: {
     flexDirection: "row",

@@ -123,7 +123,7 @@ export default function PlaceDetailScreen() {
           </View>
         </View>
 
-        <View style={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
+        <View style={[styles.content, { backgroundColor: colors.background, paddingBottom: insets.bottom + 40 }]}>
           <View style={styles.header}>
             <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(place.category) }]}>
               <Text style={styles.categoryText}>{place.category}</Text>
@@ -260,7 +260,6 @@ const styles = StyleSheet.create({
     marginTop: -30,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    backgroundColor: "#fff",
   },
   header: {
     flexDirection: "row",

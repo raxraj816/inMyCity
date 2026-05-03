@@ -62,12 +62,12 @@ export default function EventDetailScreen() {
               style={[styles.circleButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]} 
               onPress={() => router.back()}
             >
-              <Feather name="arrow-down" size={24} color="#fff" />
+              <Feather name="arrow-left" size={22} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
+        <View style={[styles.content, { backgroundColor: colors.background, paddingBottom: insets.bottom + 100 }]}>
           <View style={styles.header}>
             <View style={[styles.categoryBadge, { backgroundColor: colors.navyLight }]}>
               <Text style={styles.categoryText}>{event.category}</Text>
@@ -76,7 +76,7 @@ export default function EventDetailScreen() {
 
           <Text style={[styles.title, { color: colors.foreground }]}>{event.title}</Text>
           
-          <View style={styles.infoCard}>
+          <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.infoRow}>
               <View style={[styles.iconBox, { backgroundColor: colors.amberLight }]}>
                 <Feather name="calendar" size={20} color={colors.amber} />
@@ -111,7 +111,7 @@ export default function EventDetailScreen() {
             <View style={styles.section}>
               <View style={styles.tagsContainer}>
                 {event.tags.map(tag => (
-                  <View key={tag} style={[styles.tag, { backgroundColor: colors.card }]}>
+                  <View key={tag} style={[styles.tag, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <Text style={[styles.tagText, { color: colors.foreground }]}>{tag}</Text>
                   </View>
                 ))}
@@ -171,7 +171,6 @@ const styles = StyleSheet.create({
     marginTop: -20,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: "#fff", // overridden dynamically
   },
   header: {
     flexDirection: "row",
@@ -196,12 +195,10 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
   infoCard: {
-    backgroundColor: "#fff", // overridden
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#e2e8f0", // overridden
   },
   infoRow: {
     flexDirection: "row",
@@ -256,7 +253,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
   },
   tagText: {
     fontFamily: "Inter_500Medium",

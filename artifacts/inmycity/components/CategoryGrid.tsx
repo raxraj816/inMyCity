@@ -82,11 +82,11 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: "30.5%",
-    aspectRatio: 0.88,
+    aspectRatio: 1,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 4,
     borderWidth: StyleSheet.hairlineWidth,
     position: "relative",
     ...Platform.select({
@@ -101,16 +101,17 @@ const styles = StyleSheet.create({
     }),
   },
   iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   label: {
     fontFamily: "Inter_500Medium",
-    fontSize: 11,
+    fontSize: 10,
     textAlign: "center",
+    lineHeight: 13,
   },
   soonBadge: {
     position: "absolute",

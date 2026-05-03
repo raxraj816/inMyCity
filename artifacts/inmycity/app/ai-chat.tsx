@@ -51,15 +51,15 @@ function HeaderRobotIcon({ color, bg }: { color: string; bg: string }) {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.15, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulseAnim, { toValue: 1.08, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
       ])
     ).start();
   }, []);
 
   return (
     <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: bg }, { transform: [{ scale: pulseAnim }] }]}>
-      <MaterialCommunityIcons name="robot-love-outline" size={20} color={color} />
+      <MaterialCommunityIcons name="face-woman-shimmer-outline" size={20} color={color} />
     </Animated.View>
   );
 }
@@ -174,7 +174,6 @@ export default function AiChatScreen() {
                 );
               }
             } catch {
-              // ignore parse errors for partial lines
             }
           }
         }
@@ -207,7 +206,7 @@ export default function AiChatScreen() {
       <View style={[s.messageRow, isUser ? s.messageRowUser : s.messageRowAssistant]}>
         {!isUser && (
           <View style={[s.avatar, { backgroundColor: colors.primary }]}>
-            <MaterialCommunityIcons name="robot-love-outline" size={14} color="#fff" />
+            <MaterialCommunityIcons name="face-woman-shimmer-outline" size={14} color="#fff" />
           </View>
         )}
         <View

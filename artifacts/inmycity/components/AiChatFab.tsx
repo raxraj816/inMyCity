@@ -76,7 +76,7 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
         onPress={() => router.push("/ai-chat" as any)}
         activeOpacity={0.85}
       >
-        <MaterialCommunityIcons name="robot-love-outline" size={18} color="#fff" />
+        <MaterialCommunityIcons name="face-woman-shimmer-outline" size={18} color="#fff" />
         <Text style={styles.fabLabel}>CityPilot</Text>
       </TouchableOpacity>
     </Animated.View>

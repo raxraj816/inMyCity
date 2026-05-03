@@ -79,7 +79,7 @@ export function RobotGreeting({ size = 34, color, backgroundColor }: RobotGreeti
       />
       <View style={[styles.iconCircle, { width: containerSize, height: containerSize, borderRadius: containerSize / 2, backgroundColor }]}> 
         <Animated.View style={{ transform: [{ rotate }] }}>
-          <MaterialCommunityIcons name="robot-love-outline" size={size} color={color} />
+          <MaterialCommunityIcons name="face-woman-shimmer-outline" size={size} color={color} />
         </Animated.View>
       </View>
     </Animated.View>

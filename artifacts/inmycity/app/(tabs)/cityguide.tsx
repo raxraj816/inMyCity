@@ -216,14 +216,46 @@ export default function CityGuideScreen() {
         <AppHeader subtitle="Your Visitor's Guide" topPadding={topPadding} showCityPicker />
 
         <View style={[styles.heroBanner, { backgroundColor: colors.navy }]}>
-          <View style={styles.heroContent}>
-            <Text style={styles.heroEyebrow}>Visiting</Text>
-            <Text style={styles.heroCity}>{selectedCity?.displayName ?? "Your City"}</Text>
-            <Text style={styles.heroTagline}>{meta.tagline}</Text>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroContent}>
+              <Text style={styles.heroEyebrow}>Visiting</Text>
+              <Text style={styles.heroCity}>{selectedCity?.displayName ?? "Your City"}</Text>
+              <Text style={styles.heroTagline}>{meta.tagline}</Text>
+            </View>
+            <View style={[styles.heroIconBox, { backgroundColor: "rgba(255,255,255,0.1)" }]}>
+              <Feather name="compass" size={36} color="#f97316" />
+            </View>
           </View>
-          <View style={[styles.heroIconBox, { backgroundColor: "rgba(255,255,255,0.1)" }]}>
-            <Feather name="compass" size={36} color="#f97316" />
-          </View>
+
+          <View style={styles.heroDivider} />
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.heroFactsScroll}>
+            {[
+              { icon: "sun", label: "Best season", value: meta.tips.find((t) => t.label === "Best Season")?.value ?? "Check locally" },
+              { icon: "navigation", label: "Transit", value: meta.tips.find((t) => t.label === "Getting Around")?.value ?? "Public transit" },
+              { icon: "clock", label: "Timezone", value: glance.timezone },
+              { icon: "calendar", label: "Trip length", value: glance.tripLength },
+              { icon: "credit-card", label: "Currency", value: glance.currency },
+            ].map((item) => (
+              <View key={item.label} style={styles.heroFactPill}>
+                <Feather name={item.icon as any} size={12} color="rgba(249,115,22,0.9)" />
+                <View>
+                  <Text style={styles.heroFactLabel}>{item.label}</Text>
+                  <Text style={styles.heroFactValue}>{item.value}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.heroDetailsButton}
+            onPress={() => setDetailsOpen(true)}
+          >
+            <Feather name="info" size={12} color="rgba(255,255,255,0.55)" />
+            <Text style={styles.heroDetailsButtonText}>Full city details</Text>
+            <Feather name="chevron-right" size={12} color="rgba(255,255,255,0.4)" />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity activeOpacity={0.85} style={[styles.transitCard, { backgroundColor: "#06b6d4" }]} onPress={() => router.push("/transit")}>
@@ -237,43 +269,21 @@ export default function CityGuideScreen() {
           <Feather name="arrow-right" size={18} color="#fff" />
         </TouchableOpacity>
 
-        <View style={styles.heroQuickPanel}>
-          <View style={styles.heroQuickHeader}>
-            <View style={styles.heroQuickInfo}>
-              <View style={[styles.heroQuickBadge, { backgroundColor: "rgba(255,255,255,0.14)" }]}>
-                <Feather name="info" size={13} color="#fff" />
-              </View>
-              <View>
-                <Text style={styles.heroQuickLabel}>Quick Info</Text>
-                <Text style={styles.heroQuickValue}>{glance.knownFor}</Text>
-              </View>
-            </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickJumpScroll}>
+          {QUICK_JUMPS.map((jump) => (
             <TouchableOpacity
-              activeOpacity={0.85}
-              style={[styles.heroDetailsButton, { backgroundColor: "rgba(255,255,255,0.12)" }]}
-              onPress={() => setDetailsOpen(true)}
+              key={jump.label}
+              style={[styles.quickJumpTile, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push(jump.route as any)}
+              activeOpacity={0.8}
             >
-              <Feather name="more-horizontal" size={16} color="#fff" />
-              <Text style={styles.heroDetailsButtonText}>City details</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.heroFactsScroll}>
-            {[
-              { icon: "sun", label: "Best season", value: meta.tips.find((t) => t.label === "Best Season")?.value ?? "Check locally" },
-              { icon: "navigation", label: "Getting around", value: meta.tips.find((t) => t.label === "Getting Around")?.value ?? "Transit" },
-              { icon: "clock", label: "Timezone", value: glance.timezone },
-              { icon: "calendar", label: "Trip length", value: glance.tripLength },
-            ].map((item) => (
-              <View key={item.label} style={styles.heroFactPill}>
-                <Feather name={item.icon as any} size={12} color={colors.amber} />
-                <View>
-                  <Text style={styles.heroFactLabel}>{item.label}</Text>
-                  <Text style={styles.heroFactValue}>{item.value}</Text>
-                </View>
+              <View style={[styles.quickJumpIcon, { backgroundColor: jump.color + "22" }]}>
+                <Feather name={jump.icon as any} size={20} color={jump.color} />
               </View>
-            ))}
-          </ScrollView>
-        </View>
+              <Text style={[styles.quickJumpLabel, { color: colors.foreground }]}>{jump.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {neighborhoods.length > 0 && (
           <View style={styles.section}>
@@ -308,6 +318,24 @@ export default function CityGuideScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
               {placeHighlights.map((place) => (
                 <PlaceGuideCard key={place.id} place={place} colors={colors} onPress={() => router.push(`/place/${place.id}` as any)} />
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="Things to Do" icon="activity" colors={colors} />
+          {actLoading ? (
+            <View style={styles.skeletonRow}>
+              <SkeletonCard height={260} style={styles.guideSkeletonCard} />
+              <SkeletonCard height={260} style={styles.guideSkeletonCard} />
+            </View>
+          ) : topActivities.length === 0 ? (
+            <EmptySection icon="activity" message="No activities listed yet." colors={colors} />
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
+              {topActivities.map((activity) => (
+                <ActivityCard key={activity.id} activity={activity} colors={colors} />
               ))}
             </ScrollView>
           )}
@@ -707,24 +735,20 @@ function EventRow({ event, colors, onPress }: { event: Event; colors: ReturnType
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  heroBanner: { marginHorizontal: 20, marginBottom: 8, borderRadius: 20, padding: 24, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  heroBanner: { marginHorizontal: 20, marginBottom: 8, borderRadius: 20, padding: 20, overflow: "hidden" },
+  heroTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
   heroContent: { flex: 1 },
   heroEyebrow: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1 },
   heroCity: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#fff", marginTop: 2 },
   heroTagline: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 },
-  heroIconBox: { width: 68, height: 68, borderRadius: 20, alignItems: "center", justifyContent: "center", marginLeft: 16 },
-  heroQuickPanel: { marginHorizontal: 20, marginTop: -8, marginBottom: 4, borderRadius: 18, padding: 14, backgroundColor: "rgba(255,255,255,0.12)" },
-  heroQuickHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 },
-  heroQuickInfo: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-  heroQuickBadge: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  heroQuickLabel: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: "rgba(255,255,255,0.7)" },
-  heroQuickValue: { fontFamily: "Inter_700Bold", fontSize: 14, color: "#fff", marginTop: 1 },
-  heroDetailsButton: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
-  heroDetailsButtonText: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#fff" },
-  heroFactsScroll: { gap: 8 },
-  heroFactPill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 14, minWidth: 150 },
-  heroFactLabel: { fontFamily: "Inter_500Medium", fontSize: 10, color: "rgba(255,255,255,0.65)", textTransform: "uppercase" },
-  heroFactValue: { fontFamily: "Inter_700Bold", fontSize: 12, color: "#fff", marginTop: 1 },
+  heroIconBox: { width: 64, height: 64, borderRadius: 18, alignItems: "center", justifyContent: "center", marginLeft: 12 },
+  heroDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.12)", marginVertical: 14 },
+  heroFactsScroll: { gap: 8, paddingBottom: 2 },
+  heroFactPill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 12 },
+  heroFactLabel: { fontFamily: "Inter_400Regular", fontSize: 10, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: 0.3 },
+  heroFactValue: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#fff", marginTop: 1 },
+  heroDetailsButton: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 12, alignSelf: "flex-end" },
+  heroDetailsButtonText: { fontFamily: "Inter_400Regular", fontSize: 11, color: "rgba(255,255,255,0.5)" },
   section: { marginTop: 8 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
   sectionHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 7 },

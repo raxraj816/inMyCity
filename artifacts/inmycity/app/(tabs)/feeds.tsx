@@ -61,6 +61,7 @@ interface NewsItem {
   category: NewsCategory;
   headline: string;
   summary: string;
+  imageUrl: string;
   source: string;
   sourceKind: NewsSourceKind;
   minutesAgo: number;
@@ -166,36 +167,36 @@ const PULSE_POSTS: Record<string, PulsePost[]> = {
 
 const NEWS_DATA: Record<string, NewsItem[]> = {
   Mumbai: [
-    { id: 1, category: "traffic", headline: "Western Express Highway hit by major peak-hour delays", summary: "Traffic police advise using JVLR and alternate routes until 8:30 pm.", source: "Mumbai Traffic Police", sourceKind: "traffic", minutesAgo: 12, city: "Mumbai" },
-    { id: 2, category: "weather", headline: "Orange alert issued for Mumbai as heavy rain returns", summary: "IMD expects intense showers in low-lying areas through midnight.", source: "IMD Mumbai", sourceKind: "weather", minutesAgo: 22, city: "Mumbai" },
-    { id: 3, category: "civic", headline: "BMC announces water cut in Andheri and Bandra today", summary: "Supply will remain off from 10am to 6pm for pipeline maintenance.", source: "BMC", sourceKind: "government", minutesAgo: 45, city: "Mumbai" },
-    { id: 4, category: "local", headline: "Dharavi redevelopment project breaks ground officially", summary: "Maharashtra CM inaugurated the ₹20,000 Cr project this morning.", source: "Hindustan Times", sourceKind: "publisher", minutesAgo: 60, city: "Mumbai" },
-    { id: 5, category: "sports", headline: "Mumbai Indians sell out Wankhede for RCB clash", summary: "All 33,000 tickets sold within 90 minutes of release.", source: "Times of India Sport", sourceKind: "publisher", minutesAgo: 90, city: "Mumbai" },
-    { id: 6, category: "local", headline: "New verified food stalls added around Mohammad Ali Road", summary: "City guide team expanded the street food map with 40+ vetted stalls.", source: "inMyCity Mumbai", sourceKind: "publisher", minutesAgo: 110, city: "Mumbai" },
+    { id: 1, category: "traffic", headline: "Western Express Highway hit by major peak-hour delays", summary: "Traffic police advise using JVLR and alternate routes until 8:30 pm.", imageUrl: "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80", source: "Mumbai Traffic Police", sourceKind: "traffic", minutesAgo: 12, city: "Mumbai" },
+    { id: 2, category: "weather", headline: "Orange alert issued for Mumbai as heavy rain returns", summary: "IMD expects intense showers in low-lying areas through midnight.", imageUrl: "https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=1200&q=80", source: "IMD Mumbai", sourceKind: "weather", minutesAgo: 22, city: "Mumbai" },
+    { id: 3, category: "civic", headline: "BMC announces water cut in Andheri and Bandra today", summary: "Supply will remain off from 10am to 6pm for pipeline maintenance.", imageUrl: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80", source: "BMC", sourceKind: "government", minutesAgo: 45, city: "Mumbai" },
+    { id: 4, category: "local", headline: "Dharavi redevelopment project breaks ground officially", summary: "Maharashtra CM inaugurated the ₹20,000 Cr project this morning.", imageUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80", source: "Hindustan Times", sourceKind: "publisher", minutesAgo: 60, city: "Mumbai" },
+    { id: 5, category: "sports", headline: "Mumbai Indians sell out Wankhede for RCB clash", summary: "All 33,000 tickets sold within 90 minutes of release.", imageUrl: "https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=1200&q=80", source: "Times of India Sport", sourceKind: "publisher", minutesAgo: 90, city: "Mumbai" },
+    { id: 6, category: "local", headline: "New verified food stalls added around Mohammad Ali Road", summary: "City guide team expanded the street food map with 40+ vetted stalls.", imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80", source: "inMyCity Mumbai", sourceKind: "publisher", minutesAgo: 110, city: "Mumbai" },
   ],
   Bangalore: [
-    { id: 1, category: "civic", headline: "Namma Metro Phase 2 Whitefield extension opens next month", summary: "The 13.71 km stretch adds 12 stations and cuts Whitefield to MG Road to 35 minutes.", source: "BMRCL", sourceKind: "government", minutesAgo: 20, city: "Bangalore" },
-    { id: 2, category: "traffic", headline: "Silk Board junction signal upgrade is causing serious delays", summary: "Electronic signal replacement underway. Expect 30 minute peak-hour slowdowns.", source: "BBMP Traffic", sourceKind: "traffic", minutesAgo: 38, city: "Bangalore" },
-    { id: 3, category: "weather", headline: "Bengaluru receives unseasonal heavy showers", summary: "Outer Ring Road and Sarjapur Road have waterlogging this evening.", source: "IMD Bengaluru", sourceKind: "weather", minutesAgo: 58, city: "Bangalore" },
-    { id: 4, category: "local", headline: "Third Wave Coffee opens new roastery in Indiranagar", summary: "The new space includes a tasting bar and weekend cupping sessions.", source: "Deccan Herald", sourceKind: "publisher", minutesAgo: 75, city: "Bangalore" },
-    { id: 5, category: "sports", headline: "Bengaluru FC qualifies for ISL semi-finals with comeback win", summary: "A late goal at Kanteerava sealed a 2–1 victory.", source: "Deccan Herald Sport", sourceKind: "publisher", minutesAgo: 104, city: "Bangalore" },
-    { id: 6, category: "local", headline: "BBMP pothole repair drive begins in HSR and Koramangala", summary: "Ward teams deployed with a two-week target to fix 2,000 potholes.", source: "inMyCity Bangalore", sourceKind: "publisher", minutesAgo: 130, city: "Bangalore" },
+    { id: 1, category: "civic", headline: "Namma Metro Phase 2 Whitefield extension opens next month", summary: "The 13.71 km stretch adds 12 stations and cuts Whitefield to MG Road to 35 minutes.", imageUrl: "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?auto=format&fit=crop&w=1200&q=80", source: "BMRCL", sourceKind: "government", minutesAgo: 20, city: "Bangalore" },
+    { id: 2, category: "traffic", headline: "Silk Board junction signal upgrade is causing serious delays", summary: "Electronic signal replacement underway. Expect 30 minute peak-hour slowdowns.", imageUrl: "https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=1200&q=80", source: "BBMP Traffic", sourceKind: "traffic", minutesAgo: 38, city: "Bangalore" },
+    { id: 3, category: "weather", headline: "Bengaluru receives unseasonal heavy showers", summary: "Outer Ring Road and Sarjapur Road have waterlogging this evening.", imageUrl: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1200&q=80", source: "IMD Bengaluru", sourceKind: "weather", minutesAgo: 58, city: "Bangalore" },
+    { id: 4, category: "local", headline: "Third Wave Coffee opens new roastery in Indiranagar", summary: "The new space includes a tasting bar and weekend cupping sessions.", imageUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80", source: "Deccan Herald", sourceKind: "publisher", minutesAgo: 75, city: "Bangalore" },
+    { id: 5, category: "sports", headline: "Bengaluru FC qualifies for ISL semi-finals with comeback win", summary: "A late goal at Kanteerava sealed a 2–1 victory.", imageUrl: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=1200&q=80", source: "Deccan Herald Sport", sourceKind: "publisher", minutesAgo: 104, city: "Bangalore" },
+    { id: 6, category: "local", headline: "BBMP pothole repair drive begins in HSR and Koramangala", summary: "Ward teams deployed with a two-week target to fix 2,000 potholes.", imageUrl: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80", source: "inMyCity Bangalore", sourceKind: "publisher", minutesAgo: 130, city: "Bangalore" },
   ],
   "New York City": [
-    { id: 1, category: "traffic", headline: "BQE lane closures expected toward Brooklyn Bridge", summary: "Two lanes are closed for emergency deck repair through late evening.", source: "NYSDOT", sourceKind: "traffic", minutesAgo: 8, city: "New York City" },
-    { id: 2, category: "transit", headline: "MTA weekend subway service changes hit A, C, E lines", summary: "No A train service between Howard Beach and Far Rockaway Sat–Sun.", source: "MTA", sourceKind: "government", minutesAgo: 18, city: "New York City" },
-    { id: 3, category: "weather", headline: "NYC Heat Advisory in effect through Thursday", summary: "Heat index values may reach 105°F. Cooling centers are open citywide.", source: "NWS New York", sourceKind: "weather", minutesAgo: 30, city: "New York City" },
-    { id: 4, category: "local", headline: "Times Square pedestrian redesign unveiled", summary: "Protected lanes and wider sidewalks approved by City Council.", source: "NYC DOT", sourceKind: "government", minutesAgo: 52, city: "New York City" },
-    { id: 5, category: "sports", headline: "Knicks defeat Celtics in overtime thriller at MSG", summary: "Jalen Brunson dropped 42 points in a dramatic comeback.", source: "NY Post Sports", sourceKind: "publisher", minutesAgo: 77, city: "New York City" },
-    { id: 6, category: "business", headline: "Levain launches a new walnut chocolate chip cookie", summary: "All five locations now have the new item after an eight-month test.", source: "Levain Bakery", sourceKind: "business", minutesAgo: 120, city: "New York City" },
+    { id: 1, category: "traffic", headline: "BQE lane closures expected toward Brooklyn Bridge", summary: "Two lanes are closed for emergency deck repair through late evening.", imageUrl: "https://images.unsplash.com/photo-1508057198894-247b23fe5ade?auto=format&fit=crop&w=1200&q=80", source: "NYSDOT", sourceKind: "traffic", minutesAgo: 8, city: "New York City" },
+    { id: 2, category: "transit", headline: "MTA weekend subway service changes hit A, C, E lines", summary: "No A train service between Howard Beach and Far Rockaway Sat–Sun.", imageUrl: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80", source: "MTA", sourceKind: "government", minutesAgo: 18, city: "New York City" },
+    { id: 3, category: "weather", headline: "NYC Heat Advisory in effect through Thursday", summary: "Heat index values may reach 105°F. Cooling centers are open citywide.", imageUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80", source: "NWS New York", sourceKind: "weather", minutesAgo: 30, city: "New York City" },
+    { id: 4, category: "local", headline: "Times Square pedestrian redesign unveiled", summary: "Protected lanes and wider sidewalks approved by City Council.", imageUrl: "https://images.unsplash.com/photo-1546436836-07a91091f160?auto=format&fit=crop&w=1200&q=80", source: "NYC DOT", sourceKind: "government", minutesAgo: 52, city: "New York City" },
+    { id: 5, category: "sports", headline: "Knicks defeat Celtics in overtime thriller at MSG", summary: "Jalen Brunson dropped 42 points in a dramatic comeback.", imageUrl: "https://images.unsplash.com/photo-1518061214050-e6025e3e9b4f?auto=format&fit=crop&w=1200&q=80", source: "NY Post Sports", sourceKind: "publisher", minutesAgo: 77, city: "New York City" },
+    { id: 6, category: "business", headline: "Levain launches a new walnut chocolate chip cookie", summary: "All five locations now have the new item after an eight-month test.", imageUrl: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=1200&q=80", source: "Levain Bakery", sourceKind: "business", minutesAgo: 120, city: "New York City" },
   ],
   "San Francisco": [
-    { id: 1, category: "transit", headline: "BART strike averted — service continues as normal", summary: "Union and BART management reached a tentative agreement.", source: "BART", sourceKind: "government", minutesAgo: 11, city: "San Francisco" },
-    { id: 2, category: "weather", headline: "Dense fog advisory for Golden Gate Bridge until noon", summary: "Visibility is under a quarter mile and the speed limit is reduced.", source: "NWS Bay Area", sourceKind: "weather", minutesAgo: 25, city: "San Francisco" },
-    { id: 3, category: "local", headline: "SF expands overnight shelter capacity by 300 beds", summary: "A new Navigation Center opens in SOMA as part of the winter plan.", source: "SF Chronicle", sourceKind: "publisher", minutesAgo: 39, city: "San Francisco" },
-    { id: 4, category: "traffic", headline: "Bay Bridge westbound lane closure begins Friday evening", summary: "One lane will be closed from 8 pm to 5 am for sensor installation.", source: "Bay Bridge", sourceKind: "traffic", minutesAgo: 62, city: "San Francisco" },
-    { id: 5, category: "sports", headline: "Warriors clinch playoff spot with dominant win over Lakers", summary: "Steph Curry's 38-point performance sealed the top-4 seeding.", source: "SF Chronicle Sport", sourceKind: "publisher", minutesAgo: 84, city: "San Francisco" },
-    { id: 6, category: "business", headline: "Ferry Building farmers market opens early tomorrow", summary: "Fresh produce, local vendors, and live music from 8 am.", source: "inMyCity SF", sourceKind: "publisher", minutesAgo: 115, city: "San Francisco" },
+    { id: 1, category: "transit", headline: "BART strike averted — service continues as normal", summary: "Union and BART management reached a tentative agreement.", imageUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80", source: "BART", sourceKind: "government", minutesAgo: 11, city: "San Francisco" },
+    { id: 2, category: "weather", headline: "Dense fog advisory for Golden Gate Bridge until noon", summary: "Visibility is under a quarter mile and the speed limit is reduced.", imageUrl: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80", source: "NWS Bay Area", sourceKind: "weather", minutesAgo: 25, city: "San Francisco" },
+    { id: 3, category: "local", headline: "SF expands overnight shelter capacity by 300 beds", summary: "A new Navigation Center opens in SOMA as part of the winter plan.", imageUrl: "https://images.unsplash.com/photo-1516298584913-7e33b5f05f44?auto=format&fit=crop&w=1200&q=80", source: "SF Chronicle", sourceKind: "publisher", minutesAgo: 39, city: "San Francisco" },
+    { id: 4, category: "traffic", headline: "Bay Bridge westbound lane closure begins Friday evening", summary: "One lane will be closed from 8 pm to 5 am for sensor installation.", imageUrl: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1200&q=80", source: "Bay Bridge", sourceKind: "traffic", minutesAgo: 62, city: "San Francisco" },
+    { id: 5, category: "sports", headline: "Warriors clinch playoff spot with dominant win over Lakers", summary: "Steph Curry's 38-point performance sealed the top-4 seeding.", imageUrl: "https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=1200&q=80", source: "SF Chronicle Sport", sourceKind: "publisher", minutesAgo: 84, city: "San Francisco" },
+    { id: 6, category: "business", headline: "Ferry Building farmers market opens early tomorrow", summary: "Fresh produce, local vendors, and live music from 8 am.", imageUrl: "https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1200&q=80", source: "inMyCity SF", sourceKind: "publisher", minutesAgo: 115, city: "San Francisco" },
   ],
 };
 
@@ -501,6 +502,7 @@ export default function FeedsScreen() {
         <View style={styles.newsList}>
           {orderedNews.map((item) => {
             const meta = NEWS_CATEGORY_META[item.category];
+            const isPublisher = item.sourceKind === "publisher";
             return (
               <TouchableOpacity key={item.id} activeOpacity={0.86} style={[styles.publisherCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.publisherTop}>
@@ -510,16 +512,25 @@ export default function FeedsScreen() {
                     </View>
                     <View style={styles.publisherMeta}>
                       <Text style={[styles.publisherSource, { color: colors.foreground }]} numberOfLines={1}>{item.source}</Text>
-                      <Text style={[styles.publisherTime, { color: colors.mutedForeground }]}>{timeAgo(item.minutesAgo)}</Text>
+                      <View style={styles.publisherMetaRow}>
+                        <Text style={[styles.publisherTime, { color: colors.mutedForeground }]}>{timeAgo(item.minutesAgo)}</Text>
+                        {isPublisher ? <Text style={[styles.publisherDot, { color: colors.mutedForeground }]}>·</Text> : null}
+                        {isPublisher ? <Text style={[styles.publisherShortLabel, { color: meta.color, backgroundColor: meta.bg }]}>{meta.label}</Text> : null}
+                      </View>
                     </View>
                   </View>
-                  <Text style={[styles.publisherTag, { color: meta.color, backgroundColor: meta.bg }]}>{meta.label}</Text>
+                  {!isPublisher ? <Text style={[styles.publisherTag, { color: meta.color, backgroundColor: meta.bg }]}>{meta.label}</Text> : null}
                 </View>
-                <Text style={[styles.publisherHeadline, { color: colors.foreground }]} numberOfLines={2}>{item.headline}</Text>
-                <Text style={[styles.publisherSummary, { color: colors.mutedForeground }]} numberOfLines={2}>{item.summary}</Text>
-                <View style={styles.publisherFooter}>
-                  <Text style={[styles.publisherRead, { color: colors.amber }]}>Read more</Text>
-                  <Feather name="chevron-right" size={14} color={colors.amber} />
+                <View style={styles.publisherBody}>
+                  <Image source={{ uri: item.imageUrl }} style={styles.publisherImage} />
+                  <View style={styles.publisherContent}>
+                    <Text style={[styles.publisherHeadline, { color: colors.foreground }]} numberOfLines={2}>{item.headline}</Text>
+                    <Text style={[styles.publisherSummary, { color: colors.mutedForeground }]} numberOfLines={3}>{item.summary}</Text>
+                    <View style={styles.publisherFooter}>
+                      <Text style={[styles.publisherRead, { color: colors.amber }]}>Read more</Text>
+                      <Feather name="chevron-right" size={14} color={colors.amber} />
+                    </View>
+                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -746,8 +757,14 @@ const styles = StyleSheet.create({
   publisherIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   publisherMeta: { flex: 1, minWidth: 0 },
   publisherSource: { fontFamily: "Inter_700Bold", fontSize: 13 },
+  publisherMetaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" },
   publisherTime: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 2 },
   publisherTag: { fontFamily: "Inter_700Bold", fontSize: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, overflow: "hidden" },
+  publisherShortLabel: { fontFamily: "Inter_700Bold", fontSize: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, overflow: "hidden" },
+  publisherDot: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  publisherBody: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+  publisherImage: { width: 96, height: 96, borderRadius: 14, backgroundColor: "#e5e7eb" },
+  publisherContent: { flex: 1, minWidth: 0, gap: 8 },
   publisherHeadline: { fontFamily: "Inter_700Bold", fontSize: 16, lineHeight: 23, letterSpacing: -0.2 },
   publisherSummary: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
   publisherFooter: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4 },

@@ -40,15 +40,15 @@ export default function DiningScreen() {
 
   const filtered = activeFilter === "all"
     ? places
-    : places.filter(p => p.subcategory?.toLowerCase() === activeFilter);
+    : places.filter(p => p.tags?.some(t => t.toLowerCase() === activeFilter) || p.category?.toLowerCase() === activeFilter);
 
   // Build trending strip items from all places (unfiltered)
   const trendingItems: TrendingStripItem[] = places.slice(0, 8).map(p => ({
     id:       String(p.id),
     title:    p.name,
     imageUrl: p.imageUrl,
-    meta1:    p.subcategory
-      ? p.subcategory.charAt(0).toUpperCase() + p.subcategory.slice(1)
+    meta1:    p.tags?.[0]
+      ? p.tags[0].charAt(0).toUpperCase() + p.tags[0].slice(1)
       : "Dining",
     meta2:    p.rating != null ? `⭐ ${p.rating.toFixed(1)}` : undefined,
     route:    `/place/${p.id}`,

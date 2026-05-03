@@ -134,7 +134,7 @@ export default function CityGuideScreen() {
   const [guideFilter, setGuideFilter] = useState("all");
 
   const cityName = selectedCity?.name;
-  const meta = (cityName && CITY_META[cityName]) ?? DEFAULT_META;
+  const meta = (cityName ? CITY_META[cityName] : undefined) ?? DEFAULT_META;
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
@@ -149,7 +149,7 @@ export default function CityGuideScreen() {
     placeFilter === "all" ? allPlaces : allPlaces.filter((p) => p.category?.toLowerCase() === placeFilter)
   ).slice(0, 10);
   const upcomingEvents = events.slice(0, 5);
-  const neighborhoods = (cityName && NEIGHBORHOODS[cityName]) ?? [];
+  const neighborhoods = (cityName ? NEIGHBORHOODS[cityName] : undefined) ?? [];
   const guideItems = useMemo(() => {
     if (guideFilter === "all") return itineraries;
     return itineraries.filter((itinerary) => String(itinerary.durationDays) === guideFilter);
@@ -199,7 +199,7 @@ export default function CityGuideScreen() {
 
         <View style={styles.section}>
           <SectionHeader title="Quick Tips" icon="info" colors={colors} />
-          <View style={styles.tipsRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipsScroll}>
             {meta.tips.map((tip) => (
               <View key={tip.label} style={[styles.tipCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.tipIconBox, { backgroundColor: colors.accent }]}>
@@ -209,7 +209,7 @@ export default function CityGuideScreen() {
                 <Text style={[styles.tipValue, { color: colors.foreground }]}>{tip.value}</Text>
               </View>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         {neighborhoods.length > 0 && (
@@ -417,14 +417,14 @@ function ItineraryGuideCard({ itinerary, colors, onPress }: { itinerary: Itinera
 }
 
 function EventRow({ event, colors, onPress }: { event: Event; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
-  const dateStr = event.date ? new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null;
+  const dateStr = event.startDate ? new Date(event.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null;
   return (
     <TouchableOpacity activeOpacity={0.85} style={[styles.eventRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress}>
       <View style={[styles.eventDateBox, { backgroundColor: colors.accent }]}>
         <Text style={[styles.eventDateText, { color: colors.amber }]}>{dateStr ?? "—"}</Text>
       </View>
       <View style={styles.eventInfo}>
-        <Text style={[styles.eventName, { color: colors.foreground }]} numberOfLines={1}>{event.name}</Text>
+        <Text style={[styles.eventName, { color: colors.foreground }]} numberOfLines={1}>{event.title}</Text>
         {event.venue && <Text style={[styles.eventVenue, { color: colors.mutedForeground }]} numberOfLines={1}>{event.venue}</Text>}
       </View>
       <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
@@ -453,8 +453,8 @@ const styles = StyleSheet.create({
   transitText: { flex: 1 },
   transitTitle: { fontFamily: "Inter_700Bold", fontSize: 15, color: "#fff" },
   transitSub: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 1 },
-  tipsRow: { flexDirection: "row", paddingHorizontal: 20, gap: 10 },
-  tipCard: { flex: 1, borderRadius: 16, padding: 14, borderWidth: 1, alignItems: "flex-start", gap: 6 },
+  tipsScroll: { paddingHorizontal: 20, paddingBottom: 4, gap: 10 },
+  tipCard: { width: 130, borderRadius: 16, padding: 14, borderWidth: 1, alignItems: "flex-start", gap: 6 },
   tipIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   tipLabel: { fontFamily: "Inter_400Regular", fontSize: 11 },
   tipValue: { fontFamily: "Inter_600SemiBold", fontSize: 13, lineHeight: 17 },

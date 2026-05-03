@@ -43,9 +43,9 @@ export default function EventsScreen() {
 
   const trendingItems: TrendingStripItem[] = (events ?? []).slice(0, 8).map(e => ({
     id:       String(e.id),
-    title:    e.name,
+    title:    e.title,
     imageUrl: e.imageUrl,
-    meta1:    fmtDate(e.date) || "Upcoming",
+    meta1:    fmtDate(e.startDate) || "Upcoming",
     meta2:    e.venue ?? undefined,
     route:    `/event/${e.id}`,
   }));

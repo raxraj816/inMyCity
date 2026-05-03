@@ -14,7 +14,7 @@ interface Props {
 export function ScreenHeader({ title, topPadding, rightElement }: Props) {
   const colors = useColors();
   const router = useRouter();
-  const { selectedCity } = useCity();
+  const { selectedCity, showPicker } = useCity();
 
   return (
     <View
@@ -27,6 +27,7 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
         },
       ]}
     >
+      {/* Back button */}
       <TouchableOpacity
         onPress={() => router.back()}
         style={styles.backBtn}
@@ -36,6 +37,7 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
         <Feather name="arrow-left" size={22} color={colors.foreground} />
       </TouchableOpacity>
 
+      {/* Wordmark + subtitle */}
       <View style={styles.brandBlock}>
         <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
@@ -43,11 +45,35 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
         </Text>
       </View>
 
-      {rightElement ? (
-        <View style={styles.rightSlot}>{rightElement}</View>
-      ) : (
-        <View style={styles.spacer} />
-      )}
+      {/* Right slot: optional override, or city pill + profile */}
+      <View style={styles.rightSlot}>
+        {rightElement ?? (
+          <>
+            <TouchableOpacity
+              style={[styles.cityPill, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={showPicker}
+              activeOpacity={0.75}
+            >
+              <Feather name="map-pin" size={11} color={colors.amber} />
+              <Text
+                style={[styles.cityPillText, { color: colors.foreground }]}
+                numberOfLines={1}
+              >
+                {selectedCity?.name ?? "City"}
+              </Text>
+              <Feather name="chevron-down" size={11} color={colors.mutedForeground} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push("/profile")}
+              activeOpacity={0.75}
+              style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
+              <Feather name="user" size={17} color={colors.foreground} />
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
     </View>
   );
 }
@@ -67,6 +93,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 19,
+    flexShrink: 0,
   },
   brandBlock: {
     flex: 1,
@@ -82,10 +109,32 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   rightSlot: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 0,
+  },
+  cityPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    maxWidth: 100,
+  },
+  cityPillText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    flexShrink: 1,
+  },
+  profileBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-  },
-  spacer: {
-    width: 38,
+    borderWidth: 1,
   },
 });

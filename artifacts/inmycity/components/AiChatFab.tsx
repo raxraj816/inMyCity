@@ -16,7 +16,7 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
   const insets = useSafeAreaInsets();
 
   const TAB_BAR_HEIGHT = Platform.OS === "ios" ? 83 : 60;
-  const bottom = TAB_BAR_HEIGHT + insets.bottom + 20 + extraBottom;
+  const bottom = TAB_BAR_HEIGHT + insets.bottom + 32 + extraBottom;
 
   return (
     <TouchableOpacity

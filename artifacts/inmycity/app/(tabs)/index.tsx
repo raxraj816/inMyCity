@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Platform, useWindowDimensions,
+  RefreshControl, Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -39,9 +39,8 @@ const BADGE: Record<TrendingType, { label: string; color: string; icon: string }
   sport:    { label: "Sport",    color: "#22c55e", icon: "activity" },
 };
 
-const GRID_H_PAD = 16;
-const GRID_GAP   = 12;
-const CAP        = 5;
+const H_PAD = 16;
+const CAP   = 5;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,25 +55,13 @@ function fmtDur(mins: number | null | undefined) {
   return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
 }
 
-// ─── Skeleton grid ────────────────────────────────────────────────────────────
+// ─── Skeleton list ────────────────────────────────────────────────────────────
 
-function TrendingSkeletons({
-  colors,
-  cardWidth,
-}: {
-  colors: ReturnType<typeof useColors>;
-  cardWidth: number;
-}) {
+function TrendingSkeletons({ colors }: { colors: ReturnType<typeof useColors> }) {
   return (
-    <View style={styles.grid}>
-      {[1, 2, 3, 4].map(i => (
-        <View
-          key={i}
-          style={[
-            styles.skeletonCard,
-            { backgroundColor: colors.card, width: cardWidth },
-          ]}
-        />
+    <View style={styles.list}>
+      {[1, 2, 3].map(i => (
+        <View key={i} style={[styles.skeletonCard, { backgroundColor: colors.card }]} />
       ))}
     </View>
   );
@@ -85,41 +72,36 @@ function TrendingSkeletons({
 function TrendingCard({
   item,
   colors,
-  cardWidth,
 }: {
-  item:      TrendingItem;
-  colors:    ReturnType<typeof useColors>;
-  cardWidth: number;
+  item:   TrendingItem;
+  colors: ReturnType<typeof useColors>;
 }) {
   const router = useRouter();
   const cfg    = BADGE[item.type];
 
   return (
     <TouchableOpacity
-      style={[
-        styles.card,
-        { backgroundColor: colors.card, borderColor: colors.border, width: cardWidth },
-      ]}
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push(item.route as any)}
       activeOpacity={0.85}
     >
-      {/* Image + badge overlay */}
+      {/* Full-width landscape image with badge overlay */}
       <View style={styles.imageWrap}>
         <Image
           source={{
             uri: item.imageUrl
-              ?? "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400",
+              ?? "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800",
           }}
-          style={[styles.cardImage, { width: cardWidth }]}
+          style={styles.cardImage}
           contentFit="cover"
         />
         <View style={[styles.typeBadge, { backgroundColor: cfg.color }]}>
-          <Feather name={cfg.icon as any} size={9} color="#fff" />
+          <Feather name={cfg.icon as any} size={10} color="#fff" />
           <Text style={styles.typeBadgeText}>{cfg.label}</Text>
         </View>
       </View>
 
-      {/* Text body */}
+      {/* Body */}
       <View style={styles.cardBody}>
         <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={2}>
           {item.title}
@@ -145,17 +127,13 @@ function TrendingCard({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ExploreScreen() {
-  const colors    = useColors();
-  const insets    = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
+  const colors   = useColors();
+  const insets   = useSafeAreaInsets();
   const { selectedCity } = useCity();
-  const cityName  = selectedCity?.name;
+  const cityName = selectedCity?.name;
 
   const topPadding    = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
-
-  // Card width for 2-column grid
-  const cardWidth = Math.floor((screenWidth - GRID_H_PAD * 2 - GRID_GAP) / 2);
 
   // ── Parallel data fetches ─────────────────────────────────────────────────
   const { data: events = [],     isLoading: evLoad, refetch: refEv } =
@@ -276,7 +254,7 @@ export default function ExploreScreen() {
         </View>
 
         {isLoading ? (
-          <TrendingSkeletons colors={colors} cardWidth={cardWidth} />
+          <TrendingSkeletons colors={colors} />
         ) : trending.length === 0 ? (
           <View style={styles.emptyBox}>
             <View style={[styles.emptyIconWrap, { backgroundColor: colors.muted }]}>
@@ -290,14 +268,9 @@ export default function ExploreScreen() {
             </Text>
           </View>
         ) : (
-          <View style={styles.grid}>
+          <View style={styles.list}>
             {trending.map(item => (
-              <TrendingCard
-                key={item.key}
-                item={item}
-                colors={colors}
-                cardWidth={cardWidth}
-              />
+              <TrendingCard key={item.key} item={item} colors={colors} />
             ))}
           </View>
         )}
@@ -314,83 +287,81 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
 
   sectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: GRID_H_PAD,
-    paddingTop: 16,
-    paddingBottom: 10,
+    flexDirection:     "row",
+    alignItems:        "center",
+    justifyContent:    "space-between",
+    paddingHorizontal: H_PAD,
+    paddingTop:        16,
+    paddingBottom:     10,
   },
   sectionTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
 
-  // ── 2-column grid ──
-  grid: {
-    flexDirection:   "row",
-    flexWrap:        "wrap",
-    paddingHorizontal: GRID_H_PAD,
-    gap:             GRID_GAP,
-    paddingBottom:   8,
+  // ── Single-column list ──
+  list: {
+    paddingHorizontal: H_PAD,
+    gap:               14,
+    paddingBottom:     8,
   },
 
   // ── Card ──
   card: {
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 18,
+    overflow:     "hidden",
+    borderWidth:  StyleSheet.hairlineWidth,
     ...Platform.select({
-      web:     { boxShadow: "0 2px 12px rgba(0,0,0,0.08)" } as any,
+      web:     { boxShadow: "0 2px 14px rgba(0,0,0,0.08)" } as any,
       default: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
+        shadowColor:   "#000",
+        shadowOffset:  { width: 0, height: 2 },
         shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 3,
+        shadowRadius:  14,
+        elevation:     3,
       },
     }),
   },
   imageWrap: { position: "relative" },
-  cardImage: { height: 140 },
+  cardImage: { width: "100%", height: 180 },
   typeBadge: {
-    position:       "absolute",
-    top:            8,
-    left:           8,
-    flexDirection:  "row",
-    alignItems:     "center",
-    gap:            4,
-    paddingHorizontal: 8,
-    paddingVertical:   4,
-    borderRadius:   8,
+    position:          "absolute",
+    top:               10,
+    left:              10,
+    flexDirection:     "row",
+    alignItems:        "center",
+    gap:               5,
+    paddingHorizontal: 10,
+    paddingVertical:   5,
+    borderRadius:      10,
   },
   typeBadgeText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize:   10,
+    fontSize:   11,
     color:      "#fff",
   },
-  cardBody:  { padding: 10, gap: 4 },
-  cardTitle: { fontFamily: "Inter_700Bold", fontSize: 13, lineHeight: 18 },
-  metaRow:   { flexDirection: "row", alignItems: "center", gap: 5 },
+  cardBody:  { padding: 14, gap: 6 },
+  cardTitle: { fontFamily: "Inter_700Bold", fontSize: 15, lineHeight: 21 },
+  metaRow:   { flexDirection: "row", alignItems: "center", gap: 6 },
   metaDot:   { width: 3, height: 3, borderRadius: 1.5 },
-  meta1:     { fontFamily: "Inter_600SemiBold", fontSize: 11, flexShrink: 1 },
-  meta2:     { fontFamily: "Inter_400Regular",  fontSize: 11, flexShrink: 1 },
+  meta1:     { fontFamily: "Inter_600SemiBold", fontSize: 12, flexShrink: 1 },
+  meta2:     { fontFamily: "Inter_400Regular",  fontSize: 12, flexShrink: 1 },
 
   // ── Skeleton ──
   skeletonCard: {
-    height:       140 + 72,
-    borderRadius: 16,
+    height:       180 + 72,
+    borderRadius: 18,
   },
 
   // ── Empty ──
   emptyBox: {
-    alignItems:     "center",
-    paddingVertical: 32,
-    gap:            10,
+    alignItems:        "center",
+    paddingVertical:   32,
+    gap:               10,
     paddingHorizontal: 40,
   },
   emptyIconWrap: {
-    width:        64,
-    height:       64,
-    borderRadius: 32,
-    alignItems:   "center",
+    width:          64,
+    height:         64,
+    borderRadius:   32,
+    alignItems:     "center",
     justifyContent: "center",
   },
   emptyTitle: { fontFamily: "Inter_700Bold",    fontSize: 16 },

@@ -319,6 +319,7 @@ export default function FeedsScreen() {
   const qaItems = (cityName ? QA_DATA[cityName] : undefined) ?? [];
   const allPulse = (cityName ? PULSE_POSTS[cityName] : undefined) ?? [];
   const happeningNow = (cityName ? HAPPENING_NOW[cityName] : undefined) ?? [];
+  const pulseNews = news.slice(0, 3);
 
   const toggleJoin = (id: number) => setJoinedCommunities((prev) => {
     const n = new Set(prev);
@@ -489,6 +490,37 @@ export default function FeedsScreen() {
               </React.Fragment>
             );
           })}
+        </View>
+      )}
+
+      {pulseNews.length > 0 && (
+        <View style={styles.pulseNewsSection}>
+          <View style={styles.pulseNewsHeader}>
+            <Text style={[styles.pulseNewsTitle, { color: colors.foreground }]}>Latest city news</Text>
+            <Text style={[styles.pulseNewsSubtitle, { color: colors.mutedForeground }]}>Trusted publisher updates</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pulseNewsScroll}>
+            {pulseNews.map((item) => {
+              const meta = NEWS_CATEGORY_META[item.category];
+              return (
+                <TouchableOpacity key={item.id} activeOpacity={0.86} style={[styles.pulseNewsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Image source={{ uri: item.imageUrl }} style={styles.pulseNewsImage} />
+                  <View style={styles.pulseNewsBody}>
+                    <View style={styles.pulseNewsMetaRow}>
+                      <Text style={[styles.pulseNewsSource, { color: colors.foreground }]} numberOfLines={1}>{item.source}</Text>
+                      <Text style={[styles.pulseNewsTime, { color: colors.mutedForeground }]}>{timeAgo(item.minutesAgo)}</Text>
+                    </View>
+                    <Text style={[styles.pulseNewsHeadline, { color: colors.foreground }]} numberOfLines={2}>{item.headline}</Text>
+                    <Text style={[styles.pulseNewsSummary, { color: colors.mutedForeground }]} numberOfLines={2}>{item.summary}</Text>
+                    <View style={styles.pulseNewsFooter}>
+                      <Text style={[styles.pulseNewsTag, { color: meta.color, backgroundColor: meta.bg }]}>{meta.label}</Text>
+                      <Feather name="chevron-right" size={14} color={colors.amber} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       )}
     </ScrollView>
@@ -750,6 +782,21 @@ const styles = StyleSheet.create({
   trendingScroll: { gap: 8 },
   trendingChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   trendingChipText: { fontFamily: "Inter_500Medium", fontSize: 12 },
+  pulseNewsSection: { paddingTop: 12, gap: 10 },
+  pulseNewsHeader: { paddingHorizontal: 16, flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
+  pulseNewsTitle: { fontFamily: "Inter_700Bold", fontSize: 15 },
+  pulseNewsSubtitle: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  pulseNewsScroll: { paddingHorizontal: 16, gap: 10 },
+  pulseNewsCard: { width: 260, borderRadius: 18, borderWidth: 1, overflow: "hidden", ...Platform.select({ web: { boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3 } }) },
+  pulseNewsImage: { width: "100%", height: 128, backgroundColor: "#e5e7eb" },
+  pulseNewsBody: { padding: 12, gap: 8 },
+  pulseNewsMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  pulseNewsSource: { flex: 1, fontFamily: "Inter_700Bold", fontSize: 12 },
+  pulseNewsTime: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  pulseNewsHeadline: { fontFamily: "Inter_700Bold", fontSize: 15, lineHeight: 21 },
+  pulseNewsSummary: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 17 },
+  pulseNewsFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  pulseNewsTag: { fontFamily: "Inter_700Bold", fontSize: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, overflow: "hidden" },
   newsList: { paddingHorizontal: 16, gap: 10 },
   publisherCard: { borderRadius: 18, borderWidth: 1, padding: 14, gap: 10, ...Platform.select({ web: { boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 } }) },
   publisherTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },

@@ -24,7 +24,7 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
       onPress={() => router.push("/ai-chat" as any)}
       activeOpacity={0.85}
     >
-      <Feather name="map" size={16} color="#fff" />
+      <Feather name="cpu" size={16} color="#fff" />
       <Feather name="zap" size={12} color="#fff" style={styles.spark} />
       <Text style={styles.fabLabel}>CityPilot</Text>
     </TouchableOpacity>

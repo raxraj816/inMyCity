@@ -23,29 +23,34 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
   const bottom = TAB_BAR_HEIGHT + insets.bottom + 32 + extraBottom;
 
   useEffect(() => {
-    // Bounce in on mount
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.04, duration: 1100, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1100, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    );
+
+    const glowLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 1, duration: 1300, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(glowAnim, { toValue: 0, duration: 1300, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    );
+
     Animated.spring(bounceIn, {
       toValue: 1,
-      friction: 5,
-      tension: 70,
+      friction: 7,
+      tension: 55,
       useNativeDriver: true,
     }).start();
 
-    // Gentle idle pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.06, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    ).start();
+    pulseLoop.start();
+    glowLoop.start();
 
-    // Glow ring pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(glowAnim, { toValue: 0, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    ).start();
+    return () => {
+      pulseLoop.stop();
+      glowLoop.stop();
+    };
   }, []);
 
   return (
@@ -56,14 +61,13 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
         { transform: [{ scale: Animated.multiply(bounceIn, pulseAnim) }] },
       ]}
     >
-      {/* Expanding glow ring */}
       <Animated.View
         style={[
           styles.glowRing,
           {
             backgroundColor: colors.primary,
-            opacity: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.25] }),
-            transform: [{ scale: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) }],
+            opacity: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] }),
+            transform: [{ scale: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.2] }) }],
           },
         ]}
       />
@@ -88,8 +92,8 @@ const styles = StyleSheet.create({
   },
   glowRing: {
     position: "absolute",
-    width: 160,
-    height: 46,
+    width: 128,
+    height: 40,
     borderRadius: 30,
   },
   fab: {
@@ -103,11 +107,11 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: "#f97316",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.45,
-        shadowRadius: 12,
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
       },
       android: { elevation: 8 },
-      web: { boxShadow: "0 4px 20px rgba(249,115,22,0.45)" } as any,
+      web: { boxShadow: "0 4px 20px rgba(249,115,22,0.4)" } as any,
     }),
   },
   fabLabel: {

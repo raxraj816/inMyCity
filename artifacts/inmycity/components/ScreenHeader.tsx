@@ -21,7 +21,7 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
       style={[
         styles.container,
         {
-          paddingTop: Math.max(6, topPadding - 8),
+          paddingTop: Math.max(2, topPadding - 16),
           backgroundColor: colors.background,
           borderBottomColor: colors.border,
         },
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 10,
   },
@@ -95,13 +95,14 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: "Inter_700Bold",
-    fontSize: 18,
+    fontSize: 17,
     letterSpacing: -0.5,
+    lineHeight: 19,
   },
   subtitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 11,
-    marginTop: 1,
+    marginTop: 0,
   },
   rightSlot: {
     flexDirection: "row",

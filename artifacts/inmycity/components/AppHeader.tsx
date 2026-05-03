@@ -28,13 +28,13 @@ export function AppHeader({
     <View
       style={[
         styles.container,
-        { paddingTop: Math.max(6, topPadding - 8), borderBottomColor: colors.border },
+        { paddingTop: Math.max(2, topPadding - 16), borderBottomColor: colors.border },
       ]}
     >
       <View style={styles.row}>
         <View style={styles.wordmarkBlock}>
           <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}> 
             {subtitle}
           </Text>
         </View>
@@ -83,7 +83,7 @@ export function AppHeader({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingVertical: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
@@ -99,13 +99,14 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: "Inter_700Bold",
-    fontSize: 22,
+    fontSize: 20,
     letterSpacing: -0.5,
+    lineHeight: 22,
   },
   subtitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 11,
-    marginTop: 1,
+    marginTop: 0,
   },
 
   rightSlot: {

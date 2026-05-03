@@ -95,15 +95,6 @@ const TIER_CONFIG: Record<PosterTier, { label: string; color: string; bg: string
   business: { label: "Business", color: "#10b981", bg: "#f0fdf4", icon: "briefcase" },
 };
 
-const FILTER_CHIPS: { id: PulseFilter; label: string; icon: string }[] = [
-  { id: "all", label: "All", icon: "layers" },
-  { id: "videos", label: "Videos", icon: "play-circle" },
-  { id: "food", label: "Food", icon: "coffee" },
-  { id: "transit", label: "Transit", icon: "navigation" },
-  { id: "tips", label: "Tips", icon: "zap" },
-  { id: "events", label: "Events", icon: "calendar" },
-];
-
 const NEWS_CATEGORY_META: Record<
   NewsCategory,
   { label: string; icon: string; color: string; bg: string }
@@ -307,7 +298,6 @@ export default function FeedsScreen() {
   const insets = useSafeAreaInsets();
   const { selectedCity } = useCity();
   const [activeTab, setActiveTab] = useState<MainTab>("pulse");
-  const [activeFilter, setActiveFilter] = useState<PulseFilter>("all");
   const [joinedCommunities, setJoinedCommunities] = useState<Set<number>>(new Set());
   const [upvotedQA, setUpvotedQA] = useState<Set<number>>(new Set());
   const [upvoteCounts, setUpvoteCounts] = useState<Record<number, number>>({});
@@ -315,7 +305,6 @@ export default function FeedsScreen() {
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
   const [saveCounts, setSaveCounts] = useState<Record<number, number>>({});
-  const [showTrustInfo, setShowTrustInfo] = useState(false);
 
   const cityName = selectedCity?.name;
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
@@ -330,7 +319,6 @@ export default function FeedsScreen() {
   const allPulse = (cityName ? PULSE_POSTS[cityName] : undefined) ?? [];
   const happeningNow = (cityName ? HAPPENING_NOW[cityName] : undefined) ?? [];
 
-  const filteredPulse = activeFilter === "all" ? allPulse : allPulse.filter((p) => p.filterTags.includes(activeFilter));
   const toggleJoin = (id: number) => setJoinedCommunities((prev) => {
     const n = new Set(prev);
     n.has(id) ? n.delete(id) : n.add(id);
@@ -415,47 +403,11 @@ export default function FeedsScreen() {
         </View>
       )}
 
-      <View style={styles.filterRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          {FILTER_CHIPS.map((chip) => {
-            const active = activeFilter === chip.id;
-            return (
-              <TouchableOpacity key={chip.id} onPress={() => setActiveFilter(chip.id)} activeOpacity={0.7} style={[styles.filterChip, { backgroundColor: active ? colors.amber : colors.card, borderColor: active ? colors.amber : colors.border }]}>
-                <Feather name={chip.icon as any} size={11} color={active ? "#fff" : colors.mutedForeground} />
-                <Text style={[styles.filterChipText, { color: active ? "#fff" : colors.mutedForeground }]}>{chip.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-        <TouchableOpacity onPress={() => setShowTrustInfo(!showTrustInfo)} style={[styles.trustInfoBtn, { borderColor: colors.border }]} activeOpacity={0.7}>
-          <Feather name="shield" size={13} color={colors.mutedForeground} />
-        </TouchableOpacity>
-      </View>
-
-      {showTrustInfo && (
-        <View style={[styles.trustDrawer, { backgroundColor: colors.navy, marginHorizontal: 16, marginBottom: 4, borderRadius: 16 }]}>
-          <Text style={styles.trustDrawerTitle}>Who can post to Pulse?</Text>
-          <Text style={styles.trustDrawerBody}>Only four verified tiers can publish here — Official inMyCity, Local Experts (6+ months verified residency), Creators (vetted creator program), and Verified Businesses (max 2 posts/week). Regular users post in Q&A and Community.</Text>
-          <View style={styles.trustTierRow}>
-            {(Object.entries(TIER_CONFIG) as [PosterTier, typeof TIER_CONFIG[PosterTier]][]).map(([, cfg]) => (
-              <View key={cfg.label} style={[styles.trustTierPill, { backgroundColor: cfg.color }]}>
-                <Feather name={cfg.icon as any} size={10} color="#fff" />
-                <Text style={styles.trustTierPillText}>{cfg.label}</Text>
-              </View>
-            ))}
-          </View>
-          <TouchableOpacity style={[styles.trustApplyBtn, { borderColor: "rgba(255,255,255,0.2)" }]}>
-            <Text style={styles.trustApplyText}>Apply to become a Creator</Text>
-            <Feather name="arrow-right" size={12} color="rgba(255,255,255,0.7)" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {filteredPulse.length === 0 ? (
-        <EmptyState icon="zap" message={cityName ? `No ${activeFilter === "all" ? "" : activeFilter + " "}posts for ${cityName} yet.` : "Select a city to see Pulse."} colors={colors} />
+      {allPulse.length === 0 ? (
+        <EmptyState icon="zap" message={cityName ? `No posts for ${cityName} yet.` : "Select a city to see Pulse."} colors={colors} />
       ) : (
         <View style={styles.pulseList}>
-          {filteredPulse.map((post, index) => {
+          {allPulse.map((post, index) => {
             const cfg = TIER_CONFIG[post.tier];
             const isLiked = likedPosts.has(post.id);
             const isSaved = savedPosts.has(post.id);
@@ -753,19 +705,6 @@ const styles = StyleSheet.create({
   happeningIconWrap: { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   happeningText: { fontFamily: "Inter_500Medium", fontSize: 12, lineHeight: 17 },
   happeningTime: { fontFamily: "Inter_400Regular", fontSize: 10 },
-  filterRow: { flexDirection: "row", alignItems: "center", paddingTop: 12, paddingBottom: 8 },
-  filterScroll: { paddingLeft: 16, gap: 8, paddingRight: 8 },
-  filterChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
-  filterChipText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
-  trustInfoBtn: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, alignItems: "center", justifyContent: "center", marginRight: 16, flexShrink: 0 },
-  trustDrawer: { padding: 16, marginBottom: 8 },
-  trustDrawerTitle: { fontFamily: "Inter_700Bold", fontSize: 14, color: "#fff", marginBottom: 6 },
-  trustDrawerBody: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 18, marginBottom: 12 },
-  trustTierRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
-  trustTierPill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
-  trustTierPillText: { fontFamily: "Inter_700Bold", fontSize: 10, color: "#fff" },
-  trustApplyBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, borderTopWidth: 1 },
-  trustApplyText: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "rgba(255,255,255,0.7)" },
   pulseList: { paddingHorizontal: 16, gap: 12, paddingTop: 4, paddingBottom: 4 },
   heroCard: { borderRadius: 22, overflow: "hidden", height: 360, ...Platform.select({ web: { boxShadow: "0 4px 20px rgba(0,0,0,0.14)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 20, elevation: 8 } }) },
   heroImage: { width: "100%", height: "100%", position: "absolute" },

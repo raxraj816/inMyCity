@@ -198,24 +198,6 @@ export default function CityGuideScreen() {
         </TouchableOpacity>
 
         <View style={styles.section}>
-          <SectionHeader title="Build Your Guide" icon="clock" colors={colors} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guideFilterScroll}>
-            {GUIDE_FILTERS.map((filter) => {
-              const active = guideFilter === filter.id;
-              return (
-                <TouchableOpacity
-                  key={filter.id}
-                  style={[styles.guideFilterPill, { backgroundColor: active ? "#6366f1" : colors.card, borderColor: active ? "#6366f1" : colors.border }]}
-                  onPress={() => setGuideFilter(filter.id)}
-                >
-                  <Text style={[styles.guideFilterText, { color: active ? "#fff" : colors.foreground }]}>{filter.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        <View style={styles.section}>
           <SectionHeader title="Quick Tips" icon="info" colors={colors} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipsScroll}>
             {meta.tips.map((tip) => (
@@ -340,6 +322,20 @@ export default function CityGuideScreen() {
 
         <View style={styles.section}>
           <SectionHeader title="Curated Guides" icon="map" colors={colors} onSeeAll={() => router.push("/itineraries" as any)} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.guideFilterScroll, { paddingBottom: 8 }]}>
+            {GUIDE_FILTERS.map((filter) => {
+              const active = guideFilter === filter.id;
+              return (
+                <TouchableOpacity
+                  key={filter.id}
+                  style={[styles.guideFilterPill, { backgroundColor: active ? "#6366f1" : colors.card, borderColor: active ? "#6366f1" : colors.border }]}
+                  onPress={() => setGuideFilter(filter.id)}
+                >
+                  <Text style={[styles.guideFilterText, { color: active ? "#fff" : colors.foreground }]}>{filter.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
           {iLoading ? (
             <View style={styles.skeletonRow}>
               <SkeletonCard height={220} style={styles.guideSkeletonCard} />

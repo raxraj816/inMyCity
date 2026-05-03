@@ -185,7 +185,7 @@ export default function AiChatScreen() {
       <View style={[s.messageRow, isUser ? s.messageRowUser : s.messageRowAssistant]}>
         {!isUser && (
           <View style={[s.avatar, { backgroundColor: colors.primary }]}> 
-            <MaterialCommunityIcons name="robot-happy-outline" size={14} color="#fff" />
+            <MaterialCommunityIcons name="robot-excited-outline" size={14} color="#fff" />
           </View>
         )}
         <View
@@ -222,7 +222,7 @@ export default function AiChatScreen() {
         </TouchableOpacity>
         <View style={s.headerCenter}>
           <View style={[s.headerIcon, { backgroundColor: colors.accent }]}> 
-            <MaterialCommunityIcons name="robot-happy-outline" size={16} color={colors.primary} />
+            <MaterialCommunityIcons name="robot-excited-outline" size={16} color={colors.primary} />
           </View>
           <View>
             <Text style={[s.headerTitle, { color: colors.text }]}>CityPilot</Text>
@@ -240,7 +240,7 @@ export default function AiChatScreen() {
         {messages.length === 0 ? (
           <View style={s.emptyState}>
             <View style={[s.emptyIcon, { backgroundColor: colors.accent }]}> 
-              <MaterialCommunityIcons name="robot-happy-outline" size={32} color={colors.primary} />
+              <MaterialCommunityIcons name="robot-excited-outline" size={32} color={colors.primary} />
             </View>
             <Text style={[s.emptyTitle, { color: colors.text }]}>Ask me anything about {cityName}</Text>
             <Text style={[s.emptySubtitle, { color: colors.mutedForeground }]}> 

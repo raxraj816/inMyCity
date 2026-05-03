@@ -21,7 +21,7 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
       style={[
         styles.container,
         {
-          paddingTop: Math.max(2, topPadding - 16),
+          paddingTop: Math.max(16, topPadding),
           backgroundColor: colors.background,
           borderBottomColor: colors.border,
         },
@@ -38,7 +38,7 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
 
       <View style={styles.brandBlock}>
         <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}> 
           {title}{selectedCity ? ` · ${selectedCity.name}` : ""}
         </Text>
       </View>
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 10,
   },
@@ -95,9 +95,9 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: "Inter_700Bold",
-    fontSize: 17,
+    fontSize: 16,
     letterSpacing: -0.5,
-    lineHeight: 19,
+    lineHeight: 18,
   },
   subtitle: {
     fontFamily: "Inter_400Regular",

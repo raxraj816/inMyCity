@@ -28,7 +28,7 @@ export function AppHeader({
     <View
       style={[
         styles.container,
-        { paddingTop: Math.max(2, topPadding - 16), borderBottomColor: colors.border },
+        { paddingTop: Math.max(16, topPadding), borderBottomColor: colors.border },
       ]}
     >
       <View style={styles.row}>
@@ -83,7 +83,7 @@ export function AppHeader({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingVertical: 4,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
@@ -99,9 +99,9 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: "Inter_700Bold",
-    fontSize: 20,
+    fontSize: 18,
     letterSpacing: -0.5,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   subtitle: {
     fontFamily: "Inter_400Regular",

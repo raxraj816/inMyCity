@@ -24,8 +24,9 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
       onPress={() => router.push("/ai-chat" as any)}
       activeOpacity={0.85}
     >
-      <Feather name="cpu" size={18} color="#fff" />
-      <Text style={styles.fabLabel}>Ask AI</Text>
+      <Feather name="map" size={16} color="#fff" />
+      <Feather name="zap" size={12} color="#fff" style={styles.spark} />
+      <Text style={styles.fabLabel}>CityPilot</Text>
     </TouchableOpacity>
   );
 }
@@ -50,6 +51,10 @@ const styles = StyleSheet.create({
       android: { elevation: 8 },
       web: { boxShadow: "0 4px 20px rgba(249,115,22,0.4)" } as any,
     }),
+  },
+  spark: {
+    marginLeft: -2,
+    marginRight: 1,
   },
   fabLabel: {
     fontFamily: "Inter_700Bold",

@@ -184,8 +184,8 @@ export default function AiChatScreen() {
     return (
       <View style={[styles.messageRow, isUser ? styles.messageRowUser : styles.messageRowAssistant]}>
         {!isUser && (
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Feather name="cpu" size={14} color="#fff" />
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}> 
+            <Feather name="map" size={14} color="#fff" />
           </View>
         )}
         <View
@@ -215,19 +215,18 @@ export default function AiChatScreen() {
   const s = makeStyles(colors);
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[s.header, { borderBottomColor: colors.border, paddingTop: insets.top > 0 ? 8 : 16 }]}>
+    <SafeAreaView style={[s.container, { backgroundColor: colors.background }]}> 
+      <View style={[s.header, { borderBottomColor: colors.border, paddingTop: Math.max(16, insets.top) }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={8} style={s.backBtn}>
           <Feather name="arrow-left" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={s.headerCenter}>
-          <View style={[s.headerIcon, { backgroundColor: colors.accent }]}>
-            <Feather name="cpu" size={16} color={colors.primary} />
+          <View style={[s.headerIcon, { backgroundColor: colors.accent }]}> 
+            <Feather name="map" size={16} color={colors.primary} />
           </View>
           <View>
-            <Text style={[s.headerTitle, { color: colors.text }]}>City Assistant</Text>
-            <Text style={[s.headerSub, { color: colors.mutedForeground }]}>{cityName} • AI-powered</Text>
+            <Text style={[s.headerTitle, { color: colors.text }]}>CityPilot</Text>
+            <Text style={[s.headerSub, { color: colors.mutedForeground }]}>{cityName} • AI city guide</Text>
           </View>
         </View>
         <View style={{ width: 38 }} />
@@ -238,16 +237,13 @@ export default function AiChatScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
-        {/* Messages */}
         {messages.length === 0 ? (
           <View style={s.emptyState}>
-            <View style={[s.emptyIcon, { backgroundColor: colors.accent }]}>
-              <Feather name="cpu" size={32} color={colors.primary} />
+            <View style={[s.emptyIcon, { backgroundColor: colors.accent }]}> 
+              <Feather name="map" size={32} color={colors.primary} />
             </View>
-            <Text style={[s.emptyTitle, { color: colors.text }]}>
-              Ask me anything about {cityName}
-            </Text>
-            <Text style={[s.emptySubtitle, { color: colors.mutedForeground }]}>
+            <Text style={[s.emptyTitle, { color: colors.text }]}>Ask me anything about {cityName}</Text>
+            <Text style={[s.emptySubtitle, { color: colors.mutedForeground }]}> 
               I know the best food spots, transit tips, hidden gems, neighborhoods, events, and more.
             </Text>
             <View style={s.suggestionsGrid}>
@@ -275,7 +271,6 @@ export default function AiChatScreen() {
           />
         )}
 
-        {/* Input bar */}
         <View
           style={[
             s.inputBar,
@@ -286,7 +281,7 @@ export default function AiChatScreen() {
             },
           ]}
         >
-          <View style={[s.inputWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[s.inputWrap, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <TextInput
               style={[s.input, { color: colors.text }]}
               value={input}
@@ -312,9 +307,7 @@ export default function AiChatScreen() {
               <Feather name="send" size={16} color={input.trim() && !loading ? "#fff" : colors.mutedForeground} />
             </TouchableOpacity>
           </View>
-          <Text style={[s.disclaimer, { color: colors.mutedForeground }]}>
-            AI responses may not reflect real-time info
-          </Text>
+          <Text style={[s.disclaimer, { color: colors.mutedForeground }]}>AI responses may not reflect real-time info</Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -324,7 +317,6 @@ export default function AiChatScreen() {
 function makeStyles(colors: ReturnType<typeof useColors>) {
   return StyleSheet.create({
     container: { flex: 1 },
-
     header: {
       flexDirection: "row",
       alignItems: "center",
@@ -361,7 +353,6 @@ function makeStyles(colors: ReturnType<typeof useColors>) {
       fontFamily: "Inter_400Regular",
       fontSize: 12,
     },
-
     emptyState: {
       flex: 1,
       alignItems: "center",
@@ -406,7 +397,6 @@ function makeStyles(colors: ReturnType<typeof useColors>) {
       fontFamily: "Inter_500Medium",
       fontSize: 13,
     },
-
     messageList: {
       paddingHorizontal: 16,
       paddingTop: 16,
@@ -458,7 +448,6 @@ function makeStyles(colors: ReturnType<typeof useColors>) {
       fontFamily: "Inter_400Regular",
       fontSize: 14,
     },
-
     inputBar: {
       paddingHorizontal: 16,
       paddingTop: 10,
@@ -497,52 +486,3 @@ function makeStyles(colors: ReturnType<typeof useColors>) {
     },
   });
 }
-
-const styles = StyleSheet.create({
-  messageRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  messageRowUser: {
-    justifyContent: "flex-end",
-  },
-  messageRowAssistant: {
-    justifyContent: "flex-start",
-  },
-  avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  bubble: {
-    maxWidth: "80%",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-  },
-  bubbleUser: {
-    borderBottomRightRadius: 4,
-  },
-  bubbleAssistant: {
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-  },
-  bubbleText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  typingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  typingText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-  },
-});

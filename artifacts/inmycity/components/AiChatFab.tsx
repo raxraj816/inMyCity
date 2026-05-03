@@ -16,7 +16,6 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
   const insets = useSafeAreaInsets();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
   const bounceIn = useRef(new Animated.Value(0)).current;
 
   const TAB_BAR_HEIGHT = Platform.OS === "ios" ? 83 : 60;
@@ -30,13 +29,6 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
       ])
     );
 
-    const glowLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1, duration: 1300, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(glowAnim, { toValue: 0, duration: 1300, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    );
-
     Animated.spring(bounceIn, {
       toValue: 1,
       friction: 7,
@@ -45,11 +37,9 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
     }).start();
 
     pulseLoop.start();
-    glowLoop.start();
 
     return () => {
       pulseLoop.stop();
-      glowLoop.stop();
     };
   }, []);
 
@@ -61,16 +51,6 @@ export function AiChatFab({ extraBottom = 0 }: AiChatFabProps) {
         { transform: [{ scale: Animated.multiply(bounceIn, pulseAnim) }] },
       ]}
     >
-      <Animated.View
-        style={[
-          styles.glowRing,
-          {
-            backgroundColor: colors.primary,
-            opacity: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] }),
-            transform: [{ scale: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.2] }) }],
-          },
-        ]}
-      />
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary }]}
         onPress={() => router.push("/ai-chat" as any)}
@@ -89,12 +69,6 @@ const styles = StyleSheet.create({
     right: 20,
     alignItems: "center",
     justifyContent: "center",
-  },
-  glowRing: {
-    position: "absolute",
-    width: 128,
-    height: 40,
-    borderRadius: 30,
   },
   fab: {
     flexDirection: "row",

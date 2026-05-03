@@ -498,10 +498,6 @@ export default function FeedsScreen() {
 
     return (
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPad }}>
-        <View style={styles.newsHeaderBlock}>
-          <Text style={[styles.newsHeaderTitle, { color: colors.foreground }]}>Local city news</Text>
-          <Text style={[styles.newsHeaderSubtitle, { color: colors.mutedForeground }]}>Fast-scan publisher cards for your city.</Text>
-        </View>
         <View style={styles.newsList}>
           {orderedNews.map((item) => {
             const meta = NEWS_CATEGORY_META[item.category];
@@ -743,9 +739,6 @@ const styles = StyleSheet.create({
   trendingScroll: { gap: 8 },
   trendingChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   trendingChipText: { fontFamily: "Inter_500Medium", fontSize: 12 },
-  newsHeaderBlock: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, gap: 4 },
-  newsHeaderTitle: { fontFamily: "Inter_700Bold", fontSize: 20, letterSpacing: -0.2 },
-  newsHeaderSubtitle: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
   newsList: { paddingHorizontal: 16, gap: 10 },
   publisherCard: { borderRadius: 18, borderWidth: 1, padding: 14, gap: 10, ...Platform.select({ web: { boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 } }) },
   publisherTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },

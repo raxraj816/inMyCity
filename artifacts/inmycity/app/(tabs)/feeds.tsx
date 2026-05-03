@@ -495,52 +495,35 @@ export default function FeedsScreen() {
 
   const renderNewsTab = () => {
     const orderedNews = [...news].sort((a, b) => a.minutesAgo - b.minutesAgo);
-    const topStory = orderedNews[0];
-    const rest = orderedNews.slice(1);
 
     return (
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPad }}>
-      {topStory && (
-          <TouchableOpacity activeOpacity={0.9} style={[styles.newsHeroCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.newsHeroStrip, { backgroundColor: NEWS_CATEGORY_META[topStory.category].color + "14" }]}>
-              <View style={[styles.newsHeroBadge, { backgroundColor: NEWS_CATEGORY_META[topStory.category].bg }]}>
-                <Feather name={NEWS_CATEGORY_META[topStory.category].icon as any} size={11} color={NEWS_CATEGORY_META[topStory.category].color} />
-                <Text style={[styles.newsHeroBadgeText, { color: NEWS_CATEGORY_META[topStory.category].color }]}>{NEWS_CATEGORY_META[topStory.category].label}</Text>
-              </View>
-              <Text style={[styles.newsHeroTime, { color: colors.mutedForeground }]}>{timeAgo(topStory.minutesAgo)}</Text>
-            </View>
-            <Text style={[styles.newsHeroHeadline, { color: colors.foreground }]}>{topStory.headline}</Text>
-            <Text style={[styles.newsHeroSummary, { color: colors.mutedForeground }]}>{topStory.summary}</Text>
-            <View style={styles.newsHeroFooter}>
-              <View style={styles.newsSourceRow}>
-                <Feather name={topStory.sourceKind === "publisher" ? "radio" : topStory.sourceKind === "government" ? "shield" : topStory.sourceKind === "weather" ? "cloud-rain" : topStory.sourceKind === "sports" ? "activity" : "briefcase"} size={11} color={colors.mutedForeground} />
-                <Text style={[styles.newsSourceText, { color: colors.mutedForeground }]}>{topStory.source}</Text>
-              </View>
-              <Text style={[styles.newsReadText, { color: colors.amber }]}>Read story</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-
+        <View style={styles.newsHeaderBlock}>
+          <Text style={[styles.newsHeaderTitle, { color: colors.foreground }]}>Local city news</Text>
+          <Text style={[styles.newsHeaderSubtitle, { color: colors.mutedForeground }]}>Fast-scan publisher cards for your city.</Text>
+        </View>
         <View style={styles.newsList}>
-          {rest.map((item) => {
+          {orderedNews.map((item) => {
             const meta = NEWS_CATEGORY_META[item.category];
             return (
-              <TouchableOpacity key={item.id} activeOpacity={0.86} style={[styles.newsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={styles.newsCardTop}>
-                  <View style={[styles.newsBadge, { backgroundColor: meta.bg }]}>
-                    <Feather name={meta.icon as any} size={11} color={meta.color} />
-                    <Text style={[styles.newsBadgeText, { color: meta.color }]}>{meta.label}</Text>
+              <TouchableOpacity key={item.id} activeOpacity={0.86} style={[styles.publisherCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.publisherTop}>
+                  <View style={styles.publisherSourceRow}>
+                    <View style={[styles.publisherIconWrap, { backgroundColor: meta.bg }]}>
+                      <Feather name={meta.icon as any} size={12} color={meta.color} />
+                    </View>
+                    <View style={styles.publisherMeta}>
+                      <Text style={[styles.publisherSource, { color: colors.foreground }]} numberOfLines={1}>{item.source}</Text>
+                      <Text style={[styles.publisherTime, { color: colors.mutedForeground }]}>{timeAgo(item.minutesAgo)}</Text>
+                    </View>
                   </View>
-                  <Text style={[styles.newsTime, { color: colors.mutedForeground }]}>{timeAgo(item.minutesAgo)}</Text>
+                  <Text style={[styles.publisherTag, { color: meta.color, backgroundColor: meta.bg }]}>{meta.label}</Text>
                 </View>
-                <Text style={[styles.newsHeadline, { color: colors.foreground }]} numberOfLines={2}>{item.headline}</Text>
-                <Text style={[styles.newsSummary, { color: colors.mutedForeground }]} numberOfLines={2}>{item.summary}</Text>
-                <View style={styles.newsFooter}>
-                  <View style={styles.newsSourceRow}>
-                    <Feather name={item.sourceKind === "publisher" ? "radio" : item.sourceKind === "government" ? "shield" : item.sourceKind === "weather" ? "cloud-rain" : item.sourceKind === "sports" ? "activity" : "briefcase"} size={11} color={colors.mutedForeground} />
-                    <Text style={[styles.newsSourceText, { color: colors.mutedForeground }]}>{item.source}</Text>
-                  </View>
-                  <Text style={[styles.newsReadText, { color: colors.amber }]}>Read</Text>
+                <Text style={[styles.publisherHeadline, { color: colors.foreground }]} numberOfLines={2}>{item.headline}</Text>
+                <Text style={[styles.publisherSummary, { color: colors.mutedForeground }]} numberOfLines={2}>{item.summary}</Text>
+                <View style={styles.publisherFooter}>
+                  <Text style={[styles.publisherRead, { color: colors.amber }]}>Read more</Text>
+                  <Feather name="chevron-right" size={14} color={colors.amber} />
                 </View>
               </TouchableOpacity>
             );
@@ -760,26 +743,22 @@ const styles = StyleSheet.create({
   trendingScroll: { gap: 8 },
   trendingChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   trendingChipText: { fontFamily: "Inter_500Medium", fontSize: 12 },
-  newsHeroCard: { marginHorizontal: 16, borderRadius: 18, borderWidth: 1, padding: 14, gap: 10, marginBottom: 12 },
-  newsHeroStrip: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 10, borderRadius: 14 },
-  newsHeroBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  newsHeroBadgeText: { fontFamily: "Inter_700Bold", fontSize: 11 },
-  newsHeroTime: { fontFamily: "Inter_400Regular", fontSize: 11 },
-  newsHeroHeadline: { fontFamily: "Inter_700Bold", fontSize: 18, lineHeight: 25, letterSpacing: -0.2 },
-  newsHeroSummary: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
-  newsHeroFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  newsSourceRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  newsHeaderBlock: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, gap: 4 },
+  newsHeaderTitle: { fontFamily: "Inter_700Bold", fontSize: 20, letterSpacing: -0.2 },
+  newsHeaderSubtitle: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
   newsList: { paddingHorizontal: 16, gap: 10 },
-  newsCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 8, ...Platform.select({ web: { boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 } }) },
-  newsCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  newsBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  newsBadgeText: { fontFamily: "Inter_700Bold", fontSize: 11 },
-  newsTime: { fontFamily: "Inter_400Regular", fontSize: 11 },
-  newsHeadline: { fontFamily: "Inter_700Bold", fontSize: 15, lineHeight: 21 },
-  newsSummary: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
-  newsFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
-  newsSourceText: { fontFamily: "Inter_500Medium", fontSize: 11 },
-  newsReadText: { fontFamily: "Inter_700Bold", fontSize: 12 },
+  publisherCard: { borderRadius: 18, borderWidth: 1, padding: 14, gap: 10, ...Platform.select({ web: { boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 } }) },
+  publisherTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  publisherSourceRow: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minWidth: 0 },
+  publisherIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  publisherMeta: { flex: 1, minWidth: 0 },
+  publisherSource: { fontFamily: "Inter_700Bold", fontSize: 13 },
+  publisherTime: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 2 },
+  publisherTag: { fontFamily: "Inter_700Bold", fontSize: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, overflow: "hidden" },
+  publisherHeadline: { fontFamily: "Inter_700Bold", fontSize: 16, lineHeight: 23, letterSpacing: -0.2 },
+  publisherSummary: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
+  publisherFooter: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4 },
+  publisherRead: { fontFamily: "Inter_700Bold", fontSize: 12 },
   communityCard: { borderRadius: 18, borderWidth: 1, padding: 16, ...Platform.select({ web: { boxShadow: "0 1px 8px rgba(0,0,0,0.07)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 } }) },
   communityTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
   communityIcon: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },

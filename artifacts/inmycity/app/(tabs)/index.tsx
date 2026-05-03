@@ -248,9 +248,9 @@ export default function ExploreScreen() {
       >
         <CategoryGrid />
 
-        <View style={styles.weekendCard}>
+        <View style={[styles.weekendCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.weekendHeader}>
-            <View>
+            <View style={styles.weekendTextBlock}>
               <Text style={[styles.weekendEyebrow, { color: colors.amber }]}>This weekend</Text>
               <Text style={[styles.weekendTitle, { color: colors.foreground }]}>
                 {cityName ?? "Your city"} weekend plans
@@ -268,7 +268,7 @@ export default function ExploreScreen() {
             {WEEKEND_GOALS.map((goal) => (
               <TouchableOpacity
                 key={goal.id}
-                style={[styles.weekendGoalPill, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[styles.weekendGoalPill, { backgroundColor: colors.background, borderColor: colors.border }]}
                 onPress={() => router.push(goal.route as any)}
                 activeOpacity={0.85}
               >
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     borderRadius: 18,
     padding: 16,
-    backgroundColor: "#fff7ed",
+    borderWidth: 1,
     ...Platform.select({
       web: { boxShadow: "0 2px 12px rgba(0,0,0,0.06)" } as any,
       default: {
@@ -351,6 +351,7 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  weekendTextBlock: { flex: 1, paddingRight: 12 },
   weekendHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   weekendEyebrow: { fontFamily: "Inter_700Bold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 },
   weekendTitle: { fontFamily: "Inter_700Bold", fontSize: 18, marginTop: 2 },

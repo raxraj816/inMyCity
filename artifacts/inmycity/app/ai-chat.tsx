@@ -10,6 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   SafeAreaView,
+  Animated,
+  Easing,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -17,6 +19,7 @@ import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import { useCity } from "@/context/CityContext";
+import { RobotGreeting } from "@/components/RobotGreeting";
 
 type MessageRole = "user" | "assistant";
 
@@ -40,6 +43,25 @@ function getApiBase(): string {
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
   if (domain) return `https://${domain}/api`;
   return "/api";
+}
+
+function HeaderRobotIcon({ color, bg }: { color: string; bg: string }) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.15, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: bg }, { transform: [{ scale: pulseAnim }] }]}>
+      <MaterialCommunityIcons name="robot-love-outline" size={20} color={color} />
+    </Animated.View>
+  );
 }
 
 export default function AiChatScreen() {
@@ -184,8 +206,8 @@ export default function AiChatScreen() {
     return (
       <View style={[s.messageRow, isUser ? s.messageRowUser : s.messageRowAssistant]}>
         {!isUser && (
-          <View style={[s.avatar, { backgroundColor: colors.primary }]}> 
-            <MaterialCommunityIcons name="robot-excited-outline" size={14} color="#fff" />
+          <View style={[s.avatar, { backgroundColor: colors.primary }]}>
+            <MaterialCommunityIcons name="robot-love-outline" size={14} color="#fff" />
           </View>
         )}
         <View
@@ -215,15 +237,13 @@ export default function AiChatScreen() {
   const s = makeStyles(colors);
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.background }]}> 
-      <View style={[s.header, { borderBottomColor: colors.border, paddingTop: Math.max(16, insets.top) }]}> 
+    <SafeAreaView style={[s.container, { backgroundColor: colors.background }]}>
+      <View style={[s.header, { borderBottomColor: colors.border, paddingTop: Math.max(16, insets.top) }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={8} style={s.backBtn}>
           <Feather name="arrow-left" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={s.headerCenter}>
-          <View style={[s.headerIcon, { backgroundColor: colors.accent }]}> 
-            <MaterialCommunityIcons name="robot-excited-outline" size={16} color={colors.primary} />
-          </View>
+          <HeaderRobotIcon color={colors.primary} bg={colors.accent} />
           <View>
             <Text style={[s.headerTitle, { color: colors.text }]}>CityPilot</Text>
             <Text style={[s.headerSub, { color: colors.mutedForeground }]}>{cityName} • AI city guide</Text>
@@ -239,11 +259,10 @@ export default function AiChatScreen() {
       >
         {messages.length === 0 ? (
           <View style={s.emptyState}>
-            <View style={[s.emptyIcon, { backgroundColor: colors.accent }]}> 
-              <MaterialCommunityIcons name="robot-excited-outline" size={32} color={colors.primary} />
-            </View>
+            <RobotGreeting size={40} color={colors.primary} backgroundColor={colors.accent} />
+            <Text style={[s.greetingText, { color: colors.primary }]}>Hi there! 👋</Text>
             <Text style={[s.emptyTitle, { color: colors.text }]}>Ask me anything about {cityName}</Text>
-            <Text style={[s.emptySubtitle, { color: colors.mutedForeground }]}> 
+            <Text style={[s.emptySubtitle, { color: colors.mutedForeground }]}>
               I know the best food spots, transit tips, hidden gems, neighborhoods, events, and more.
             </Text>
             <View style={s.suggestionsGrid}>
@@ -281,7 +300,7 @@ export default function AiChatScreen() {
             },
           ]}
         >
-          <View style={[s.inputWrap, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+          <View style={[s.inputWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TextInput
               style={[s.input, { color: colors.text }]}
               value={input}
@@ -338,13 +357,6 @@ function makeStyles(colors: ReturnType<typeof useColors>) {
       flex: 1,
       justifyContent: "center",
     },
-    headerIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: "center",
-      justifyContent: "center",
-    },
     headerTitle: {
       fontFamily: "Inter_700Bold",
       fontSize: 15,
@@ -358,19 +370,16 @@ function makeStyles(colors: ReturnType<typeof useColors>) {
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: 24,
-      gap: 12,
+      gap: 10,
     },
-    emptyIcon: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 4,
+    greetingText: {
+      fontFamily: "Inter_700Bold",
+      fontSize: 20,
+      marginTop: 4,
     },
     emptyTitle: {
       fontFamily: "Inter_700Bold",
-      fontSize: 18,
+      fontSize: 17,
       textAlign: "center",
     },
     emptySubtitle: {
@@ -378,7 +387,7 @@ function makeStyles(colors: ReturnType<typeof useColors>) {
       fontSize: 14,
       textAlign: "center",
       lineHeight: 20,
-      marginBottom: 8,
+      marginBottom: 4,
     },
     suggestionsGrid: {
       flexDirection: "row",

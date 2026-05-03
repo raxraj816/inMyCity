@@ -7,6 +7,7 @@ import {
   Platform,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -21,6 +22,26 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 // ─── Types ────────────────────────────────────────────────────
 
 type MainTab = "all" | "news" | "community" | "qa";
+
+type FeedPosterType = "brand" | "guide" | "local" | "creator";
+type FeedMediaType = "image" | "video";
+
+interface PulsePost {
+  id: number;
+  posterType: FeedPosterType;
+  author: string;
+  role: string;
+  city?: string;
+  title: string;
+  caption: string;
+  mediaType: FeedMediaType;
+  mediaUrl: string;
+  timeAgo: number;
+  likes: number;
+  comments: number;
+  saves: number;
+  isSponsored?: boolean;
+}
 
 interface NewsItem {
   id: number;
@@ -51,6 +72,8 @@ interface QAItem {
   answers: number;
   minutesAgo: number;
 }
+
+const ALLOWED_POSTER_TYPES: FeedPosterType[] = ["brand", "guide", "local", "creator"];
 
 // ─── Static city data ─────────────────────────────────────────
 
@@ -155,6 +178,23 @@ const DEFAULT_NEWS: NewsItem[] = [
   { id: 1, type: "civic", headline: "Select a city to see local news and alerts.", summary: "Use the city picker to view news relevant to your area.", source: "inMyCity", minutesAgo: 0 },
 ];
 
+const PULSE_POSTS: Record<string, PulsePost[]> = {
+  Mumbai: [
+    { id: 1, posterType: "guide", author: "inMyCity Guide", role: "City guide", city: "Mumbai", title: "48 hours in Bandra", caption: "Cafe stops, sea-facing walks, and an easy first-night plan.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?auto=format&fit=crop&w=1200&q=80", timeAgo: 18, likes: 1240, comments: 32, saves: 118 },
+    { id: 2, posterType: "local", author: "Aarav M.", role: "Local tipster", city: "Mumbai", title: "Best time for the Western Line", caption: "Leave before 8:10am or after 10:15am if you can.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1514578915946-8b0a7c3f1f60?auto=format&fit=crop&w=1200&q=80", timeAgo: 42, likes: 980, comments: 19, saves: 76 },
+    { id: 3, posterType: "brand", author: "inMyCity", role: "Official", city: "Mumbai", title: "Street food map update", caption: "New verified stalls around Mohammad Ali Road and Juhu.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=1200&q=80", timeAgo: 65, likes: 2104, comments: 58, saves: 244, isSponsored: true },
+  ],
+  Bangalore: [
+    { id: 1, posterType: "guide", author: "inMyCity Guide", role: "City guide", city: "Bangalore", title: "Indiranagar coffee crawl", caption: "Three excellent stops for a slow afternoon.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80", timeAgo: 25, likes: 860, comments: 21, saves: 84 },
+  ],
+  "New York City": [
+    { id: 1, posterType: "creator", author: "Maya R.", role: "Neighborhood creator", city: "NYC", title: "Best sunset walk in Brooklyn", caption: "A calm route with skyline views and a dessert stop.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=1200&q=80", timeAgo: 14, likes: 1540, comments: 44, saves: 162 },
+  ],
+  "San Francisco": [
+    { id: 1, posterType: "local", author: "Sofia L.", role: "Local tipster", city: "SF", title: "Golden Gate fog check", caption: "The bridge looked clear until noon, then fog rolled in fast.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=1200&q=80", timeAgo: 31, likes: 740, comments: 18, saves: 63 },
+  ],
+};
+
 // ─── Helpers ──────────────────────────────────────────────────
 
 const NEWS_COLORS: Record<NewsItem["type"], { bg: string; fg: string; label: string; icon: string }> = {
@@ -207,6 +247,7 @@ export default function FeedsScreen() {
   const news        = (cityName ? NEWS_DATA[cityName]      : undefined) ?? DEFAULT_NEWS;
   const communities = (cityName ? COMMUNITY_DATA[cityName] : undefined) ?? [];
   const qaItems     = (cityName ? QA_DATA[cityName]        : undefined) ?? [];
+  const pulsePosts  = (cityName ? PULSE_POSTS[cityName]    : undefined) ?? [];
 
   const toggleJoin = (id: number) => {
     setJoinedCommunities((prev) => {
@@ -225,6 +266,8 @@ export default function FeedsScreen() {
       return next;
     });
   };
+
+  const allowedPulsePosts = pulsePosts.filter((post) => ALLOWED_POSTER_TYPES.includes(post.posterType));
 
   // ── ALL tab feed ──────────────────────────────────────────
   type FeedItem =
@@ -290,6 +333,70 @@ export default function FeedsScreen() {
         })}
       </View>
     </View>
+  );
+
+  const renderPulseTab = () => (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingTop: 12, paddingBottom: bottomPadding, gap: 12 }}
+    >
+      <View style={[styles.pulseComposer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.pulseComposerTop}>
+          <View style={[styles.pulseComposerAvatar, { backgroundColor: colors.amber + "20" }]}>
+            <Feather name="edit-3" size={16} color={colors.amber} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pulseComposerTitle, { color: colors.foreground }]}>Share a city pulse</Text>
+            <Text style={[styles.pulseComposerSub, { color: colors.mutedForeground }]}>
+              Brand, guide, local, and creator posts only
+            </Text>
+          </View>
+          <View style={[styles.pulseComposerBadge, { backgroundColor: colors.amber }]}>
+            <Text style={styles.pulseComposerBadgeText}>Video first</Text>
+          </View>
+        </View>
+      </View>
+
+      {allowedPulsePosts.map((post) => (
+        <View key={post.id} style={[styles.pulseCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.pulseCardTop}>
+            <View style={[styles.pulseAvatar, { backgroundColor: colors.accent }]}>
+              <Text style={[styles.pulseAvatarText, { color: colors.amber }]}>{post.author.slice(0, 1)}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.pulseAuthor, { color: colors.foreground }]}>{post.author}</Text>
+              <Text style={[styles.pulseMeta, { color: colors.mutedForeground }]}>
+                {post.role}{post.city ? ` · ${post.city}` : ""} · {timeAgo(post.timeAgo)}
+              </Text>
+            </View>
+            {post.isSponsored && (
+              <View style={[styles.pulseSponsor, { backgroundColor: colors.accent }]}>
+                <Text style={[styles.pulseSponsorText, { color: colors.amber }]}>Sponsored</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={[styles.pulseTitle, { color: colors.foreground }]}>{post.title}</Text>
+          <Text style={[styles.pulseCaption, { color: colors.mutedForeground }]}>{post.caption}</Text>
+
+          <View style={styles.pulseMediaWrap}>
+            <Image source={{ uri: post.mediaUrl }} style={styles.pulseMedia} />
+            <View style={[styles.pulseMediaBadge, { backgroundColor: colors.background }]}>
+              <Feather name={post.mediaType === "video" ? "play-circle" : "image"} size={12} color={colors.foreground} />
+              <Text style={[styles.pulseMediaBadgeText, { color: colors.foreground }]}>
+                {post.mediaType === "video" ? "Video" : "Photo"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.pulseActions, { borderTopColor: colors.border }]}>
+            <Text style={[styles.pulseActionText, { color: colors.mutedForeground }]}>♥ {post.likes}</Text>
+            <Text style={[styles.pulseActionText, { color: colors.mutedForeground }]}>💬 {post.comments}</Text>
+            <Text style={[styles.pulseActionText, { color: colors.mutedForeground }]}>⌁ {post.saves}</Text>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
   );
 
   // ── ALL tab ───────────────────────────────────────────────

@@ -21,13 +21,12 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
       style={[
         styles.container,
         {
-          paddingTop: topPadding,
+          paddingTop: Math.max(6, topPadding - 8),
           backgroundColor: colors.background,
           borderBottomColor: colors.border,
         },
       ]}
     >
-      {/* Back button */}
       <TouchableOpacity
         onPress={() => router.back()}
         style={styles.backBtn}
@@ -37,7 +36,6 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
         <Feather name="arrow-left" size={22} color={colors.foreground} />
       </TouchableOpacity>
 
-      {/* Wordmark + subtitle */}
       <View style={styles.brandBlock}>
         <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
@@ -45,7 +43,6 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
         </Text>
       </View>
 
-      {/* Right slot: optional extra element + always-visible city pill + profile */}
       <View style={styles.rightSlot}>
         {rightElement}
 
@@ -81,7 +78,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 10,
   },
@@ -98,7 +95,7 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: "Inter_700Bold",
-    fontSize: 20,
+    fontSize: 18,
     letterSpacing: -0.5,
   },
   subtitle: {

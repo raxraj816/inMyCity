@@ -28,13 +28,10 @@ export function AppHeader({
     <View
       style={[
         styles.container,
-        { paddingTop: topPadding, borderBottomColor: colors.border },
+        { paddingTop: Math.max(6, topPadding - 8), borderBottomColor: colors.border },
       ]}
     >
-      {/* Single row: wordmark (flex) + city pill + profile */}
       <View style={styles.row}>
-
-        {/* Left — wordmark + tagline */}
         <View style={styles.wordmarkBlock}>
           <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
@@ -42,7 +39,6 @@ export function AppHeader({
           </Text>
         </View>
 
-        {/* Right — city pill + any extra element + profile */}
         <View style={styles.rightSlot}>
           {rightElement}
 
@@ -87,7 +83,7 @@ export function AppHeader({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
@@ -103,7 +99,7 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: "Inter_700Bold",
-    fontSize: 24,
+    fontSize: 22,
     letterSpacing: -0.5,
   },
   subtitle: {

@@ -10,3 +10,4 @@ export * from "./activities";
 export * from "./transit";
 export * from "./conversations";
 export * from "./messages";
+export * from "./auth";

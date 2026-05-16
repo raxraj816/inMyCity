@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, Platform,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -17,6 +18,8 @@ import { CityPicker } from "@/components/CityPicker";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { AppHeader } from "@/components/AppHeader";
 import { AiChatFab } from "@/components/AiChatFab";
+
+const ONBOARDING_DONE_KEY = "onboarding_complete";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -269,6 +272,13 @@ export default function ExploreScreen() {
 
   const [trendFilter, setTrendFilter] = useState<TrendFilter>("all");
   const [refreshing,  setRefreshing]  = useState(false);
+
+  // ── Onboarding redirect ───────────────────────────────────────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_DONE_KEY).then((val) => {
+      if (!val) router.replace("/onboarding");
+    });
+  }, []);
 
   // ── Parallel data fetches ─────────────────────────────────────────────────
   const { data: events = [],     isLoading: evLoad, refetch: refEv } =

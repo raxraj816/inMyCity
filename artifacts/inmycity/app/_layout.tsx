@@ -8,17 +8,20 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as SecureStore from "expo-secure-store";
 import React, { useEffect } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { setBaseUrl } from "@workspace/api-client-react";
+import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import { LocationProvider } from "@/context/LocationContext";
 import { CityProvider } from "@/context/CityContext";
+import { AuthProvider } from "@/lib/auth";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+setAuthTokenGetter(() => SecureStore.getItemAsync("auth_session_token"));
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,12 +37,15 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "fade" }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="place/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="event/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="deal/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="dining" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="nightlife" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="sports" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="places" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="movies" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="movie/[id]" options={{ headerShown: false, presentation: "card" }} />
@@ -89,13 +95,15 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <CityProvider>
-            <LocationProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                {withKeyboard}
-              </GestureHandlerRootView>
-            </LocationProvider>
-          </CityProvider>
+          <AuthProvider>
+            <CityProvider>
+              <LocationProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  {withKeyboard}
+                </GestureHandlerRootView>
+              </LocationProvider>
+            </CityProvider>
+          </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

@@ -1,15 +1,26 @@
 import { Router } from "express";
 import { db, favoritesTable, placesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 const router = Router();
 
+function getUserId(req: any): string | null {
+  return req.isAuthenticated() ? req.user.id : null;
+}
+
 router.get("/favorites", async (req, res) => {
   try {
+    const userId = getUserId(req);
+
     const rows = await db
       .select()
       .from(favoritesTable)
       .leftJoin(placesTable, eq(favoritesTable.placeId, placesTable.id))
+      .where(
+        userId
+          ? eq(favoritesTable.userId, userId)
+          : isNull(favoritesTable.userId)
+      )
       .orderBy(favoritesTable.createdAt);
 
     const favorites = rows
@@ -30,13 +41,25 @@ router.get("/favorites", async (req, res) => {
 
 router.post("/favorites", async (req, res) => {
   try {
+    const userId = getUserId(req);
     const { placeId } = req.body;
     if (!placeId) return res.status(400).json({ error: "placeId is required" });
 
     const [place] = await db.select().from(placesTable).where(eq(placesTable.id, placeId));
     if (!place) return res.status(404).json({ error: "Place not found" });
 
-    const [existing] = await db.select().from(favoritesTable).where(eq(favoritesTable.placeId, placeId));
+    const [existing] = await db
+      .select()
+      .from(favoritesTable)
+      .where(
+        and(
+          eq(favoritesTable.placeId, placeId),
+          userId
+            ? eq(favoritesTable.userId, userId)
+            : isNull(favoritesTable.userId)
+        )
+      );
+
     if (existing) {
       return res.status(201).json({
         id: existing.id,
@@ -46,7 +69,11 @@ router.post("/favorites", async (req, res) => {
       });
     }
 
-    const [fav] = await db.insert(favoritesTable).values({ placeId }).returning();
+    const [fav] = await db
+      .insert(favoritesTable)
+      .values({ placeId, userId })
+      .returning();
+
     res.status(201).json({
       id: fav.id,
       placeId: fav.placeId,
@@ -61,8 +88,20 @@ router.post("/favorites", async (req, res) => {
 
 router.delete("/favorites/:placeId", async (req, res) => {
   try {
+    const userId = getUserId(req);
     const placeId = parseInt(req.params.placeId);
-    await db.delete(favoritesTable).where(eq(favoritesTable.placeId, placeId));
+
+    await db
+      .delete(favoritesTable)
+      .where(
+        and(
+          eq(favoritesTable.placeId, placeId),
+          userId
+            ? eq(favoritesTable.userId, userId)
+            : isNull(favoritesTable.userId)
+        )
+      );
+
     res.json({ success: true });
   } catch (err) {
     req.log.error({ err }, "Failed to remove favorite");

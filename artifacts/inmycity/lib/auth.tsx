@@ -8,11 +8,14 @@ import React, {
 } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
+import * as Crypto from "expo-crypto";
 import { Platform } from "react-native";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const AUTH_TOKEN_KEY = "auth_session_token";
+const ISSUER_URL = "https://replit.com/oidc";
+const REDIRECT_URI = "inmycity://oauth";
 
 function getApiBaseUrl(): string {
   if (process.env.EXPO_PUBLIC_DOMAIN) {
@@ -21,7 +24,11 @@ function getApiBaseUrl(): string {
   return "";
 }
 
-interface User {
+function getClientId(): string {
+  return process.env.EXPO_PUBLIC_REPL_ID || "";
+}
+
+export interface AuthUser {
   id: string;
   email: string | null;
   firstName: string | null;
@@ -30,7 +37,7 @@ interface User {
 }
 
 interface AuthContextValue {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: () => Promise<void>;
@@ -44,6 +51,8 @@ const AuthContext = createContext<AuthContextValue>({
   login: async () => {},
   logout: async () => {},
 });
+
+// ── SecureStore helpers (no-ops on web) ────────────────────────────────────
 
 async function getToken(): Promise<string | null> {
   try {
@@ -68,19 +77,35 @@ async function deleteToken(): Promise<void> {
   } catch {}
 }
 
+// ── PKCE helpers ───────────────────────────────────────────────────────────
+
+async function randomBase64Url(byteCount: number): Promise<string> {
+  const bytes = await Crypto.getRandomBytesAsync(byteCount);
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(bytes)));
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+async function codeChallenge(verifier: string): Promise<string> {
+  const digest = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    verifier,
+    { encoding: Crypto.CryptoEncoding.BASE64 },
+  );
+  return digest.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+// ── Provider ───────────────────────────────────────────────────────────────
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchUser = useCallback(async () => {
     try {
       const token = await getToken();
-      if (!token) {
-        setUser(null);
-        return;
-      }
-      const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/auth/user`, {
+      if (!token) { setUser(null); return; }
+
+      const res = await fetch(`${getApiBaseUrl()}/api/auth/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -95,31 +120,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+  useEffect(() => { fetchUser(); }, [fetchUser]);
 
   const login = useCallback(async () => {
+    // Web: redirect to server-side login (session cookie based)
+    if (Platform.OS === "web") {
+      const base = getApiBaseUrl();
+      if (base) window.location.href = `${base}/api/login?returnTo=/`;
+      return;
+    }
+
     try {
+      setIsLoading(true);
+
+      // 1. PKCE
+      const verifier = await randomBase64Url(32);
+      const challenge = await codeChallenge(verifier);
+      const state = await randomBase64Url(16);
+
+      // 2. Discover OIDC endpoints
+      const disc = await fetch(`${ISSUER_URL}/.well-known/openid-configuration`);
+      const { authorization_endpoint } = await disc.json();
+
+      // 3. Build authorization URL
+      const params = new URLSearchParams({
+        client_id:              getClientId(),
+        response_type:          "code",
+        scope:                  "openid email profile offline_access",
+        redirect_uri:           REDIRECT_URI,
+        code_challenge:         challenge,
+        code_challenge_method:  "S256",
+        state,
+        prompt:                 "login",
+      });
+      const authUrl = `${authorization_endpoint}?${params}`;
+
+      // 4. Open browser
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, REDIRECT_URI);
+      if (result.type !== "success" || !result.url) return;
+
+      // 5. Parse code + verify state
+      const redirected = new URL(result.url);
+      const code = redirected.searchParams.get("code");
+      if (!code || redirected.searchParams.get("state") !== state) return;
+
+      // 6. Exchange code for session token
       const apiBase = getApiBaseUrl();
-      if (!apiBase) return;
-      const loginUrl = `${apiBase}/api/auth/login?mobile=1`;
-      const result = await WebBrowser.openAuthSessionAsync(loginUrl, apiBase);
-      if (result.type === "success") {
+      const exchangeRes = await fetch(`${apiBase}/api/mobile-auth/token-exchange`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          code_verifier: verifier,
+          redirect_uri:  REDIRECT_URI,
+          state,
+        }),
+      });
+
+      const { token } = await exchangeRes.json();
+      if (token) {
+        await saveToken(token);
         await fetchUser();
       }
     } catch (err) {
       console.error("Login error:", err);
+    } finally {
+      setIsLoading(false);
     }
   }, [fetchUser]);
 
   const logout = useCallback(async () => {
     try {
       const token = await getToken();
-      const apiBase = getApiBaseUrl();
-      if (token && apiBase) {
-        await fetch(`${apiBase}/api/mobile-auth/logout`, {
-          method: "POST",
+      const base = getApiBaseUrl();
+      if (token && base) {
+        await fetch(`${base}/api/mobile-auth/logout`, {
+          method:  "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -129,15 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

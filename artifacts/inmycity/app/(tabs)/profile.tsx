@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,20 +7,30 @@ import {
   TouchableOpacity,
   ScrollView,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetFavorites, useGetCollections } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth";
 import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 
 type Tab = "favorites" | "collections";
 
+function getInitials(firstName: string | null, lastName: string | null): string {
+  const f = firstName?.trim()[0] ?? "";
+  const l = lastName?.trim()[0] ?? "";
+  return (f + l).toUpperCase() || "?";
+}
+
 export default function ProfileTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("favorites");
 
   const { data: favorites, isLoading: favLoading, refetch: refetchFav } = useGetFavorites();
@@ -30,6 +40,18 @@ export default function ProfileTab() {
   const isRefreshing = favLoading || colLoading;
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 8;
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
+
+  const displayName = isAuthenticated && user
+    ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Member"
+    : "Guest";
+
+  const initials = isAuthenticated && user
+    ? getInitials(user.firstName, user.lastName)
+    : "G";
+
+  const subtitle = isAuthenticated && user
+    ? user.email ?? "Signed in"
+    : "Sign in to sync across devices";
 
   return (
     <ScrollView
@@ -45,21 +67,49 @@ export default function ProfileTab() {
 
       {/* Avatar card */}
       <View style={[styles.avatarCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.amber }]}>
-          <Text style={styles.avatarInitial}>G</Text>
-        </View>
+        {/* Avatar */}
+        {isAuthenticated && user?.profileImageUrl ? (
+          <Image
+            source={{ uri: user.profileImageUrl }}
+            style={styles.avatarImg}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: colors.amber }]}>
+            <Text style={styles.avatarInitial}>{initials}</Text>
+          </View>
+        )}
+
+        {/* Name + sub */}
         <View style={styles.avatarInfo}>
-          <Text style={[styles.userName, { color: colors.foreground }]}>Guest</Text>
-          <Text style={[styles.userSub, { color: colors.mutedForeground }]}>
-            Sign in to sync across devices
+          <Text style={[styles.userName, { color: colors.foreground }]} numberOfLines={1}>
+            {displayName}
+          </Text>
+          <Text style={[styles.userSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+            {subtitle}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.signInBtn, { backgroundColor: colors.amber }]}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.signInBtnText}>Sign In</Text>
-        </TouchableOpacity>
+
+        {/* Sign In / Sign Out button */}
+        {authLoading ? (
+          <ActivityIndicator size="small" color={colors.amber} />
+        ) : isAuthenticated ? (
+          <TouchableOpacity
+            style={[styles.signInBtn, { backgroundColor: colors.muted }]}
+            onPress={logout}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.signInBtnText, { color: colors.foreground }]}>Sign Out</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.signInBtn, { backgroundColor: colors.amber }]}
+            onPress={login}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.signInBtnText, { color: "#fff" }]}>Sign In</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Saved section */}
@@ -106,7 +156,9 @@ export default function ProfileTab() {
                 <Feather name="heart" size={28} color={colors.mutedForeground} />
                 <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No favorites yet</Text>
                 <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                  Tap the heart on any place to save it here.
+                  {isAuthenticated
+                    ? "Tap the heart on any place to save it here."
+                    : "Sign in to save and sync favorites across devices."}
                 </Text>
               </View>
             ) : (
@@ -158,9 +210,9 @@ export default function ProfileTab() {
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SETTINGS</Text>
       <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {([
-          { icon: "bell" as const, label: "Notifications" },
-          { icon: "moon" as const, label: "Dark Mode" },
-          { icon: "info" as const, label: "About inMyCity" },
+          { icon: "bell" as const,  label: "Notifications" },
+          { icon: "moon" as const,  label: "Dark Mode"     },
+          { icon: "info" as const,  label: "About inMyCity" },
         ]).map(({ icon, label }, idx, arr) => (
           <TouchableOpacity
             key={label}
@@ -201,12 +253,13 @@ const styles = StyleSheet.create({
     }),
   },
   avatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  avatarImg: { width: 52, height: 52, borderRadius: 26 },
   avatarInitial: { fontFamily: "Inter_700Bold", fontSize: 22, color: "#fff" },
   avatarInfo: { flex: 1 },
   userName: { fontFamily: "Inter_700Bold", fontSize: 17, marginBottom: 2 },
   userSub: { fontFamily: "Inter_400Regular", fontSize: 12 },
   signInBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
-  signInBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: "#fff" },
+  signInBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
   sectionLabel: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 11,
@@ -225,10 +278,7 @@ const styles = StyleSheet.create({
       default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
     }),
   },
-  tabRow: {
-    flexDirection: "row",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
+  tabRow: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
   tab: {
     flex: 1,
     flexDirection: "row",

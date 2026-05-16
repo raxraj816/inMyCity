@@ -20,8 +20,18 @@ import { LocationProvider } from "@/context/LocationContext";
 import { CityProvider } from "@/context/CityContext";
 import { AuthProvider } from "@/lib/auth";
 
+// Safe token getter — skips SecureStore on web (not needed there)
+function safeGetToken(): Promise<string | null> {
+  try {
+    if (Platform.OS === "web") return Promise.resolve(null);
+    return SecureStore.getItemAsync("auth_session_token");
+  } catch {
+    return Promise.resolve(null);
+  }
+}
+
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
-setAuthTokenGetter(() => SecureStore.getItemAsync("auth_session_token"));
+setAuthTokenGetter(safeGetToken);
 
 SplashScreen.preventAutoHideAsync();
 
@@ -83,13 +93,14 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   const nav = <RootLayoutNav />;
-  const withKeyboard = Platform.OS !== "web"
-    ? React.createElement(
-        require("react-native-keyboard-controller").KeyboardProvider,
-        null,
-        nav
-      )
-    : nav;
+  const withKeyboard =
+    Platform.OS !== "web"
+      ? React.createElement(
+          require("react-native-keyboard-controller").KeyboardProvider,
+          null,
+          nav,
+        )
+      : nav;
 
   return (
     <SafeAreaProvider>

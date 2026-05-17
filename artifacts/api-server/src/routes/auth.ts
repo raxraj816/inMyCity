@@ -267,4 +267,140 @@ router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
   res.json(LogoutMobileSessionResponse.parse({ success: true }));
 });
 
+// ── Google OAuth ──────────────────────────────────────────────────────────
+
+const GOOGLE_ISSUER = "https://accounts.google.com";
+
+async function getGoogleConfig() {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set");
+  }
+  return oidc.discovery(new URL(GOOGLE_ISSUER), clientId, clientSecret);
+}
+
+// Start Google OAuth flow
+router.get("/auth/google", async (req: Request, res: Response) => {
+  try {
+    const config = await getGoogleConfig();
+    const callbackUrl = `${getOrigin(req)}/api/auth/google/callback`;
+    const mobile = req.query.mobile === "1";
+
+    const state = oidc.randomState();
+    const codeVerifier = oidc.randomPKCECodeVerifier();
+    const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
+
+    const redirectTo = oidc.buildAuthorizationUrl(config, {
+      redirect_uri: callbackUrl,
+      scope: "openid email profile",
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
+      state,
+    });
+
+    setOidcCookie(res, "g_code_verifier", codeVerifier);
+    setOidcCookie(res, "g_state", state);
+    if (mobile) setOidcCookie(res, "g_mobile", "1");
+
+    res.redirect(redirectTo.href);
+  } catch (err) {
+    req.log.error({ err }, "Google OAuth start error");
+    res.status(503).json({ error: "Google OAuth is not configured" });
+  }
+});
+
+// Google OAuth callback
+router.get("/auth/google/callback", async (req: Request, res: Response) => {
+  try {
+    const config = await getGoogleConfig();
+    const origin = getOrigin(req);
+    const callbackUrl = `${origin}/api/auth/google/callback`;
+
+    const codeVerifier = req.cookies?.g_code_verifier as string | undefined;
+    const expectedState = req.cookies?.g_state as string | undefined;
+    const isMobile = req.cookies?.g_mobile === "1";
+
+    res.clearCookie("g_code_verifier", { path: "/" });
+    res.clearCookie("g_state", { path: "/" });
+    res.clearCookie("g_mobile", { path: "/" });
+
+    if (!codeVerifier || !expectedState) {
+      res.redirect("/api/auth/google");
+      return;
+    }
+
+    const callbackWithParams = new URL(
+      `${callbackUrl}?${new URL(req.url, `http://${req.headers.host}`).searchParams}`,
+    );
+
+    let tokens: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
+    try {
+      tokens = await oidc.authorizationCodeGrant(config, callbackWithParams, {
+        pkceCodeVerifier: codeVerifier,
+        expectedState,
+        idTokenExpected: true,
+      });
+    } catch {
+      res.redirect("/api/auth/google");
+      return;
+    }
+
+    const claims = tokens.claims();
+    if (!claims) {
+      res.redirect("/api/auth/google");
+      return;
+    }
+
+    // Google uses given_name / family_name instead of first_name / last_name
+    const googleUser = {
+      id: claims.sub as string,
+      email: (claims.email as string) || null,
+      firstName: (claims.given_name as string) || null,
+      lastName: (claims.family_name as string) || null,
+      profileImageUrl: (claims.picture as string) || null,
+    };
+
+    const [dbUser] = await db
+      .insert(usersTable)
+      .values(googleUser)
+      .onConflictDoUpdate({
+        target: usersTable.id,
+        set: { ...googleUser, updatedAt: new Date() },
+      })
+      .returning();
+
+    const now = Math.floor(Date.now() / 1000);
+    const sessionData: SessionData = {
+      user: {
+        id: dbUser.id,
+        email: dbUser.email,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        profileImageUrl: dbUser.profileImageUrl,
+      },
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: tokens.expiresIn()
+        ? now + tokens.expiresIn()!
+        : (claims.exp ?? now + 3600),
+    };
+
+    const sid = await createSession(sessionData);
+
+    if (isMobile) {
+      // Hand token back to the native app via custom scheme redirect.
+      // WebBrowser.openAuthSessionAsync intercepts this before the OS handles it.
+      res.redirect(`inmycity://oauth?token=${encodeURIComponent(sid)}`);
+    } else {
+      setSessionCookie(res, sid);
+      res.redirect("/");
+    }
+  } catch (err) {
+    req.log.error({ err }, "Google OAuth callback error");
+    res.status(500).json({ error: "Authentication failed" });
+  }
+});
+
 export default router;
+

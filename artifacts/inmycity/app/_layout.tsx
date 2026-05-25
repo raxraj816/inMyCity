@@ -30,7 +30,7 @@ function safeGetToken(): Promise<string | null> {
   }
 }
 
-setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+setBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3001");
 setAuthTokenGetter(safeGetToken);
 
 SplashScreen.preventAutoHideAsync();

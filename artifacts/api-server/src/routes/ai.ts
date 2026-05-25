@@ -69,6 +69,11 @@ ${cityKnowledge ? `## Your ${city} Knowledge Base\n${cityKnowledge}\n` : ""}
 }
 
 router.post("/ai/chat", async (req, res) => {
+  if (!process.env.OPENAI_API_KEY) {
+    res.status(503).json({ error: "OPENAI_API_KEY is not configured" });
+    return;
+  }
+
   const { message, city, history } = req.body as {
     message: string;
     city: string;
@@ -103,7 +108,7 @@ router.post("/ai/chat", async (req, res) => {
     ];
 
     const stream = await openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
       max_completion_tokens: 8192,
       messages: chatMessages,
       stream: true,

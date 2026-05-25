@@ -15,10 +15,7 @@ WebBrowser.maybeCompleteAuthSession();
 const AUTH_TOKEN_KEY = "auth_session_token";
 
 function getApiBaseUrl(): string {
-  if (process.env.EXPO_PUBLIC_DOMAIN) {
-    return `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
-  }
-  return "";
+  return process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
 }
 
 export interface AuthUser {

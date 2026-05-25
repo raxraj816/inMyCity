@@ -64,9 +64,7 @@ export default function NightlifeScreen() {
     <View>
       <ScreenHeader
         title="Nightlife"
-        subtitle={selectedCity?.name ?? ""}
-        onBack={() => router.back()}
-        accentColor={ACCENT}
+        topPadding={insets.top}
       />
 
       {/* Filter pills */}
@@ -103,7 +101,7 @@ export default function NightlifeScreen() {
       {/* Tonight hot spots strip */}
       {trendingItems.length > 0 && (
         <TrendingStrip
-          title="Tonight's Hot Spots"
+          label="Tonight's Hot Spots"
           items={trendingItems}
           accentColor={ACCENT}
         />

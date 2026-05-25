@@ -25,7 +25,7 @@ type MainTab = "pulse" | "news" | "community" | "qa";
 type PosterTier = "official" | "local_expert" | "creator" | "business";
 type PulseFilter = "all" | "videos" | "food" | "transit" | "tips" | "events";
 
-type NewsCategory = "local" | "traffic" | "weather" | "civic" | "sports" | "business";
+type NewsCategory = "local" | "traffic" | "weather" | "civic" | "sports" | "business" | "transit";
 
 type NewsSourceKind = "publisher" | "government" | "traffic" | "weather" | "sports" | "business";
 
@@ -107,6 +107,7 @@ const NEWS_CATEGORY_META: Record<
   civic: { label: "Civic", icon: "info", color: "#22c55e", bg: "#f0fdf4" },
   sports: { label: "Sports", icon: "activity", color: "#16a34a", bg: "#f0fdf4" },
   business: { label: "Business", icon: "briefcase", color: "#10b981", bg: "#ecfdf5" },
+  transit: { label: "Transit", icon: "navigation", color: "#06b6d4", bg: "#ecfeff" },
 };
 
 const HAPPENING_NOW: Record<string, HappeningItem[]> = {
@@ -202,7 +203,7 @@ const NEWS_DATA: Record<string, NewsItem[]> = {
 };
 
 const DEFAULT_NEWS: NewsItem[] = [
-  { id: 1, category: "local", headline: "Select a city to see local news and alerts.", summary: "Use the city picker to view news relevant to your area.", source: "inMyCity", sourceKind: "publisher", minutesAgo: 0 },
+  { id: 1, category: "local", headline: "Select a city to see local news and alerts.", summary: "Use the city picker to view news relevant to your area.", imageUrl: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=80", source: "inMyCity", sourceKind: "publisher", minutesAgo: 0 },
 ];
 
 const COMMUNITY_DATA: Record<string, Community[]> = {

@@ -40,9 +40,8 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 function getApiBase(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}/api`;
-  return "/api";
+  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+  return `${baseUrl.replace(/\/+$/, "")}/api`;
 }
 
 function HeaderRobotIcon({ color, bg }: { color: string; bg: string }) {

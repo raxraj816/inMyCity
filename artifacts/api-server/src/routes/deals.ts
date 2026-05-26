@@ -76,7 +76,10 @@ router.get("/deals/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [deal] = await db.select().from(dealsTable).where(eq(dealsTable.id, id));
-    if (!deal) return res.status(404).json({ error: "Deal not found" });
+    if (!deal) {
+      res.status(404).json({ error: "Deal not found" });
+      return;
+    }
     res.json({
       ...deal,
       distanceKm: null,

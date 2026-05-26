@@ -33,6 +33,7 @@ import {
   type Hotel,
   type Activity,
 } from "@workspace/api-client-react";
+import { MUMBAI_LAUNCH_ZONES } from "@workspace/city-config";
 
 const CITY_META: Record<string, { tagline: string; tips: { icon: string; label: string; value: string }[] }> = {
   Mumbai: {
@@ -168,7 +169,9 @@ const DEFAULT_INSIDER_TIPS = [
   { icon: "map-pin",  color: "#10b981", label: "Hidden gem",   tip: "Walk 2–3 blocks off the main tourist strip — that's where the city actually lives." },
 ];
 
-const NEIGHBORHOODS: Record<string, { name: string; vibe: string; color: string }[]> = {
+type GuideNeighborhood = { id?: string; name: string; vibe: string; color: string };
+
+const NEIGHBORHOODS: Record<string, GuideNeighborhood[]> = {
   Mumbai: [
     { name: "Colaba", vibe: "Heritage & cafes", color: "#0ea5e9" },
     { name: "Bandra", vibe: "Food & nightlife", color: "#ec4899" },
@@ -194,14 +197,6 @@ const NEIGHBORHOODS: Record<string, { name: string; vibe: string; color: string 
     { name: "Nob Hill", vibe: "Classic city", color: "#10b981" },
   ],
 };
-
-const QUICK_JUMPS: { label: string; icon: string; color: string; route: string }[] = [
-  { label: "Itineraries", icon: "book-open", color: "#6366f1", route: "/itineraries" },
-  { label: "Places", icon: "map-pin", color: "#0ea5e9", route: "/places" },
-  { label: "Dining", icon: "coffee", color: "#f97316", route: "/dining" },
-  { label: "Hotels", icon: "home", color: "#10b981", route: "/hotels" },
-  { label: "Events", icon: "calendar", color: "#ec4899", route: "/events" },
-];
 
 const CITY_AT_A_GLANCE: Record<string, { currency: string; timezone: string; knownFor: string; tripLength: string }> = {
   Mumbai: { currency: "INR (₹)", timezone: "IST +5:30", knownFor: "Bollywood & Finance", tripLength: "3–5 Days" },
@@ -254,7 +249,15 @@ export default function CityGuideScreen() {
     placeFilter === "all" ? allPlaces : allPlaces.filter((p) => p.category?.toLowerCase() === placeFilter)
   ).slice(0, 10);
   const upcomingEvents = events.slice(0, 5);
-  const neighborhoods = (cityName ? NEIGHBORHOODS[cityName] : undefined) ?? [];
+  const neighborhoods: GuideNeighborhood[] =
+    cityName === "Mumbai"
+      ? MUMBAI_LAUNCH_ZONES.map((zone, index) => ({
+          id: zone.id,
+          name: zone.name,
+          vibe: zone.vibe,
+          color: ["#ec4899", "#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#ef4444"][index % 6],
+        }))
+      : (cityName ? NEIGHBORHOODS[cityName] : undefined) ?? [];
   const guideItems = useMemo(() => {
     if (guideFilter === "all") return itineraries;
     return itineraries.filter((itinerary) => String(itinerary.durationDays) === guideFilter);
@@ -316,9 +319,15 @@ export default function CityGuideScreen() {
               <Text style={styles.heroCity}>{selectedCity?.displayName ?? "Your City"}</Text>
               <Text style={styles.heroTagline}>{meta.tagline}</Text>
             </View>
-            <View style={[styles.heroIconBox, { backgroundColor: "rgba(255,255,255,0.1)" }]}>
-              <Feather name="compass" size={36} color="#f97316" />
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={[styles.heroInfoButton, { backgroundColor: "rgba(249,115,22,0.16)", borderColor: "rgba(249,115,22,0.34)" }]}
+              onPress={() => setDetailsOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Open Mumbai city details"
+            >
+              <MaterialCommunityIcons name="star-four-points" size={20} color="#fb923c" />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.heroDivider} />
@@ -341,42 +350,7 @@ export default function CityGuideScreen() {
             ))}
           </ScrollView>
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.heroDetailsButton}
-            onPress={() => setDetailsOpen(true)}
-          >
-            <Feather name="info" size={12} color="rgba(255,255,255,0.55)" />
-            <Text style={styles.heroDetailsButtonText}>Full city details</Text>
-            <Feather name="chevron-right" size={12} color="rgba(255,255,255,0.4)" />
-          </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.85} style={[styles.transitCard, { backgroundColor: "#06b6d4" }]} onPress={() => router.push("/transit")}>
-            <View style={[styles.transitIconBox, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-              <MaterialCommunityIcons name="train-variant" size={22} color="#fff" />
-            </View>
-            <View style={styles.transitText}>
-              <Text style={styles.transitTitle}>Getting Around</Text>
-              <Text style={styles.transitSub}>Metro, bus & train routes for visitors</Text>
-            </View>
-            <Feather name="arrow-right" size={18} color="#fff" />
-          </TouchableOpacity>
         </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickJumpScroll}>
-          {QUICK_JUMPS.map((jump) => (
-            <TouchableOpacity
-              key={jump.label}
-              style={[styles.quickJumpTile, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(jump.route as any)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.quickJumpIcon, { backgroundColor: jump.color + "22" }]}>
-                <Feather name={jump.icon as any} size={20} color={jump.color} />
-              </View>
-              <Text style={[styles.quickJumpLabel, { color: colors.foreground }]}>{jump.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
 
         {neighborhoods.length > 0 && (
           <View style={styles.section}>
@@ -387,7 +361,7 @@ export default function CityGuideScreen() {
                   key={hood.name}
                   activeOpacity={0.8}
                   style={[styles.neighborhoodCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => router.push("/places")}
+                  onPress={() => router.push(hood.id ? `/neighborhood/${hood.id}` as any : "/places")}
                 >
                   <View style={[styles.neighborhoodDot, { backgroundColor: hood.color }]} />
                   <Text style={[styles.neighborhoodName, { color: colors.foreground }]}>{hood.name}</Text>
@@ -717,10 +691,32 @@ export default function CityGuideScreen() {
           <TouchableOpacity activeOpacity={1} style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>City details</Text>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Mumbai Starter Guide</Text>
               <TouchableOpacity onPress={() => setDetailsOpen(false)}>
                 <Feather name="x" size={20} color={colors.foreground} />
               </TouchableOpacity>
+            </View>
+            <Text style={[styles.modalIntro, { color: colors.mutedForeground }]}>
+              First-time context, transit basics, rain backups, food areas, and city details in one place.
+            </Text>
+            <View style={styles.modalStarterList}>
+              {[
+                { icon: "compass", title: "First time in Mumbai", body: "Start with one neighborhood, one meal plan, and one transit anchor instead of trying to cross the whole city." },
+                { icon: "navigation", title: "Local train basics", body: "Use Western, Central, and Harbour lines for longer movement. Avoid peak crush hours when possible." },
+                { icon: "cloud-rain", title: "Rain-safe guide", body: "Keep indoor backups for monsoon days: cafes, malls, museums, movies, and station-adjacent plans." },
+                { icon: "coffee", title: "Food zones", body: "Bandra, Fort, Dadar, Ghatkopar, Juhu, and Colaba each solve a different food mood." },
+                { icon: "shield", title: "Safety/context", body: "Mumbai is active late, but plan clear pickup points, watch crowded markets, and keep a rain/traffic buffer." },
+              ].map((item) => (
+                <View key={item.title} style={[styles.modalStarterRow, { backgroundColor: colors.muted }]}>
+                  <View style={[styles.modalStarterIcon, { backgroundColor: colors.amber + "18" }]}>
+                    <Feather name={item.icon as any} size={14} color={colors.amber} />
+                  </View>
+                  <View style={styles.modalStarterText}>
+                    <Text style={[styles.modalStarterTitle, { color: colors.foreground }]}>{item.title}</Text>
+                    <Text style={[styles.modalStarterBody, { color: colors.mutedForeground }]}>{item.body}</Text>
+                  </View>
+                </View>
+              ))}
             </View>
             <View style={styles.modalGlanceGrid}>
               <GlanceStat icon="credit-card" label="Currency" value={glance.currency} colors={colors} />
@@ -1005,14 +1001,12 @@ const styles = StyleSheet.create({
   heroEyebrow: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1 },
   heroCity: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#fff", marginTop: 2 },
   heroTagline: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 },
-  heroIconBox: { width: 64, height: 64, borderRadius: 18, alignItems: "center", justifyContent: "center", marginLeft: 12 },
+  heroInfoButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center", marginLeft: 12, ...Platform.select({ web: { boxShadow: "0 0 18px rgba(249,115,22,0.16)" }, default: { shadowColor: "#f97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 10, elevation: 2 } }) },
   heroDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.12)", marginVertical: 14 },
   heroFactsScroll: { gap: 8, paddingBottom: 2 },
   heroFactPill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 12 },
   heroFactLabel: { fontFamily: "Inter_400Regular", fontSize: 10, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: 0.3 },
   heroFactValue: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#fff", marginTop: 1 },
-  heroDetailsButton: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 12, alignSelf: "flex-end" },
-  heroDetailsButtonText: { fontFamily: "Inter_400Regular", fontSize: 11, color: "rgba(255,255,255,0.5)" },
   section: { marginTop: 8 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
   sectionHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 7 },
@@ -1021,11 +1015,6 @@ const styles = StyleSheet.create({
   guideFilterScroll: { paddingHorizontal: 20, paddingBottom: 4, gap: 8 },
   guideFilterPill: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   guideFilterText: { fontFamily: "Inter_500Medium", fontSize: 13 },
-  transitCard: { marginHorizontal: 20, marginTop: 12, borderRadius: 16, padding: 16, flexDirection: "row", alignItems: "center", gap: 14 },
-  transitIconBox: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  transitText: { flex: 1 },
-  transitTitle: { fontFamily: "Inter_700Bold", fontSize: 15, color: "#fff" },
-  transitSub: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 1 },
   tipsScroll: { paddingHorizontal: 20, paddingBottom: 4, gap: 10 },
   tipCard: { width: 130, borderRadius: 16, padding: 14, borderWidth: 1, alignItems: "flex-start", gap: 6 },
   tipIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
@@ -1083,10 +1072,6 @@ const styles = StyleSheet.create({
   eventVenue: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
   emptyBox: { marginHorizontal: 20, borderRadius: 14, padding: 20, flexDirection: "row", alignItems: "center", gap: 10 },
   emptyText: { fontFamily: "Inter_400Regular", fontSize: 13, flex: 1 },
-  quickJumpScroll: { paddingHorizontal: 20, paddingVertical: 14, gap: 10 },
-  quickJumpTile: { width: 76, alignItems: "center", borderRadius: 16, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 8, gap: 8 },
-  quickJumpIcon: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  quickJumpLabel: { fontFamily: "Inter_500Medium", fontSize: 11, textAlign: "center" },
   glanceCard: { marginHorizontal: 20, borderRadius: 18, borderWidth: 1, padding: 16, flexDirection: "row", flexWrap: "wrap", gap: 14 },
   glanceStat: { width: "45%", flexDirection: "row", alignItems: "flex-start", gap: 10 },
   glanceStatIcon: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -1127,6 +1112,13 @@ const styles = StyleSheet.create({
   modalHandle: { width: 42, height: 4, borderRadius: 2, alignSelf: "center", backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 14 },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   modalTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
+  modalIntro: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  modalStarterList: { gap: 10, marginBottom: 14 },
+  modalStarterRow: { flexDirection: "row", gap: 10, borderRadius: 14, padding: 12 },
+  modalStarterIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  modalStarterText: { flex: 1 },
+  modalStarterTitle: { fontFamily: "Inter_700Bold", fontSize: 13, marginBottom: 3 },
+  modalStarterBody: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 17 },
   modalGlanceGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 14 },
   modalTipList: { gap: 10 },
   modalTipRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingBottom: 10, borderBottomWidth: 1 },

@@ -43,10 +43,16 @@ router.post("/favorites", async (req, res) => {
   try {
     const userId = getUserId(req);
     const { placeId } = req.body;
-    if (!placeId) return res.status(400).json({ error: "placeId is required" });
+    if (!placeId) {
+      res.status(400).json({ error: "placeId is required" });
+      return;
+    }
 
     const [place] = await db.select().from(placesTable).where(eq(placesTable.id, placeId));
-    if (!place) return res.status(404).json({ error: "Place not found" });
+    if (!place) {
+      res.status(404).json({ error: "Place not found" });
+      return;
+    }
 
     const [existing] = await db
       .select()
@@ -61,12 +67,13 @@ router.post("/favorites", async (req, res) => {
       );
 
     if (existing) {
-      return res.status(201).json({
+      res.status(201).json({
         id: existing.id,
         placeId: existing.placeId,
         createdAt: existing.createdAt.toISOString(),
         place: { ...place, distanceKm: null, isOpen: null },
       });
+      return;
     }
 
     const [fav] = await db

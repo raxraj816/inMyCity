@@ -112,7 +112,10 @@ router.get("/places/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [place] = await db.select().from(placesTable).where(eq(placesTable.id, id));
-    if (!place) return res.status(404).json({ error: "Place not found" });
+    if (!place) {
+      res.status(404).json({ error: "Place not found" });
+      return;
+    }
     res.json({ ...place, distanceKm: null, isOpen: isPlaceOpen(place.openingHours) });
   } catch (err) {
     req.log.error({ err }, "Failed to get place");

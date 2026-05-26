@@ -4,14 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
+    "dev": "export NODE_ENV=development PORT=${PORT:-3001} DATABASE_URL=${DATABASE_URL:-postgres://inmycity:inmycity@localhost:5432/inmycity} && corepack pnpm run build && corepack pnpm run start",
     "build": "node ./build.mjs",
-    "start": "node --enable-source-maps ./dist/index.mjs",
+    "start": "node --import ../../scripts/load-local-env.mjs --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "seed": "tsx src/seed.ts"
+    "seed": "DATABASE_URL=${DATABASE_URL:-postgres://inmycity:inmycity@localhost:5432/inmycity} tsx src/seed.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
+    "@workspace/city-config": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/integrations-openai-ai-server": "workspace:*",
     "cookie-parser": "^1.4.7",

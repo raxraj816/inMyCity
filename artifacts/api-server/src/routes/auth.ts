@@ -16,6 +16,7 @@ import {
   SESSION_COOKIE,
   SESSION_TTL,
   ISSUER_URL,
+  OIDC_CLIENT_ID,
   type SessionData,
 } from "../lib/auth";
 
@@ -193,7 +194,7 @@ router.get("/logout", async (req: Request, res: Response) => {
   await clearSession(res, sid);
 
   const endSessionUrl = oidc.buildEndSessionUrl(config, {
-    client_id: process.env.REPL_ID!,
+    client_id: OIDC_CLIENT_ID!,
     post_logout_redirect_uri: origin,
   });
 
@@ -217,7 +218,9 @@ router.post(
       const callbackUrl = new URL(redirect_uri);
       callbackUrl.searchParams.set("code", code);
       callbackUrl.searchParams.set("state", state);
-      callbackUrl.searchParams.set("iss", ISSUER_URL);
+      if (ISSUER_URL) {
+        callbackUrl.searchParams.set("iss", ISSUER_URL);
+      }
 
       const tokens = await oidc.authorizationCodeGrant(config, callbackUrl, {
         pkceCodeVerifier: code_verifier,
@@ -403,4 +406,3 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
 });
 
 export default router;
-

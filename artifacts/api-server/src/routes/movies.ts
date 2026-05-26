@@ -50,7 +50,10 @@ router.get("/movies/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [movie] = await db.select().from(moviesTable).where(eq(moviesTable.id, id));
-    if (!movie) return res.status(404).json({ error: "Movie not found" });
+    if (!movie) {
+      res.status(404).json({ error: "Movie not found" });
+      return;
+    }
     res.json({
       ...movie,
       rating: movie.rating ?? null,

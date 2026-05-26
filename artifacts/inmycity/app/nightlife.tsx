@@ -3,7 +3,6 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   Platform, FlatList,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
@@ -29,7 +28,6 @@ const FILTERS = [
 const ACCENT = "#ec4899";
 
 export default function NightlifeScreen() {
-  const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { selectedCity } = useCity();
@@ -64,9 +62,7 @@ export default function NightlifeScreen() {
     <View>
       <ScreenHeader
         title="Nightlife"
-        subtitle={selectedCity?.name ?? ""}
-        onBack={() => router.back()}
-        accentColor={ACCENT}
+        topPadding={Math.max(insets.top, 20)}
       />
 
       {/* Filter pills */}
@@ -103,9 +99,9 @@ export default function NightlifeScreen() {
       {/* Tonight hot spots strip */}
       {trendingItems.length > 0 && (
         <TrendingStrip
-          title="Tonight's Hot Spots"
           items={trendingItems}
           accentColor={ACCENT}
+          label="Tonight's Hot Spots"
         />
       )}
 

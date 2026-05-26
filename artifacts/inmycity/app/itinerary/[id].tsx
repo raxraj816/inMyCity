@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -8,18 +9,30 @@ import { useColors } from "@/hooks/useColors";
 import { useGetItineraryById, getGetItineraryByIdQueryKey } from "@workspace/api-client-react";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { PlaceCard } from "@/components/PlaceCard";
+import {
+  buildPlanShareText,
+  isPlanSaved,
+  toggleSavedPlan,
+  type SavedPlan,
+} from "@/lib/savedPlans";
 
 export default function ItineraryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const [saved, setSaved] = useState(false);
 
   const itineraryId = parseInt(id, 10);
 
   const { data: itinerary, isLoading, error, refetch } = useGetItineraryById(itineraryId, {
     query: { enabled: !!itineraryId, queryKey: getGetItineraryByIdQueryKey(itineraryId) }
   });
+
+  useEffect(() => {
+    if (!itineraryId) return;
+    isPlanSaved(`itinerary-${itineraryId}`).then(setSaved).catch(() => setSaved(false));
+  }, [itineraryId]);
 
   if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
   
@@ -39,6 +52,38 @@ export default function ItineraryDetailScreen() {
   });
 
   const days = Object.keys(stopsByDay).map(Number).sort((a, b) => a - b);
+  const savedPlan: Omit<SavedPlan, "createdAt"> = {
+    id: `itinerary-${itinerary.id}`,
+    kind: "itinerary",
+    title: itinerary.title,
+    subtitle: `${itinerary.durationDays} day${itinerary.durationDays > 1 ? "s" : ""} · ${itinerary.stops?.length || 0} stops`,
+    city: itinerary.city,
+    route: `/itinerary/${itinerary.id}`,
+    summary: itinerary.description ?? itinerary.tips?.slice(0, 2).join(" ") ?? "A saved inMyCity itinerary.",
+  };
+
+  const onToggleSave = async () => {
+    const result = await toggleSavedPlan(savedPlan);
+    setSaved(result.saved);
+  };
+
+  const onShare = () => {
+    const stopNames = itinerary.stops
+      ?.slice()
+      .sort((a, b) => a.day - b.day || a.order - b.order)
+      .slice(0, 5)
+      .map((stop) => stop.place?.name)
+      .filter(Boolean)
+      .join(" -> ");
+
+    Share.share({
+      title: itinerary.title,
+      message: buildPlanShareText({
+        ...savedPlan,
+        summary: stopNames ? `${savedPlan.summary}\n\nStops: ${stopNames}` : savedPlan.summary,
+      }),
+    });
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -61,6 +106,20 @@ export default function ItineraryDetailScreen() {
             >
               <Feather name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
+            <View style={styles.topRightActions}>
+              <TouchableOpacity
+                style={[styles.circleButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+                onPress={onToggleSave}
+              >
+                <Feather name="bookmark" size={20} color={saved ? colors.amber : "#fff"} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.circleButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+                onPress={onShare}
+              >
+                <Feather name="share-2" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -88,6 +147,17 @@ export default function ItineraryDetailScreen() {
               {itinerary.description}
             </Text>
           )}
+
+          <View style={[styles.planActions, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <TouchableOpacity style={[styles.primaryPlanAction, { backgroundColor: colors.amber }]} onPress={onToggleSave}>
+              <Feather name={saved ? "check" : "bookmark"} size={15} color="#fff" />
+              <Text style={styles.primaryPlanActionText}>{saved ? "Saved plan" : "Save plan"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.secondaryPlanAction, { borderColor: colors.border }]} onPress={onShare}>
+              <Feather name="share-2" size={15} color={colors.foreground} />
+              <Text style={[styles.secondaryPlanActionText, { color: colors.foreground }]}>Share</Text>
+            </TouchableOpacity>
+          </View>
 
           {itinerary.tips && itinerary.tips.length > 0 && (
             <View style={[styles.tipsBox, { backgroundColor: colors.amberLight }]}>
@@ -180,7 +250,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
+    right: 0,
     paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  topRightActions: {
+    flexDirection: "row",
+    gap: 10,
   },
   circleButton: {
     width: 44,
@@ -231,6 +309,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 24,
+  },
+  planActions: {
+    flexDirection: "row",
+    gap: 10,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 24,
+  },
+  primaryPlanAction: {
+    flex: 1.2,
+    minHeight: 44,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  primaryPlanActionText: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+  },
+  secondaryPlanAction: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  secondaryPlanActionText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
   },
   tipsBox: {
     padding: 16,

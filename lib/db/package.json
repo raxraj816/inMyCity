@@ -8,8 +8,8 @@
     "./schema": "./src/schema/index.ts"
   },
   "scripts": {
-    "push": "drizzle-kit push --config ./drizzle.config.ts",
-    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
+    "push": "DATABASE_URL=${DATABASE_URL:-postgres://inmycity:inmycity@localhost:5432/inmycity} drizzle-kit push --config ./drizzle.config.ts",
+    "push-force": "DATABASE_URL=${DATABASE_URL:-postgres://inmycity:inmycity@localhost:5432/inmycity} drizzle-kit push --force --config ./drizzle.config.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Dimensions, Platform, FlatList,
+  Platform, ScrollView, useWindowDimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -10,9 +10,11 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
 const ONBOARDING_KEY = "onboarding_complete";
+
+// A non-scrollable pager is `overflow: hidden` on web, and browsers ignore
+// smooth programmatic scrolls on such a box — only instant ones land.
+const ANIMATE_PAGING = Platform.OS !== "web";
 
 const SLIDES = [
   {
@@ -49,17 +51,33 @@ export default function OnboardingScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // The pager is full-bleed, so the window width is the page width — and it
+  // updates on browser resize, unlike a module-level Dimensions.get() read.
+  const { width: slideWidth } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
-  const listRef = useRef<FlatList>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const activeIndexRef = useRef(0);
 
   const isLast = activeIndex === SLIDES.length - 1;
+
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
+
+  // Keep the current page aligned when the page width changes (browser resize).
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      x: activeIndexRef.current * slideWidth,
+      animated: false,
+    });
+  }, [slideWidth]);
 
   const goNext = () => {
     if (isLast) {
       finish();
     } else {
       const next = activeIndex + 1;
-      listRef.current?.scrollToIndex({ index: next, animated: true });
+      scrollRef.current?.scrollTo({ x: next * slideWidth, animated: ANIMATE_PAGING });
       setActiveIndex(next);
     }
   };
@@ -71,8 +89,8 @@ export default function OnboardingScreen() {
     router.replace("/(tabs)");
   };
 
-  const renderSlide = ({ item }: { item: typeof SLIDES[0] }) => (
-    <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
+  const renderSlide = (item: typeof SLIDES[0]) => (
+    <View key={item.id} style={[styles.slide, { width: slideWidth }]}>
       <View style={[styles.iconCircle, { backgroundColor: item.color + "20" }]}>
         <MaterialCommunityIcons name={item.icon} size={72} color={item.color} />
       </View>
@@ -94,18 +112,20 @@ export default function OnboardingScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Slides */}
-      <FlatList
-        ref={listRef}
-        data={SLIDES}
-        keyExtractor={s => s.id}
-        renderItem={renderSlide}
+      {/* Slides — a plain pager: every page is exactly `slideWidth` wide.
+          A FlatList wraps each cell in an auto-height row on web, which
+          collapsed the slides; direct children avoid that wrapper. */}
+      <ScrollView
+        ref={scrollRef}
         horizontal
         pagingEnabled
         scrollEnabled={false}
         showsHorizontalScrollIndicator={false}
-        style={styles.flatList}
-      />
+        style={styles.pager}
+        contentContainerStyle={styles.pagerContent}
+      >
+        {SLIDES.map(renderSlide)}
+      </ScrollView>
 
       {/* Dot indicators */}
       <View style={styles.dots}>
@@ -158,11 +178,23 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 15,
   },
-  flatList: {
+  pager: {
     flex: 1,
+    alignSelf: "stretch",
+  },
+  pagerContent: {
+    // Vertical centring. On web each child sits in an auto-height paging
+    // wrapper, so centring the wrapper is what actually lands; on native the
+    // page stretches instead and centres its own content. Same result.
+    alignItems: "center",
   },
   slide: {
-    flex: 1,
+    // No `flex: 1` here: inside the pager's row layout that resolves to a
+    // zero flex-basis on web and squeezes every page into one viewport.
+    // The width is set inline from the current window width instead.
+    flexGrow: 0,
+    flexShrink: 0,
+    alignSelf: "stretch",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,

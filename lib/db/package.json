@@ -9,7 +9,8 @@
   },
   "scripts": {
     "push": "DATABASE_URL=${DATABASE_URL:-postgres://inmycity:inmycity@localhost:5432/inmycity} drizzle-kit push --config ./drizzle.config.ts",
-    "push-force": "DATABASE_URL=${DATABASE_URL:-postgres://inmycity:inmycity@localhost:5432/inmycity} drizzle-kit push --force --config ./drizzle.config.ts"
+    "push-force": "DATABASE_URL=${DATABASE_URL:-postgres://inmycity:inmycity@localhost:5432/inmycity} drizzle-kit push --force --config ./drizzle.config.ts",
+    "bootstrap": "DATABASE_URL=${DATABASE_URL:-postgres://inmycity:inmycity@localhost:5432/inmycity} tsx src/bootstrap-cli.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "^8.18.0",
-    "drizzle-kit": "^0.31.9"
+    "drizzle-kit": "^0.31.9",
+    "tsx": "catalog:"
   }
 }

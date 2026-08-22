@@ -10,7 +10,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetHotels } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { NearbyFilters } from "@/components/NearbyFilters";
 import { useNearby } from "@/hooks/useNearby";
@@ -23,14 +23,15 @@ const FILTERS = [
   { id: "boutique", label: "Boutique" },
 ];
 
+// Shades chosen to stay readable as text on their own tinted pill.
 const CATEGORY_COLORS: Record<string, string> = {
-  budget: "#10b981",
-  "mid-range": "#0ea5e9",
-  luxury: "#f59e0b",
-  boutique: "#ec4899",
+  budget: "#047857",
+  "mid-range": "#0369a1",
+  luxury: "#b45309",
+  boutique: "#db2777",
 };
 
-const ACCENT = "#f59e0b";
+const ACCENT = "#b45309";
 
 export default function HotelsScreen() {
   const router = useRouter();
@@ -41,13 +42,13 @@ export default function HotelsScreen() {
 
   const nearby = useNearby();
 
-  const { data: hotels = [], isLoading, error, refetch } = useGetHotels({
+  const { data: hotels = [], isLoading, isRefetching, error, refetch } = useGetHotels({
     city: selectedCity?.name,
     category: activeFilter !== "all" ? activeFilter : undefined,
     ...nearby.queryParams,
   });
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   const isLocal = selectedCity?.name === "Mumbai" || selectedCity?.name === "Bangalore";
   const currencySymbol = isLocal ? "₹" : "$";
@@ -66,6 +67,9 @@ export default function HotelsScreen() {
               { backgroundColor: activeFilter === f.id ? ACCENT : colors.card, borderColor: activeFilter === f.id ? ACCENT : colors.border }
             ]}
             onPress={() => setActiveFilter(f.id)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeFilter === f.id }}
+            accessibilityLabel={`${f.label} hotels`}
           >
             <Text style={[styles.pillText, { color: activeFilter === f.id ? "#fff" : colors.foreground }]}>{f.label}</Text>
           </TouchableOpacity>
@@ -75,16 +79,13 @@ export default function HotelsScreen() {
       <NearbyFilters controls={nearby} accent={ACCENT} showOpenNow={false} />
 
       {/* Hotels List */}
-      {isLoading ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="hotels" />
+      ) : isLoading ? (
         <View style={styles.loadingContainer}>
           {[1, 2, 3].map(i => (
             <View key={i} style={[styles.skeletonCard, { backgroundColor: colors.card }]} />
           ))}
-        </View>
-      ) : hotels.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Feather name="home" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No hotels found</Text>
         </View>
       ) : (
         <FlatList
@@ -92,18 +93,48 @@ export default function HotelsScreen() {
           keyExtractor={item => String(item.id)}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
+          ListEmptyComponent={
+            <EmptyState
+              icon="home"
+              title="No hotels found"
+              accent={ACCENT}
+              message={
+                activeFilter !== "all"
+                  ? `No ${activeFilter} hotels in ${selectedCity?.name ?? "this city"} yet. Try another price band.`
+                  : `No hotels listed in ${selectedCity?.name ?? "this city"} yet.`
+              }
+            />
+          }
           renderItem={({ item }) => {
-            const catColor = CATEGORY_COLORS[item.category] ?? "#6366f1";
+            const catColor = CATEGORY_COLORS[item.category] ?? "#4f46e5";
             return (
               <TouchableOpacity
                 style={[styles.hotelCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push(`/hotel/${item.id}` as any)}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={[
+                  item.name,
+                  item.category,
+                  item.rating != null ? `rated ${item.rating.toFixed(1)} out of 5` : null,
+                  item.pricePerNight
+                    ? `from ${currencySymbol}${Math.round(item.pricePerNight)} per night`
+                    : null,
+                  item.address,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+                accessibilityHint="Opens this hotel"
               >
                 <Image
                   source={{ uri: item.imageUrl ?? "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600" }}
                   style={styles.hotelImage}
                   contentFit="cover"
+                  cachePolicy="memory-disk"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
                 />
                 <View style={styles.hotelBody}>
                   <View style={styles.hotelHeader}>
@@ -121,7 +152,7 @@ export default function HotelsScreen() {
                   <View style={styles.hotelMeta}>
                     {item.rating && (
                       <View style={styles.ratingRow}>
-                        <Feather name="star" size={13} color="#f59e0b" />
+                        <Feather name="star" size={13} color="#b45309" />
                         <Text style={[styles.ratingText, { color: colors.foreground }]}>{item.rating.toFixed(1)}</Text>
                         {item.reviewCount && (
                           <Text style={[styles.reviewCount, { color: colors.mutedForeground }]}>({item.reviewCount.toLocaleString()})</Text>
@@ -145,11 +176,11 @@ export default function HotelsScreen() {
                   <View style={[styles.hotelFooter, { borderTopColor: colors.border }]}>
                     <View>
                       <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Per night from</Text>
-                      <Text style={[styles.priceValue, { color: "#f59e0b" }]}>
+                      <Text style={[styles.priceValue, { color: ACCENT }]}>
                         {item.pricePerNight ? `${currencySymbol}${Math.round(item.pricePerNight).toLocaleString()}` : "—"}
                       </Text>
                     </View>
-                    <View style={[styles.viewBtn, { backgroundColor: "#f59e0b" }]}>
+                    <View style={[styles.viewBtn, { backgroundColor: ACCENT }]}>
                       <Text style={styles.viewBtnText}>View</Text>
                       <Feather name="arrow-right" size={14} color="#fff" />
                     </View>
@@ -180,8 +211,6 @@ const styles = StyleSheet.create({
   pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
   loadingContainer: { padding: 16, gap: 12 },
   skeletonCard: { height: 240, borderRadius: 16 },
-  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  emptyText: { fontFamily: "Inter_500Medium", fontSize: 16 },
   listContent: { padding: 16, gap: 16 },
   hotelCard: {
     borderRadius: 20, overflow: "hidden", borderWidth: StyleSheet.hairlineWidth,

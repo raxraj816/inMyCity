@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     ...Platform.select({
       native: {
-        shadowColor: "#f97316",
+        shadowColor: "#c2410c",
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.22,
         shadowRadius: 16,

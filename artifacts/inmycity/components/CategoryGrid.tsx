@@ -17,17 +17,17 @@ type Category = {
 
 const CATEGORIES: Category[] = [
   // Row 1 — Discovery (What's on today?)
-  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#f97316", active: true, route: "/dining"                  },
-  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#ef4444", active: true, route: "/activities"               },
-  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0ea5e9", active: true, route: "/events"                   },
+  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#c2410c", active: true, route: "/dining"                  },
+  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#dc2626", active: true, route: "/activities"               },
+  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0369a1", active: true, route: "/events"                   },
   // Row 2 — Lifestyle (How I spend my week)
-  { id: "shops",      label: "Shops",      icon: "shopping-outline",      color: "#f97316", active: true, route: "/shops"                    },
-  { id: "sports",     label: "Sports &\nFitness", icon: "dumbbell",      color: "#22c55e", active: true, route: "/sports"                   },
-  { id: "hotels",     label: "Hotels",     icon: "hanger",                color: "#f59e0b", active: true, route: "/hotels"                   },
+  { id: "shops",      label: "Shops",      icon: "shopping-outline",      color: "#c2410c", active: true, route: "/shops"                    },
+  { id: "sports",     label: "Sports &\nFitness", icon: "dumbbell",      color: "#15803d", active: true, route: "/sports"                   },
+  { id: "hotels",     label: "Hotels",     icon: "hanger",                color: "#b45309", active: true, route: "/hotels"                   },
   // Row 3 — Practical (Utility + entertainment)
-  { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#06b6d4", active: true, route: "/transit"                  },
-  { id: "deals",      label: "Deals",      icon: "percent",               color: "#10b981", active: true, route: "/deals"                    },
-  { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#ec4899", active: true, route: "/nightlife"                },
+  { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#0e7490", active: true, route: "/transit"                  },
+  { id: "deals",      label: "Deals",      icon: "percent",               color: "#047857", active: true, route: "/deals"                    },
+  { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#be185d", active: true, route: "/nightlife"                },
 ];
 
 export function CategoryGrid() {
@@ -40,13 +40,17 @@ export function CategoryGrid() {
   };
 
   return (
-    <View style={styles.grid}>
+    <View style={styles.grid} accessibilityRole="menu">
       {CATEGORIES.map((cat) => (
         <TouchableOpacity
           key={cat.id}
           style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => handlePress(cat)}
           activeOpacity={cat.active ? 0.7 : 1}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !cat.active }}
+          accessibilityLabel={cat.label.replace("\n", " ") + (cat.active ? "" : ", coming soon")}
+          accessibilityHint={cat.active ? `Opens ${cat.label.replace("\n", " ").toLowerCase()}` : undefined}
         >
           <View style={[styles.iconCircle, { backgroundColor: cat.color + "1a" }]}>
             <MaterialCommunityIcons

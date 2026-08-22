@@ -11,15 +11,28 @@ type Props = {
   itinerary: Itinerary;
 };
 
-export function ItineraryCard({ itinerary }: Props) {
+function ItineraryCardComponent({ itinerary }: Props) {
   const colors = useColors();
   const router = useRouter();
+
+  const stopCount = itinerary.stops?.length ?? 0;
+  const accessibilityLabel = [
+    itinerary.title,
+    itinerary.city,
+    `${itinerary.durationDays} day itinerary`,
+    `${stopCount} stops`,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       style={[styles.card, { backgroundColor: colors.card }]}
       onPress={() => router.push(`/itinerary/${itinerary.id}`)}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Opens this itinerary"
     >
         <View style={styles.imageContainer}>
           {itinerary.coverImageUrl ? (
@@ -28,6 +41,9 @@ export function ItineraryCard({ itinerary }: Props) {
               style={styles.image}
               contentFit="cover"
               transition={200}
+              cachePolicy="memory-disk"
+              accessibilityElementsHidden
+              importantForAccessibility="no"
             />
           ) : (
             <View style={[styles.image, { backgroundColor: colors.navy }]} />
@@ -59,6 +75,9 @@ export function ItineraryCard({ itinerary }: Props) {
       </TouchableOpacity>
   );
 }
+
+/** Memoized: these sit in long lists that re-render whenever a filter above them changes. */
+export const ItineraryCard = React.memo(ItineraryCardComponent);
 
 const styles = StyleSheet.create({
   card: {

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { View, FlatList, StyleSheet, Platform, Text } from "react-native";
+import { View, FlatList, StyleSheet, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetDeals } from "@workspace/api-client-react";
@@ -10,14 +9,14 @@ import { useCity } from "@/context/CityContext";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { DealCard } from "@/components/DealCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 import { NearbyFilters } from "@/components/NearbyFilters";
 import { useNearby } from "@/hooks/useNearby";
 
 const CATEGORIES = ["food", "attraction", "retail", "wellness", "nightlife", "fitness"];
-const ACCENT = "#10b981";
+const ACCENT = "#047857";
 
 export default function DealsScreen() {
   const colors = useColors();
@@ -30,6 +29,7 @@ export default function DealsScreen() {
   const {
     data: deals,
     isLoading,
+    isRefetching,
     error,
     refetch,
   } = useGetDeals({
@@ -50,9 +50,7 @@ export default function DealsScreen() {
     route:    `/deal/${d.id}`,
   }));
 
-  if (error) {
-    return <ErrorFallback error={error as Error} resetError={refetch} />;
-  }
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   const ListHeader = (
     <TrendingStrip
@@ -76,7 +74,9 @@ export default function DealsScreen() {
 
       <NearbyFilters controls={nearby} accent={ACCENT} showOpenNow={false} />
 
-      {isLoading && !deals ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="deals" />
+      ) : isLoading && !deals ? (
         <>
           {ListHeader}
           <View style={styles.loadingArea}>
@@ -93,21 +93,20 @@ export default function DealsScreen() {
           ListHeaderComponent={ListHeader}
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
-          onRefresh={refetch}
-          refreshing={isLoading}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
           ListEmptyComponent={
             !isLoading ? (
-              <View style={styles.emptyContainer}>
-                <View style={[styles.emptyIconContainer, { backgroundColor: colors.muted }]}>
-                  <Feather name="tag" size={32} color={colors.mutedForeground} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No deals found</Text>
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                  {selectedCategory
-                    ? `No ${selectedCategory} deals in ${selectedCity?.name ?? "this city"}.`
-                    : `No active deals in ${selectedCity?.name ?? "this city"}.`}
-                </Text>
-              </View>
+              <EmptyState
+                icon="tag"
+                title="No deals found"
+                accent={ACCENT}
+                message={
+                  selectedCategory
+                    ? `No ${selectedCategory} deals in ${selectedCity?.name ?? "this city"} right now.`
+                    : `No active deals in ${selectedCity?.name ?? "this city"} right now.`
+                }
+              />
             ) : null
           }
         />
@@ -120,8 +119,4 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingArea: { flex: 1, paddingTop: 8 },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-  emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 60, paddingHorizontal: 40 },
-  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20, marginBottom: 8 },
-  emptyText: { fontFamily: "Inter_400Regular", fontSize: 16, textAlign: "center" },
 });

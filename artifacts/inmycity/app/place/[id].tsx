@@ -17,7 +17,7 @@ import {
   getGetPlaceByIdQueryKey,
 } from "@workspace/api-client-react";
 import { RatingStars } from "@/components/RatingStars";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { ErrorState } from "@/components/ListStates";
 import { VenueActions } from "@/components/VenueActions";
 import { CopyableAddress } from "@/components/CopyableAddress";
 import { MapPreview } from "@/components/MapPreview";
@@ -66,7 +66,23 @@ export default function PlaceDetailScreen() {
     });
   };
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  // Inline rather than a full-screen fallback: the user came here from a list and needs the
+  // way back, not an app-restart prompt.
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 20) }]}>
+        <ErrorState error={error} onRetry={refetch} subject="this place" />
+        <TouchableOpacity
+          style={styles.errorBack}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Text style={[styles.errorBackText, { color: colors.mutedForeground }]}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   
   if (isLoading || !place) {
     return <View style={[styles.container, { backgroundColor: colors.background }]} />;
@@ -76,7 +92,7 @@ export default function PlaceDetailScreen() {
     switch (category.toLowerCase()) {
       case "food": return colors.amber;
       case "attraction": return colors.info;
-      case "nightlife": return "#a855f7"; // purple
+      case "nightlife": return colors.purple;
       case "essentials": return colors.success;
       default: return colors.mutedForeground;
     }
@@ -91,6 +107,9 @@ export default function PlaceDetailScreen() {
               source={{ uri: place.imageUrl }}
               style={styles.image}
               contentFit="cover"
+              cachePolicy="memory-disk"
+              accessibilityElementsHidden
+              importantForAccessibility="no"
             />
           ) : (
             <View style={[styles.image, { backgroundColor: colors.muted }]} />
@@ -100,6 +119,8 @@ export default function PlaceDetailScreen() {
             <TouchableOpacity 
               style={[styles.circleButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]} 
               onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
             >
               <Feather name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
@@ -108,6 +129,8 @@ export default function PlaceDetailScreen() {
               <TouchableOpacity 
                 style={[styles.circleButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]} 
                 onPress={handleShare}
+                accessibilityRole="button"
+                accessibilityLabel={`Share ${place.name}`}
               >
                 <Feather name="share" size={20} color="#fff" />
               </TouchableOpacity>
@@ -115,6 +138,9 @@ export default function PlaceDetailScreen() {
               <TouchableOpacity 
                 style={[styles.circleButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]} 
                 onPress={toggleFavorite}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isFavorite }}
+                accessibilityLabel={isFavorite ? `Remove ${place.name} from favourites` : `Save ${place.name} to favourites`}
               >
                 <Feather 
                   name="heart" 
@@ -239,6 +265,8 @@ export default function PlaceDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorBack: { alignSelf: "center", padding: 16, minHeight: 44 },
+  errorBackText: { fontFamily: "Inter_500Medium", fontSize: 15 },
   container: {
     flex: 1,
   },

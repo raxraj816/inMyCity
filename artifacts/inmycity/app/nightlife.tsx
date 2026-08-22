@@ -4,14 +4,13 @@ import {
   Platform, FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetPlaces } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 import { NearbyFilters } from "@/components/NearbyFilters";
@@ -27,7 +26,7 @@ const FILTERS = [
   { id: "pub",       label: "Pubs"       },
 ];
 
-const ACCENT = "#ec4899";
+const ACCENT = "#be185d";
 
 export default function NightlifeScreen() {
   const colors = useColors();
@@ -37,7 +36,7 @@ export default function NightlifeScreen() {
 
   const nearby = useNearby();
 
-  const { data: places = [], isLoading, error, refetch } = useGetPlaces({
+  const { data: places = [], isLoading, isRefetching, error, refetch } = useGetPlaces({
     city: selectedCity?.name,
     category: "nightlife",
     ...nearby.queryParams,
@@ -61,7 +60,7 @@ export default function NightlifeScreen() {
     route:    `/place/${p.id}`,
   }));
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   const ListHeader = (
     <View>
@@ -121,25 +120,14 @@ export default function NightlifeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isLoading ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="nightlife" />
+      ) : isLoading ? (
         <View>
           {ListHeader}
           <SkeletonCard style={styles.skeleton} />
           <SkeletonCard style={styles.skeleton} />
           <SkeletonCard style={styles.skeleton} />
-        </View>
-      ) : filtered.length === 0 ? (
-        <View>
-          {ListHeader}
-          <View style={styles.empty}>
-            <Feather name="moon" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-              No venues found
-            </Text>
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Try a different filter or switch city.
-            </Text>
-          </View>
         </View>
       ) : (
         <FlatList
@@ -149,6 +137,16 @@ export default function NightlifeScreen() {
           ListHeaderComponent={ListHeader}
           contentContainerStyle={{ paddingBottom: Platform.OS === "web" ? 84 : 84 + insets.bottom }}
           showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
+          ListEmptyComponent={
+            <EmptyState
+              icon="moon"
+              title="No venues found"
+              accent={ACCENT}
+              message="Try a different filter, or switch city from the header."
+            />
+          }
         />
       )}
     </View>
@@ -181,20 +179,4 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-  empty: {
-    alignItems: "center",
-    paddingTop: 60,
-    paddingHorizontal: 40,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 20,
-  },
-  emptyText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 15,
-    textAlign: "center",
-    lineHeight: 22,
-  },
 });

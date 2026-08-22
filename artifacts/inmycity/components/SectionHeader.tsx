@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
 type Props = {
@@ -13,14 +13,20 @@ export function SectionHeader({ title, actionLabel, onAction }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
+      <Text style={[styles.title, { color: colors.foreground }]} accessibilityRole="header">
+        {title}
+      </Text>
       {actionLabel && onAction && (
-        <Text
-          style={[styles.action, { color: colors.amber }]}
+        // A Text with onPress is invisible to a screen reader as a control, and its tap target
+        // is only as tall as the text.
+        <TouchableOpacity
           onPress={onAction}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel={`${actionLabel}, ${title}`}
         >
-          {actionLabel}
-        </Text>
+          <Text style={[styles.action, { color: colors.amber }]}>{actionLabel}</Text>
+        </TouchableOpacity>
       )}
     </View>
   );

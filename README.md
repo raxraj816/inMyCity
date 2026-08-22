@@ -145,9 +145,10 @@ Run these from the repository root.
 | `corepack pnpm install` | Install workspace dependencies |
 | `corepack pnpm run dev:api` | Build and start the API server on port `3001` |
 | `corepack pnpm run dev:app` | Start Expo on port `8081` |
-| `corepack pnpm run db:push` | Push Drizzle schema to PostgreSQL |
+| `corepack pnpm run db:push` | Push Drizzle schema to PostgreSQL, then apply the search extension and indexes |
 | `corepack pnpm run db:seed` | Seed local city data |
 | `corepack pnpm run typecheck` | Typecheck shared libs, API server, app, and scripts |
+| `corepack pnpm run test` | Run the test suite across the API server and the app |
 | `corepack pnpm run build` | Typecheck and build packages with build scripts |
 
 Package-specific examples:
@@ -157,7 +158,17 @@ corepack pnpm --filter @workspace/inmycity run typecheck
 corepack pnpm --filter @workspace/api-server run build
 corepack pnpm --filter @workspace/api-server run seed
 corepack pnpm --filter @workspace/db run push
+corepack pnpm --filter @workspace/db run bootstrap
+corepack pnpm --filter @workspace/scripts run bench:places
 ```
+
+`bootstrap` applies the database objects Drizzle's schema DSL cannot express — the `pg_trgm`
+extension, the trigram indexes search matches against, and the `lower(city)` expression
+indexes the list endpoints filter on. It is idempotent and already runs as part of `db:push`.
+
+`bench:places` load-checks the list endpoints against 2,000 seeded rows. It inserts synthetic
+rows tagged as generated, measures, and deletes them again, so curated seed data is untouched.
+The API server must be running.
 
 ## Database
 
@@ -195,6 +206,11 @@ corepack pnpm run db:seed
 ```
 
 The seed script inserts sample content for places, events, deals, movies, hotels, activities, transit, and related city discovery experiences.
+
+It also writes each row's `search_text`: the flattened, normalized blob that `/api/search`
+matches against, always starting with the row's own name. Adding a searchable column to a table
+means adding it to `SEARCH_TEXT_FIELDS` in the seed script and re-seeding — nothing else reads
+or writes that column.
 
 ## API Server
 

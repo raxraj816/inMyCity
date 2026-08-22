@@ -15,6 +15,7 @@ import activitiesRouter from "./activities";
 import transitRouter from "./transit";
 import aiRouter from "./ai";
 import recommendationsRouter from "./recommendations";
+import searchRouter from "./search";
 
 const router: IRouter = Router();
 
@@ -32,6 +33,7 @@ router.use(moviesRouter);
 router.use(hotelsRouter);
 router.use(activitiesRouter);
 router.use(transitRouter);
+router.use(searchRouter);
 router.use(recommendationsRouter);
 router.use(aiRouter);
 

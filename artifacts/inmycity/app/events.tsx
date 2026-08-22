@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { View, FlatList, StyleSheet, Platform, Text } from "react-native";
+import { View, FlatList, StyleSheet, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetEvents } from "@workspace/api-client-react";
@@ -10,14 +9,14 @@ import { useCity } from "@/context/CityContext";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { EventCard } from "@/components/EventCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 import { NearbyFilters } from "@/components/NearbyFilters";
 import { useNearby } from "@/hooks/useNearby";
 
 const CATEGORIES = ["music", "food", "art", "comedy", "film", "wellness", "networking", "sports"];
-const ACCENT = "#6366f1";
+const ACCENT = "#4f46e5";
 
 function fmtDate(d: string | null | undefined) {
   if (!d) return "";
@@ -35,6 +34,7 @@ export default function EventsScreen() {
   const {
     data: events,
     isLoading,
+    isRefetching,
     error,
     refetch,
   } = useGetEvents({
@@ -55,9 +55,7 @@ export default function EventsScreen() {
     route:    `/event/${e.id}`,
   }));
 
-  if (error) {
-    return <ErrorFallback error={error as Error} resetError={refetch} />;
-  }
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   const ListHeader = (
     <TrendingStrip
@@ -81,7 +79,9 @@ export default function EventsScreen() {
 
       <NearbyFilters controls={nearby} accent={ACCENT} showOpenNow={false} />
 
-      {isLoading && !events ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="events" />
+      ) : isLoading && !events ? (
         <>
           {ListHeader}
           <View style={styles.loadingArea}>
@@ -98,21 +98,20 @@ export default function EventsScreen() {
           ListHeaderComponent={ListHeader}
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
-          onRefresh={refetch}
-          refreshing={isLoading}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
           ListEmptyComponent={
             !isLoading ? (
-              <View style={styles.emptyContainer}>
-                <View style={[styles.emptyIconContainer, { backgroundColor: colors.muted }]}>
-                  <Feather name="calendar" size={32} color={colors.mutedForeground} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No events found</Text>
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                  {selectedCategory
-                    ? `No ${selectedCategory} events in ${selectedCity?.name ?? "this city"}.`
-                    : `No upcoming events in ${selectedCity?.name ?? "this city"}.`}
-                </Text>
-              </View>
+              <EmptyState
+                icon="calendar"
+                title="No events found"
+                accent={ACCENT}
+                message={
+                  selectedCategory
+                    ? `No ${selectedCategory} events in ${selectedCity?.name ?? "this city"} right now.`
+                    : `No upcoming events in ${selectedCity?.name ?? "this city"} right now.`
+                }
+              />
             ) : null
           }
         />
@@ -125,8 +124,4 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingArea: { flex: 1, paddingTop: 8 },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-  emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 60, paddingHorizontal: 40 },
-  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20, marginBottom: 8 },
-  emptyText: { fontFamily: "Inter_400Regular", fontSize: 16, textAlign: "center" },
 });

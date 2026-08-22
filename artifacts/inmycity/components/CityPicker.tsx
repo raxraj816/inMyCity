@@ -33,6 +33,10 @@ function CityRow({ city, isSelected, onPress }: { city: SupportedCity; isSelecte
         { borderBottomColor: colors.border },
         isSoon && styles.cityRowDim,
       ]}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: isSelected && !isSoon, disabled: isSoon }}
+      accessibilityLabel={`${city.name}, ${isSoon ? "coming soon" : city.tagline}`}
+      accessibilityHint={isSoon ? undefined : `Switches the app to ${city.name}`}
     >
       <View style={[styles.flagCircle, { backgroundColor: colors.muted }]}>
         <Text style={styles.flagText}>{COUNTRY_FLAGS[city.country] ?? "🌍"}</Text>
@@ -83,7 +87,13 @@ export function CityPicker() {
       animationType="slide"
       onRequestClose={hidePicker}
     >
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={hidePicker}>
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        onPress={hidePicker}
+        accessibilityRole="button"
+        accessibilityLabel="Close city picker"
+      >
         {Platform.OS === "ios" ? (
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
         ) : (
@@ -98,14 +108,27 @@ export function CityPicker() {
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={{ width: 36 }} />
-          <Text style={[styles.headerTitle, { color: colors.foreground }]}>Choose City</Text>
-          <TouchableOpacity onPress={hidePicker} style={styles.closeBtn}>
+          <Text style={[styles.headerTitle, { color: colors.foreground }]} accessibilityRole="header">
+            Choose City
+          </Text>
+          <TouchableOpacity
+            onPress={hidePicker}
+            style={styles.closeBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Feather name="x" size={20} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
 
         {/* Section: Live */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LIVE NOW</Text>
+        <Text
+          style={[styles.sectionLabel, { color: colors.mutedForeground }]}
+          accessibilityRole="header"
+        >
+          LIVE NOW
+        </Text>
         {liveCities.map((city) => (
           <CityRow
             key={city.id}

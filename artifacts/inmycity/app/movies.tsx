@@ -11,7 +11,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetMovies } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 const FILTERS = [
@@ -20,6 +20,9 @@ const FILTERS = [
   { id: "coming_soon", label: "Coming Soon" },
 ];
 
+/** Violet-600: the previous violet-500 pills could not carry white text at AA. */
+const ACCENT = "#7c3aed";
+
 export default function MoviesScreen() {
   const router = useRouter();
   const colors = useColors();
@@ -27,12 +30,12 @@ export default function MoviesScreen() {
   const { selectedCity } = useCity();
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const { data: movies = [], isLoading, error, refetch } = useGetMovies({
+  const { data: movies = [], isLoading, isRefetching, error, refetch } = useGetMovies({
     city: selectedCity?.name,
     status: activeFilter !== "all" ? (activeFilter as "now_showing" | "coming_soon") : undefined,
   });
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -45,9 +48,12 @@ export default function MoviesScreen() {
             key={f.id}
             style={[
               styles.pill,
-              { backgroundColor: activeFilter === f.id ? "#8b5cf6" : colors.card, borderColor: activeFilter === f.id ? "#8b5cf6" : colors.border }
+              { backgroundColor: activeFilter === f.id ? ACCENT : colors.card, borderColor: activeFilter === f.id ? ACCENT : colors.border }
             ]}
             onPress={() => setActiveFilter(f.id)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeFilter === f.id }}
+            accessibilityLabel={`${f.label} movies`}
           >
             <Text style={[styles.pillText, { color: activeFilter === f.id ? "#fff" : colors.foreground }]}>{f.label}</Text>
           </TouchableOpacity>
@@ -55,16 +61,13 @@ export default function MoviesScreen() {
       </ScrollView>
 
       {/* Movie List */}
-      {isLoading ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="movies" />
+      ) : isLoading ? (
         <View style={styles.loadingContainer}>
           {[1, 2, 3, 4].map(i => (
             <View key={i} style={[styles.skeletonCard, { backgroundColor: colors.card }]} />
           ))}
-        </View>
-      ) : movies.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Feather name="film" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No movies found</Text>
         </View>
       ) : (
         <FlatList
@@ -73,23 +76,50 @@ export default function MoviesScreen() {
           numColumns={2}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
-          columnWrapperStyle={styles.row}
+          columnWrapperStyle={movies.length > 0 ? styles.row : undefined}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
+          ListEmptyComponent={
+            <EmptyState
+              icon="film"
+              title="No movies found"
+              accent={ACCENT}
+              message={
+                activeFilter !== "all"
+                  ? "Nothing in this listing right now. Try the other tab."
+                  : `No showtimes listed for ${selectedCity?.name ?? "this city"} yet.`
+              }
+            />
+          }
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[styles.movieCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push(`/movie/${item.id}` as any)}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={[
+                item.title,
+                item.genre,
+                item.status === "now_showing" ? "Now showing" : "Coming soon",
+                item.rating != null ? `rated ${item.rating.toFixed(1)} out of 5` : null,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+              accessibilityHint="Opens this movie"
             >
               <View style={styles.posterContainer}>
                 <Image
                   source={{ uri: item.posterUrl ?? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400" }}
                   style={styles.poster}
                   contentFit="cover"
+                  cachePolicy="memory-disk"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
                 />
                 {/* Status badge */}
                 <View style={[
                   styles.statusBadge,
-                  { backgroundColor: item.status === "now_showing" ? "#10b981" : "#f59e0b" }
+                  { backgroundColor: item.status === "now_showing" ? "#047857" : "#b45309" }
                 ]}>
                   <Text style={styles.statusText}>
                     {item.status === "now_showing" ? "Now Showing" : "Coming Soon"}
@@ -102,7 +132,7 @@ export default function MoviesScreen() {
                 <View style={styles.metaRow}>
                   {item.rating && (
                     <View style={styles.ratingRow}>
-                      <Feather name="star" size={11} color="#f59e0b" />
+                      <Feather name="star" size={11} color="#b45309" />
                       <Text style={[styles.ratingText, { color: colors.foreground }]}>{item.rating.toFixed(1)}</Text>
                     </View>
                   )}
@@ -113,7 +143,7 @@ export default function MoviesScreen() {
                   )}
                 </View>
                 {item.price && (
-                  <Text style={[styles.priceText, { color: "#8b5cf6" }]}>
+                  <Text style={[styles.priceText, { color: ACCENT }]}>
                     {item.city === "New York City" || item.city === "San Francisco" ? "$" : "₹"}{item.price}
                   </Text>
                 )}
@@ -148,8 +178,6 @@ const styles = StyleSheet.create({
   pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
   loadingContainer: { padding: 16, gap: 12 },
   skeletonCard: { height: 200, borderRadius: 16 },
-  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  emptyText: { fontFamily: "Inter_500Medium", fontSize: 16 },
   listContent: { padding: 16 },
   row: { gap: 12, marginBottom: 12 },
   movieCard: {

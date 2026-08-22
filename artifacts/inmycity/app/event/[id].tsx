@@ -6,7 +6,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetEventById, getGetEventByIdQueryKey } from "@workspace/api-client-react";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { ErrorState } from "@/components/ListStates";
 import { VenueActions } from "@/components/VenueActions";
 import { MapPreview } from "@/components/MapPreview";
 
@@ -22,7 +22,23 @@ export default function EventDetailScreen() {
     query: { enabled: !!eventId, queryKey: getGetEventByIdQueryKey(eventId) }
   });
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  // Inline rather than a full-screen fallback: the user arrived from a list and needs a way
+  // back, not an app-restart prompt.
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 20) }]}>
+        <ErrorState error={error} onRetry={refetch} subject="this event" />
+        <TouchableOpacity
+          style={styles.errorBack}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Text style={[styles.errorBackText, { color: colors.mutedForeground }]}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   
   if (isLoading || !event) {
     return <View style={[styles.container, { backgroundColor: colors.background }]} />;
@@ -147,6 +163,8 @@ export default function EventDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorBack: { alignSelf: "center", padding: 16, minHeight: 44 },
+  errorBackText: { fontFamily: "Inter_500Medium", fontSize: 15 },
   container: {
     flex: 1,
   },

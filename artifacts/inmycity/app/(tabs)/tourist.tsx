@@ -1,13 +1,12 @@
 import { View, FlatList, StyleSheet, Platform, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetItineraries } from "@workspace/api-client-react";
 
 import { ItineraryCard } from "@/components/ItineraryCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 
 export default function TouristScreen() {
   const colors = useColors();
@@ -16,16 +15,16 @@ export default function TouristScreen() {
   const {
     data: itineraries,
     isLoading,
+    isRefetching,
     error,
     refetch,
   } = useGetItineraries();
 
+  const refreshControl = useListRefreshControl(isRefetching, refetch);
+
   const topPadding = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
-  if (error) {
-    return <ErrorFallback error={error as Error} resetError={refetch} />;
-  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -41,14 +40,18 @@ export default function TouristScreen() {
           },
         ]}
       >
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>City Guides</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]} accessibilityRole="header">
+          City Guides
+        </Text>
         <Text style={[styles.headerSubtitle, { color: colors.mutedForeground }]}>
           Curated itineraries to make the most of your trip
         </Text>
       </View>
 
       {/* ── Scrollable content ── */}
-      {isLoading && !itineraries ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} subject="guides" />
+      ) : isLoading && !itineraries ? (
         <View style={styles.loadingArea}>
           <SkeletonCard height={180} style={styles.skeleton} />
           <SkeletonCard height={180} style={styles.skeleton} />
@@ -61,19 +64,15 @@ export default function TouristScreen() {
           renderItem={({ item }) => <ItineraryCard itinerary={item} />}
           contentContainerStyle={{ paddingBottom: bottomPadding, paddingTop: 16 }}
           showsVerticalScrollIndicator={false}
-          onRefresh={refetch}
-          refreshing={isLoading}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
           ListEmptyComponent={
             !isLoading ? (
-              <View style={styles.emptyContainer}>
-                <View style={[styles.emptyIconContainer, { backgroundColor: colors.muted }]}>
-                  <Feather name="map" size={32} color={colors.mutedForeground} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No guides found</Text>
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                  Check back later for new curated itineraries.
-                </Text>
-              </View>
+              <EmptyState
+                icon="map"
+                title="No guides found"
+                message="Check back later for new curated itineraries."
+              />
             ) : null
           }
         />
@@ -102,8 +101,4 @@ const styles = StyleSheet.create({
   },
   loadingArea: { flex: 1, paddingTop: 16 },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-  emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 60, paddingHorizontal: 40 },
-  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20, marginBottom: 8 },
-  emptyText: { fontFamily: "Inter_400Regular", fontSize: 16, textAlign: "center" },
 });

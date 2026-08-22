@@ -17,6 +17,7 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Props
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.container}
+        accessibilityRole="tablist"
       >
         <TouchableOpacity
           style={[
@@ -28,6 +29,9 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Props
           ]}
           onPress={() => onSelect(null)}
           activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: selectedCategory === null }}
+          accessibilityLabel="All categories"
         >
           <Text
             style={[
@@ -52,6 +56,9 @@ export function CategoryFilter({ categories, selectedCategory, onSelect }: Props
             ]}
             onPress={() => onSelect(category)}
             activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: selectedCategory === category }}
+            accessibilityLabel={`${category} category`}
           >
             <Text
               style={[

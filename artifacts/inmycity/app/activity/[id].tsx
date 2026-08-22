@@ -6,17 +6,17 @@ import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetActivityById, getGetActivityByIdQueryKey } from "@workspace/api-client-react";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { ErrorState } from "@/components/ListStates";
 import { VenueActions } from "@/components/VenueActions";
 import { MapPreview } from "@/components/MapPreview";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  adventure: "#ef4444",
-  cultural: "#6366f1",
-  wellness: "#10b981",
-  sports: "#0ea5e9",
-  workshop: "#f59e0b",
-  tour: "#ec4899",
+  adventure: "#dc2626",
+  cultural: "#4f46e5",
+  wellness: "#047857",
+  sports: "#0369a1",
+  workshop: "#b45309",
+  tour: "#be185d",
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -39,10 +39,26 @@ export default function ActivityDetailScreen() {
     query: { enabled: !!activityId, queryKey: getGetActivityByIdQueryKey(activityId) }
   });
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  // Inline rather than a full-screen fallback: the user arrived from a list and needs a way
+  // back, not an app-restart prompt.
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 20) }]}>
+        <ErrorState error={error} onRetry={refetch} subject="this activity" />
+        <TouchableOpacity
+          style={styles.errorBack}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Text style={[styles.errorBackText, { color: colors.mutedForeground }]}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   if (isLoading || !activity) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
 
-  const catColor = CATEGORY_COLORS[activity.category] ?? "#6366f1";
+  const catColor = CATEGORY_COLORS[activity.category] ?? "#4f46e5";
   const catIcon = CATEGORY_ICONS[activity.category] ?? "zap";
   const isLocal = activity.city === "Mumbai" || activity.city === "Bangalore";
   const currencySymbol = isLocal ? "₹" : "$";
@@ -103,8 +119,8 @@ export default function ActivityDetailScreen() {
               <>
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
-                  <View style={[styles.statIcon, { backgroundColor: "#f59e0b15" }]}>
-                    <Feather name="star" size={18} color="#f59e0b" />
+                  <View style={[styles.statIcon, { backgroundColor: "#b4530915" }]}>
+                    <Feather name="star" size={18} color="#b45309" />
                   </View>
                   <Text style={[styles.statValue, { color: colors.foreground }]}>{activity.rating.toFixed(1)}</Text>
                   <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
@@ -206,6 +222,8 @@ export default function ActivityDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorBack: { alignSelf: "center", padding: 16, minHeight: 44 },
+  errorBackText: { fontFamily: "Inter_500Medium", fontSize: 15 },
   container: { flex: 1 },
   heroContainer: { height: 300, position: "relative" },
   hero: { width: "100%", height: "100%" },

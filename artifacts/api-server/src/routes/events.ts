@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { db, eventsTable } from "@workspace/db";
-import { eq, and, gte, ilike } from "drizzle-orm";
-import { applyProximity, parseOrigin } from "../lib/geo";
+import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { parseOrigin } from "../lib/geo";
+import { parseLimit, parseOffset } from "../lib/pagination";
+import { cityMatches, distanceKmExpression, withinRadiusCondition } from "../lib/sqlFilters";
 
 const router = Router();
 
@@ -10,40 +12,41 @@ router.get("/events", async (req, res) => {
     const city = req.query.city as string | undefined;
     const dateStr = req.query.date as string | undefined;
     const category = req.query.category as string | undefined;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+    const limit = parseLimit(req.query.limit);
+    const offset = parseOffset(req.query.offset);
     const origin = parseOrigin(req.query as Record<string, unknown>);
 
-    const conditions = [];
-    if (city) conditions.push(ilike(eventsTable.city, `%${city}%`));
-    if (category) conditions.push(eq(eventsTable.category, category));
-    if (dateStr) {
-      const date = new Date(dateStr);
-      conditions.push(gte(eventsTable.startDate, date));
-    } else {
-      conditions.push(gte(eventsTable.startDate, new Date()));
-    }
+    const from = dateStr ? new Date(dateStr) : new Date();
+    const distanceKm = origin
+      ? distanceKmExpression(eventsTable.lat, eventsTable.lng, origin)
+      : sql<number | null>`null::double precision`;
 
-    const events = await db
-      .select()
+    const conditions = [
+      city ? cityMatches(eventsTable.city, city) : undefined,
+      category ? eq(eventsTable.category, category) : undefined,
+      gte(eventsTable.startDate, Number.isNaN(from.getTime()) ? new Date() : from),
+      origin ? withinRadiusCondition(eventsTable.lat, eventsTable.lng, origin) : undefined,
+    ].filter((condition) => condition !== undefined);
+
+    // Nearest first once the caller shares a location, soonest first otherwise.
+    const orderBy = origin ? [asc(distanceKm)] : [asc(eventsTable.startDate)];
+
+    const rows = await db
+      .select({ event: eventsTable, distanceKm })
       .from(eventsTable)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(eventsTable.startDate)
-      // Proximity filtering happens after the query, so fetch a wider slice first and
-      // paginate below. Keeps soonest-first ordering when no origin was supplied.
-      .limit(origin ? 500 : limit)
-      .offset(origin ? 0 : offset);
+      .where(and(...conditions))
+      .orderBy(...orderBy)
+      .limit(limit)
+      .offset(offset);
 
-    const nearby = applyProximity(events, origin).slice(
-      origin ? offset : 0,
-      origin ? offset + limit : undefined,
+    res.json(
+      rows.map(({ event, distanceKm: distance }) => ({
+        ...event,
+        startDate: event.startDate.toISOString(),
+        endDate: event.endDate?.toISOString() ?? null,
+        distanceKm: distance === null ? null : Number(distance),
+      })),
     );
-
-    res.json(nearby.map(e => ({
-      ...e,
-      startDate: e.startDate.toISOString(),
-      endDate: e.endDate?.toISOString() ?? null,
-    })));
   } catch (err) {
     req.log.error({ err }, "Failed to get events");
     res.status(500).json({ error: "Internal server error" });

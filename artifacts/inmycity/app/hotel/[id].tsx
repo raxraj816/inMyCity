@@ -6,15 +6,15 @@ import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetHotelById, getGetHotelByIdQueryKey } from "@workspace/api-client-react";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { ErrorState } from "@/components/ListStates";
 import { VenueActions } from "@/components/VenueActions";
 import { MapPreview } from "@/components/MapPreview";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  budget: "#10b981",
-  "mid-range": "#0ea5e9",
-  luxury: "#f59e0b",
-  boutique: "#ec4899",
+  budget: "#047857",
+  "mid-range": "#0369a1",
+  luxury: "#b45309",
+  boutique: "#be185d",
 };
 
 export default function HotelDetailScreen() {
@@ -28,10 +28,26 @@ export default function HotelDetailScreen() {
     query: { enabled: !!hotelId, queryKey: getGetHotelByIdQueryKey(hotelId) }
   });
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  // Inline rather than a full-screen fallback: the user arrived from a list and needs a way
+  // back, not an app-restart prompt.
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 20) }]}>
+        <ErrorState error={error} onRetry={refetch} subject="this hotel" />
+        <TouchableOpacity
+          style={styles.errorBack}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Text style={[styles.errorBackText, { color: colors.mutedForeground }]}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   if (isLoading || !hotel) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
 
-  const catColor = CATEGORY_COLORS[hotel.category] ?? "#6366f1";
+  const catColor = CATEGORY_COLORS[hotel.category] ?? "#4f46e5";
   const isLocal = hotel.city === "Mumbai" || hotel.city === "Bangalore";
   const currencySymbol = isLocal ? "₹" : "$";
 
@@ -80,7 +96,7 @@ export default function HotelDetailScreen() {
                   key={star}
                   name="star"
                   size={16}
-                  color={star <= Math.round(hotel.rating!) ? "#f59e0b" : colors.border}
+                  color={star <= Math.round(hotel.rating!) ? "#b45309" : colors.border}
                 />
               ))}
               <Text style={[styles.ratingNum, { color: colors.foreground }]}>{hotel.rating.toFixed(1)}</Text>
@@ -200,6 +216,8 @@ export default function HotelDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorBack: { alignSelf: "center", padding: 16, minHeight: 44 },
+  errorBackText: { fontFamily: "Inter_500Medium", fontSize: 15 },
   container: { flex: 1 },
   heroContainer: { height: 320, position: "relative" },
   hero: { width: "100%", height: "100%" },

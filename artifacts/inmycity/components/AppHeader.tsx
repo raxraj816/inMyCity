@@ -32,7 +32,7 @@ export function AppHeader({
       ]}
     >
       <View style={styles.row}>
-        <View style={styles.wordmarkBlock}>
+        <View style={styles.wordmarkBlock} accessible accessibilityRole="header">
           <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}> 
             {subtitle}
@@ -50,6 +50,9 @@ export function AppHeader({
               ]}
               onPress={showPicker}
               activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={`City: ${selectedCity?.name ?? "not set"}`}
+              accessibilityHint="Opens the city picker"
             >
               <Feather name="map-pin" size={11} color={colors.amber} />
               <Text
@@ -66,6 +69,9 @@ export function AppHeader({
             <TouchableOpacity
               onPress={() => router.push("/profile")}
               activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Your profile"
+              accessibilityHint="Opens your saved plans and settings"
               style={[
                 styles.profileBtn,
                 { backgroundColor: colors.card, borderColor: colors.border },

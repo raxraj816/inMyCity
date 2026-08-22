@@ -11,7 +11,7 @@ type Props = {
   event: Event;
 };
 
-export function EventCard({ event }: Props) {
+function EventCardComponent({ event }: Props) {
   const colors = useColors();
   const router = useRouter();
 
@@ -19,11 +19,24 @@ export function EventCard({ event }: Props) {
   const month = date.toLocaleString("default", { month: "short" });
   const day = date.getDate();
 
+  const accessibilityLabel = [
+    event.title,
+    event.category,
+    `on ${day} ${month}`,
+    `at ${event.venue}`,
+    event.isFree ? "Free entry" : event.price ? `from ${event.price}` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       style={[styles.card, { backgroundColor: colors.card }]}
       onPress={() => router.push(`/event/${event.id}`)}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Opens this event"
     >
         <View style={styles.imageContainer}>
           {event.imageUrl ? (
@@ -32,6 +45,9 @@ export function EventCard({ event }: Props) {
               style={styles.image}
               contentFit="cover"
               transition={200}
+              cachePolicy="memory-disk"
+              accessibilityElementsHidden
+              importantForAccessibility="no"
             />
           ) : (
             <View style={[styles.image, { backgroundColor: colors.muted }]} />
@@ -76,6 +92,9 @@ export function EventCard({ event }: Props) {
       </TouchableOpacity>
   );
 }
+
+/** Memoized: these sit in long lists that re-render whenever a filter above them changes. */
+export const EventCard = React.memo(EventCardComponent);
 
 const styles = StyleSheet.create({
   card: {

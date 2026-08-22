@@ -31,12 +31,14 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
         onPress={() => router.back()}
         style={styles.backBtn}
         activeOpacity={0.7}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
       >
         <Feather name="arrow-left" size={22} color={colors.foreground} />
       </TouchableOpacity>
 
-      <View style={styles.brandBlock}>
+      <View style={styles.brandBlock} accessible accessibilityRole="header">
         <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}> 
           {title}{selectedCity ? ` · ${selectedCity.name}` : ""}
@@ -50,6 +52,9 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
           style={[styles.cityPill, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={showPicker}
           activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={`City: ${selectedCity?.name ?? "not set"}`}
+          accessibilityHint="Opens the city picker"
         >
           <Feather name="map-pin" size={11} color={colors.amber} />
           <Text
@@ -64,6 +69,9 @@ export function ScreenHeader({ title, topPadding, rightElement }: Props) {
         <TouchableOpacity
           onPress={() => router.push("/profile")}
           activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="Your profile"
+          accessibilityHint="Opens your saved plans and settings"
           style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
           <Feather name="user" size={17} color={colors.foreground} />

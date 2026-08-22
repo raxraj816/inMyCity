@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, doublePrecision, integer, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, doublePrecision, integer, real, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -16,6 +16,12 @@ export const placesTable = pgTable("places", {
   phone: text("phone"),
   website: text("website"),
   openingHours: text("opening_hours"),
+  /**
+   * Structured weekly hours, derived from `openingHours`. Seven entries, index 0 = Sunday;
+   * each holds minute-of-day intervals whose `end` may exceed 1440 when the venue trades
+   * past midnight. Authoritative when present — `openingHours` remains the display string.
+   */
+  openingHoursJson: jsonb("opening_hours_json").$type<{ start: number; end: number }[][]>(),
   imageUrl: text("image_url"),
   images: text("images").array().notNull().default([]),
   tags: text("tags").array().notNull().default([]),

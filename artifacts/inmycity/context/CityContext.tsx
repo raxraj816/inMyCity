@@ -6,11 +6,23 @@ import {
   type CityStatus,
   type SupportedCity,
 } from "@workspace/city-config";
+import { useLocation } from "./LocationContext";
 
 export { SUPPORTED_CITIES };
 export type { CityStatus, SupportedCity };
 
 const STORAGE_KEY = "@inmycity/selected_city";
+
+/**
+ * Known synchronously, so the first render already has a city.
+ *
+ * Reading the saved city from AsyncStorage is async, and while it resolved every screen used
+ * to render with `selectedCity === null`. That fired a full set of list queries with no city,
+ * which were then aborted and refired once the city arrived — four wasted round-trips on
+ * every cold start, which on a weak connection is visible latency for no benefit.
+ */
+const DEFAULT_CITY: SupportedCity =
+  SUPPORTED_CITIES.find((city) => city.id === DEFAULT_CITY_ID) ?? SUPPORTED_CITIES[0];
 const DETECT_RADIUS_KM = 80;
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -40,7 +52,8 @@ export function detectCityFromCoords(lat: number, lng: number): SupportedCity | 
 }
 
 type CityContextType = {
-  selectedCity: SupportedCity | null;
+  /** Never null: starts at the default city and is corrected once storage is read. */
+  selectedCity: SupportedCity;
   setCity: (city: SupportedCity) => void;
   pickerVisible: boolean;
   showPicker: () => void;
@@ -51,28 +64,43 @@ type CityContextType = {
 const CityContext = createContext<CityContextType | null>(null);
 
 export function CityProvider({ children }: { children: React.ReactNode }) {
-  const [selectedCity, setSelectedCityState] = useState<SupportedCity | null>(null);
+  const [selectedCity, setSelectedCityState] = useState<SupportedCity>(DEFAULT_CITY);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [isAutoDetected, setIsAutoDetected] = useState(false);
+  const [hasStoredChoice, setHasStoredChoice] = useState(false);
+  const { location } = useLocation();
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        const saved = SUPPORTED_CITIES.find((c) => c.id === raw);
-        if (saved) {
-          setSelectedCityState(saved);
-          return;
-        }
+      const saved = raw ? SUPPORTED_CITIES.find((c) => c.id === raw) : undefined;
+
+      if (saved) {
+        setHasStoredChoice(true);
+        // Only re-render when the stored choice differs from the default we started with.
+        setSelectedCityState((current) => (current.id === saved.id ? current : saved));
+        return;
       }
-      const fallback = SUPPORTED_CITIES.find((c) => c.id === DEFAULT_CITY_ID) ?? null;
-      setSelectedCityState(fallback);
+
       setIsAutoDetected(true);
     });
   }, []);
 
+  // If the user later shares their location and has never picked a city themselves, correct
+  // the default to whichever live city they are actually in. Their own choice always wins.
+  useEffect(() => {
+    if (hasStoredChoice || !location) return;
+
+    const detected = detectCityFromCoords(location.lat, location.lng);
+    if (!detected) return;
+
+    setSelectedCityState((current) => (current.id === detected.id ? current : detected));
+    setIsAutoDetected(true);
+  }, [location, hasStoredChoice]);
+
   const setCity = useCallback((city: SupportedCity) => {
     setSelectedCityState(city);
     setIsAutoDetected(false);
+    setHasStoredChoice(true);
     AsyncStorage.setItem(STORAGE_KEY, city.id);
   }, []);
 

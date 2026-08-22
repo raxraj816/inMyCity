@@ -29,6 +29,8 @@ export interface Event {
   imageUrl?: string | null;
   /** @nullable */
   bookingUrl?: string | null;
+  /** @nullable */
+  distanceKm?: number | null;
   tags: string[];
   createdAt: string;
 }

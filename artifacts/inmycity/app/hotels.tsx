@@ -12,6 +12,8 @@ import { useGetHotels } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { NearbyFilters } from "@/components/NearbyFilters";
+import { useNearby } from "@/hooks/useNearby";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -28,6 +30,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   boutique: "#ec4899",
 };
 
+const ACCENT = "#f59e0b";
+
 export default function HotelsScreen() {
   const router = useRouter();
   const colors = useColors();
@@ -35,9 +39,12 @@ export default function HotelsScreen() {
   const { selectedCity } = useCity();
   const [activeFilter, setActiveFilter] = useState("all");
 
+  const nearby = useNearby();
+
   const { data: hotels = [], isLoading, error, refetch } = useGetHotels({
     city: selectedCity?.name,
     category: activeFilter !== "all" ? activeFilter : undefined,
+    ...nearby.queryParams,
   });
 
   if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
@@ -56,7 +63,7 @@ export default function HotelsScreen() {
             key={f.id}
             style={[
               styles.pill,
-              { backgroundColor: activeFilter === f.id ? "#f59e0b" : colors.card, borderColor: activeFilter === f.id ? "#f59e0b" : colors.border }
+              { backgroundColor: activeFilter === f.id ? ACCENT : colors.card, borderColor: activeFilter === f.id ? ACCENT : colors.border }
             ]}
             onPress={() => setActiveFilter(f.id)}
           >
@@ -64,6 +71,8 @@ export default function HotelsScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <NearbyFilters controls={nearby} accent={ACCENT} showOpenNow={false} />
 
       {/* Hotels List */}
       {isLoading ? (

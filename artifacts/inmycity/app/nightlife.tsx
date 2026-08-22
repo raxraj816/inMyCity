@@ -14,6 +14,8 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
+import { NearbyFilters } from "@/components/NearbyFilters";
+import { useNearby } from "@/hooks/useNearby";
 
 const FILTERS = [
   { id: "all",       label: "All"        },
@@ -33,9 +35,12 @@ export default function NightlifeScreen() {
   const { selectedCity } = useCity();
   const [activeFilter, setActiveFilter] = useState("all");
 
+  const nearby = useNearby();
+
   const { data: places = [], isLoading, error, refetch } = useGetPlaces({
     city: selectedCity?.name,
     category: "nightlife",
+    ...nearby.queryParams,
   });
 
   const filtered = activeFilter === "all"
@@ -95,6 +100,8 @@ export default function NightlifeScreen() {
           </TouchableOpacity>
         )}
       />
+
+      <NearbyFilters controls={nearby} accent={ACCENT} />
 
       {/* Tonight hot spots strip */}
       {trendingItems.length > 0 && (

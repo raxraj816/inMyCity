@@ -7,6 +7,8 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetHotelById, getGetHotelByIdQueryKey } from "@workspace/api-client-react";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { VenueActions } from "@/components/VenueActions";
+import { MapPreview } from "@/components/MapPreview";
 
 const CATEGORY_COLORS: Record<string, string> = {
   budget: "#10b981",
@@ -64,6 +66,11 @@ export default function HotelDetailScreen() {
             <Feather name="map-pin" size={14} color={colors.mutedForeground} />
             <Text style={[styles.addressText, { color: colors.mutedForeground }]}>{hotel.address}</Text>
           </View>
+
+          {/* Phone and website already have their own Contact section below. */}
+          <VenueActions name={hotel.name} lat={hotel.lat} lng={hotel.lng} />
+
+          <MapPreview name={hotel.name} lat={hotel.lat} lng={hotel.lng} />
 
           {/* Rating + reviews */}
           {hotel.rating && (

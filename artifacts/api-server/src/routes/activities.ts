@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { db, activitiesTable } from "@workspace/db";
 import { eq, and, ilike } from "drizzle-orm";
+import { resolveIsOpen } from "../lib/openingHours";
+import { applyProximity, parseOrigin } from "../lib/geo";
 
 const router = Router();
 
@@ -8,8 +10,10 @@ router.get("/activities", async (req, res) => {
   try {
     const city = req.query.city as string | undefined;
     const category = req.query.category as string | undefined;
+    const openNow = req.query.openNow === "true";
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+    const origin = parseOrigin(req.query as Record<string, unknown>);
 
     const conditions = [];
     if (city) conditions.push(ilike(activitiesTable.city, `%${city}%`));
@@ -20,10 +24,16 @@ router.get("/activities", async (req, res) => {
       .from(activitiesTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(activitiesTable.rating)
-      .limit(limit)
-      .offset(offset);
+      .limit(origin ? 500 : limit)
+      .offset(origin ? 0 : offset);
 
-    res.json(activities.map(a => ({
+    const withStatus = applyProximity(activities, origin)
+      .map((a) => ({ ...a, isOpen: resolveIsOpen(a) }))
+      // Keep venues whose hours are unknown: absent data is not evidence of being closed.
+      .filter((a) => !openNow || a.isOpen !== false)
+      .slice(origin ? offset : 0, origin ? offset + limit : undefined);
+
+    res.json(withStatus.map(a => ({
       ...a,
       rating: a.rating ?? null,
       reviewCount: a.reviewCount ?? null,
@@ -53,6 +63,7 @@ router.get("/activities/:id", async (req, res) => {
     }
     res.json({
       ...activity,
+      isOpen: resolveIsOpen(activity),
       rating: activity.rating ?? null,
       reviewCount: activity.reviewCount ?? null,
       price: activity.price ?? null,

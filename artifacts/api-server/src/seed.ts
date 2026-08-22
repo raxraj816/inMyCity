@@ -1,4 +1,17 @@
+import { parseOpeningHours } from "./lib/openingHours";
 import { db, placesTable, eventsTable, dealsTable, itinerariesTable, itineraryStopsTable, moviesTable, hotelsTable, activitiesTable, transitLinesTable, transitRoutesTable } from "@workspace/db";
+
+/**
+ * Derives the structured weekly schedule from each row's display hours so `opening_hours_json`
+ * is populated at seed time. Keeps the two representations in sync without hand-authoring
+ * seven-day schedules for every venue.
+ */
+function withStructuredHours<T extends { openingHours?: string | null }>(rows: T[]) {
+  return rows.map((row) => ({
+    ...row,
+    openingHoursJson: parseOpeningHours(row.openingHours),
+  }));
+}
 
 async function seed() {
   console.log("Seeding database...");
@@ -17,7 +30,7 @@ async function seed() {
 
   console.log("Cleared existing data");
 
-  const places = await db.insert(placesTable).values([
+  const places = await db.insert(placesTable).values(withStructuredHours([
     // ─── MUMBAI ───────────────────────────────────────────────────────────────
     // Food
     { name: "Leopold Cafe & Bar", category: "food", description: "An iconic Colaba institution since 1871. Famous for its chilled beer, mixed crowd, and bullet-hole-marked walls from the 2008 attacks.", address: "Colaba Causeway, Colaba", city: "Mumbai", lat: 18.9229, lng: 72.8318, rating: 4.2, reviewCount: 18700, phone: "+91-22-2202-0131", openingHours: "Daily 7:30am-12am", imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800", images: ["https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"], tags: ["historic", "cafe", "beer", "colaba"] },
@@ -119,7 +132,7 @@ async function seed() {
     { name: "Union Square", category: "shopping", description: "San Francisco's premier shopping district. Westfield Mall, Neiman Marcus, Saks Fifth Avenue, and hundreds of boutiques centred around a landscaped urban plaza.", address: "Union Square, San Francisco", city: "San Francisco", lat: 37.7881, lng: -122.4075, rating: 4.3, reviewCount: 39000, openingHours: "Daily 10am-9pm (varies by store)", imageUrl: "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=800", images: ["https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=800"], tags: ["apparel", "luxury", "beauty", "department stores", "central"] },
     { name: "Rainbow Grocery", category: "shopping", description: "SF's beloved worker-owned cooperative grocery. Exceptional selection of organic produce, bulk foods, vegan products, and local artisan goods since 1975.", address: "1745 Folsom St, Mission District", city: "San Francisco", lat: 37.7699, lng: -122.4160, rating: 4.6, reviewCount: 7200, openingHours: "Daily 9am-9pm", phone: "+1-415-863-0620", website: "https://www.rainbow.coop", imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800", images: ["https://images.unsplash.com/photo-1542838132-92c53300491e?w=800"], tags: ["grocery", "organic", "vegan", "bulk food", "cooperative"] },
     { name: "Fillmore Street Boutiques", category: "shopping", description: "Pacific Heights' chic shopping corridor. Independent boutiques for fashion, jewellery, wellness, and homeware line this leafy stretch between Sutter and Jackson.", address: "Fillmore Street, Pacific Heights", city: "San Francisco", lat: 37.7877, lng: -122.4334, rating: 4.4, reviewCount: 6800, openingHours: "Daily 10am-7pm (varies by store)", imageUrl: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800", images: ["https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800"], tags: ["apparel", "jewellery", "boutique", "lifestyle", "pacific heights"] },
-  ]).returning();
+  ])).returning();
 
   console.log(`Inserted ${places.length} places`);
 
@@ -381,7 +394,7 @@ async function seed() {
   ]);
 
   // ─── ACTIVITIES ────────────────────────────────────────────────────────────
-  await db.insert(activitiesTable).values([
+  await db.insert(activitiesTable).values(withStructuredHours([
     // MUMBAI
     { name: "Dharavi Slum Walking Tour", category: "cultural", address: "Dharavi, Mumbai", city: "Mumbai", lat: 19.0411, lng: 72.8564, description: "A sensitively led walking tour through Asia's largest urban township, exploring its thriving leather, pottery, and recycling industries. Led by local guides from Dharavi.", durationMinutes: 120, price: 600, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1598618443855-232ee0f819f6?w=800", images: ["https://images.unsplash.com/photo-1598618443855-232ee0f819f6?w=800"], rating: 4.8, reviewCount: 3400, openingHours: "Daily 9am-1pm", bookingUrl: "https://www.realitytoursandtravel.com", tags: ["walking tour", "cultural", "dharavi", "community"] },
     { name: "Koli Village Heritage Walk", category: "cultural", address: "Koliwada, Mahim", city: "Mumbai", lat: 19.0445, lng: 72.8391, description: "Explore Mumbai's indigenous fishing communities—the Kolis—who have inhabited these shores for centuries. See traditional boats, dried fish markets, and century-old temples.", durationMinutes: 90, price: 500, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800", images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800"], rating: 4.6, reviewCount: 1200, openingHours: "Tue-Sun 7am-10am", tags: ["heritage", "fishing", "community", "morning"] },
@@ -409,7 +422,7 @@ async function seed() {
     { name: "Mission District Food & Mural Walking Tour", category: "tour", address: "16th Street BART Station, Mission District", city: "San Francisco", lat: 37.7648, lng: -122.4194, description: "A 2.5-hour walk through the Mission's food paradise—taquerias, panaderías, and the famous Clarion Alley murals. Tastings of 7+ stops including La Lengua tacos and Dandelion chocolate.", durationMinutes: 150, price: 59, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800", images: ["https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800"], rating: 4.8, reviewCount: 4200, openingHours: "Sat-Sun 11am-1:30pm", bookingUrl: "https://www.sftours.com", tags: ["food tour", "mission district", "murals", "tacos", "latin"] },
     { name: "Sea Kayaking in the Bay", category: "adventure", address: "Sausalito, Marin County", city: "San Francisco", lat: 37.8590, lng: -122.4852, description: "Paddle the San Francisco Bay with spectacular views of the Golden Gate Bridge, Alcatraz, and the city skyline. Expert guides lead 2-hour tours from Sausalito.", durationMinutes: 120, price: 72, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800", images: ["https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800"], rating: 4.8, reviewCount: 2800, openingHours: "Daily 9am-11am, 1pm-3pm", bookingUrl: "https://www.seatrek.com", tags: ["kayaking", "golden gate", "bay", "outdoor", "sausalito"] },
     { name: "Muir Woods & Wine Country Day Tour", category: "adventure", address: "Union Square, Geary Street", city: "San Francisco", lat: 37.7879, lng: -122.4074, description: "Explore the ancient redwood forest of Muir Woods (permit included) then head to Sonoma Valley for wine tastings at 2 boutique wineries. Includes hotel pickup.", durationMinutes: 480, price: 145, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800", images: ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800"], rating: 4.9, reviewCount: 6700, openingHours: "Daily 8am-5pm", bookingUrl: "https://www.citydaytrips.com", tags: ["day trip", "redwoods", "muir woods", "wine", "sonoma"] },
-  ]);
+  ]));
 
   // ─── TRANSIT LINES ──────────────────────────────────────────────────────────
   const transitLines = await db.insert(transitLinesTable).values([
@@ -464,7 +477,7 @@ async function seed() {
   ]);
 
   // ─── SPORTS & FITNESS ACTIVITIES ──────────────────────────────────────────
-  await db.insert(activitiesTable).values([
+  await db.insert(activitiesTable).values(withStructuredHours([
     // MUMBAI — Fitness
     { name: "Cult.fit Bandra", category: "fitness", address: "Hill Road, Bandra West, Mumbai", city: "Mumbai", lat: 19.0596, lng: 72.8295, description: "Mumbai's most popular fitness chain. Classes include yoga, Zumba, HIIT, and strength training. Drop-in classes or monthly memberships available.", durationMinutes: 60, price: 499, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", images: ["https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800"], rating: 4.5, reviewCount: 3200, openingHours: "Daily 5:30am–10pm", bookingUrl: "https://cult.fit", tags: ["gym", "yoga", "crossfit", "hiit", "classes"] },
     { name: "Gold's Gym Lower Parel", category: "fitness", address: "High Street Phoenix, Lower Parel, Mumbai", city: "Mumbai", lat: 18.9979, lng: 72.8259, description: "International gym brand with state-of-the-art equipment, free weights, cardio machines, and personal training. Day passes available.", durationMinutes: 90, price: 600, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800", images: ["https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800"], rating: 4.3, reviewCount: 1800, openingHours: "Mon–Sat 6am–11pm, Sun 7am–9pm", tags: ["gym", "weights", "cardio", "personal training"] },
@@ -507,7 +520,7 @@ async function seed() {
     // SAN FRANCISCO — Outdoor
     { name: "Embarcadero to Fort Mason Run", category: "outdoor", address: "Ferry Building, Embarcadero, San Francisco", city: "San Francisco", lat: 37.7955, lng: -122.3937, description: "The city's most scenic running route: 10 km from the Ferry Building, along the waterfront, past Fisherman's Wharf to Fort Mason with jaw-dropping bay and Alcatraz views.", durationMinutes: 60, price: 0, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", images: ["https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800"], rating: 4.9, reviewCount: 9800, openingHours: "24/7", tags: ["running", "outdoor", "waterfront", "free", "bay", "alcatraz"] },
     { name: "Marin Headlands Hiking", category: "outdoor", address: "Marin Headlands Visitor Center, Sausalito", city: "San Francisco", lat: 37.8325, lng: -122.5102, description: "Just across the Golden Gate Bridge, the Marin Headlands offer 100+ miles of trails from easy coastal walks to strenuous ridge hikes. Spectacular bay and city views.", durationMinutes: 240, price: 0, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800", images: ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800"], rating: 4.9, reviewCount: 12600, openingHours: "Sunrise to sunset", tags: ["hiking", "outdoor", "free", "marin", "golden gate", "views"] },
-  ]);
+  ]));
 
   // ─── SPORTS EVENTS ──────────────────────────────────────────────────────────
   await db.insert(eventsTable).values([

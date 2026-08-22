@@ -8,6 +8,9 @@
 
 export type GetHotelsParams = {
   city?: string;
+  lat?: number;
+  lng?: number;
+  radius?: number;
   category?: string;
   maxPrice?: number;
   limit?: number;

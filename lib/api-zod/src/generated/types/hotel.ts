@@ -37,6 +37,8 @@ export interface Hotel {
   checkOut?: string | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  distanceKm?: number | null;
   tags: string[];
   createdAt: string;
 }

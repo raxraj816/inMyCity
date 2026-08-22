@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, hotelsTable } from "@workspace/db";
 import { eq, and, ilike, lte } from "drizzle-orm";
+import { applyProximity, parseOrigin } from "../lib/geo";
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.get("/hotels", async (req, res) => {
     const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : null;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+    const origin = parseOrigin(req.query as Record<string, unknown>);
 
     const conditions = [];
     if (city) conditions.push(ilike(hotelsTable.city, `%${city}%`));
@@ -22,10 +24,15 @@ router.get("/hotels", async (req, res) => {
       .from(hotelsTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(hotelsTable.rating)
-      .limit(limit)
-      .offset(offset);
+      .limit(origin ? 500 : limit)
+      .offset(origin ? 0 : offset);
 
-    res.json(hotels.map(h => ({
+    const nearby = applyProximity(hotels, origin).slice(
+      origin ? offset : 0,
+      origin ? offset + limit : undefined,
+    );
+
+    res.json(nearby.map(h => ({
       ...h,
       rating: h.rating ?? null,
       reviewCount: h.reviewCount ?? null,

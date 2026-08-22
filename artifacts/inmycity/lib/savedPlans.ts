@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { shareUrlForRoute } from "./links";
+
 export type SavedPlanKind = "itinerary" | "neighborhood";
 
 export type SavedPlan = {
@@ -74,12 +76,19 @@ export async function toggleSavedPlan(
   return { saved: true, plans: next };
 }
 
-export function buildPlanShareText(plan: Pick<SavedPlan, "title" | "subtitle" | "city" | "summary">) {
+export function buildPlanShareText(
+  plan: Pick<SavedPlan, "title" | "subtitle" | "city" | "summary" | "route">,
+) {
+  // Include a link so the recipient can open the plan, not just read about it. Omitted
+  // until a public web origin is configured — see lib/links.ts.
+  const url = shareUrlForRoute(plan.route);
+
   const parts = [
     plan.title,
     plan.subtitle,
     plan.summary,
     `Shared from inMyCity for ${plan.city}.`,
+    url,
   ].filter(Boolean);
 
   return parts.join("\n\n");

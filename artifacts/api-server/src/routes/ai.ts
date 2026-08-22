@@ -14,6 +14,10 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
+/** Caps on client-supplied input, so conversation size cannot drive unbounded token spend. */
+const MAX_MESSAGE_CHARS = 2000;
+const MAX_HISTORY_MESSAGES = 20;
+
 const CITY_KNOWLEDGE: Record<string, string> = {
   mumbai: `Mumbai is India's financial capital and most populous city (population ~20 million). Key facts:
 - Neighborhoods: Bandra (hipster, cafes, nightlife), Colaba (tourist hub, Gateway of India), Juhu (beach, Bollywood), Worli (business, Sea Link), Dadar (market hub), Andheri (commercial, airport area), Lower Parel (malls, corporate), Powai (tech hub, lake).
@@ -199,6 +203,25 @@ router.post("/ai/chat", async (req, res) => {
     return;
   }
 
+  if (message.length > MAX_MESSAGE_CHARS) {
+    res.status(413).json({
+      error: `Message is too long. Keep it under ${MAX_MESSAGE_CHARS} characters.`,
+    });
+    return;
+  }
+
+  // Trim the conversation before it reaches the model: history arrives from the client, so
+  // an oversized array would otherwise translate straight into token spend.
+  const safeHistory = (Array.isArray(history) ? history : [])
+    .filter(
+      (m): m is { role: "user" | "assistant"; content: string } =>
+        !!m &&
+        (m.role === "user" || m.role === "assistant") &&
+        typeof m.content === "string",
+    )
+    .slice(-MAX_HISTORY_MESSAGES)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS) }));
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -212,10 +235,7 @@ router.post("/ai/chat", async (req, res) => {
 
     const chatMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
       { role: "system", content: systemPrompt },
-      ...(history ?? []).map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
+      ...safeHistory,
       { role: "user", content: message },
     ];
 

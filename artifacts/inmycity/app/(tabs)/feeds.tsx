@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
+import { useListRefreshControl } from "@/components/ListStates";
 import { useGetEvents, useGetDeals } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { EventCard } from "@/components/EventCard";
@@ -96,53 +97,53 @@ interface QAItem {
 }
 
 const TIER_CONFIG: Record<PosterTier, { label: string; color: string; bg: string; icon: string }> = {
-  official: { label: "Official", color: "#f59e0b", bg: "#fef3c7", icon: "shield" },
-  local_expert: { label: "Local Expert", color: "#3b82f6", bg: "#eff6ff", icon: "award" },
-  creator: { label: "Creator", color: "#8b5cf6", bg: "#f5f3ff", icon: "video" },
-  business: { label: "Business", color: "#10b981", bg: "#f0fdf4", icon: "briefcase" },
+  official: { label: "Official", color: "#b45309", bg: "#fef3c7", icon: "shield" },
+  local_expert: { label: "Local Expert", color: "#2563eb", bg: "#eff6ff", icon: "award" },
+  creator: { label: "Creator", color: "#7c3aed", bg: "#f5f3ff", icon: "video" },
+  business: { label: "Business", color: "#047857", bg: "#f0fdf4", icon: "briefcase" },
 };
 
 const NEWS_CATEGORY_META: Record<
   NewsCategory,
   { label: string; icon: string; color: string; bg: string }
 > = {
-  local: { label: "Local", icon: "map-pin", color: "#8b5cf6", bg: "#f5f3ff" },
-  traffic: { label: "Traffic", icon: "alert-triangle", color: "#f97316", bg: "#fff7ed" },
-  weather: { label: "Weather", icon: "cloud-rain", color: "#3b82f6", bg: "#eff6ff" },
-  civic: { label: "Civic", icon: "info", color: "#22c55e", bg: "#f0fdf4" },
-  sports: { label: "Sports", icon: "activity", color: "#16a34a", bg: "#f0fdf4" },
-  business: { label: "Business", icon: "briefcase", color: "#10b981", bg: "#ecfdf5" },
-  transit: { label: "Transit", icon: "navigation", color: "#06b6d4", bg: "#ecfeff" },
+  local: { label: "Local", icon: "map-pin", color: "#7c3aed", bg: "#f5f3ff" },
+  traffic: { label: "Traffic", icon: "alert-triangle", color: "#c2410c", bg: "#fff7ed" },
+  weather: { label: "Weather", icon: "cloud-rain", color: "#2563eb", bg: "#eff6ff" },
+  civic: { label: "Civic", icon: "info", color: "#15803d", bg: "#f0fdf4" },
+  sports: { label: "Sports", icon: "activity", color: "#15803d", bg: "#f0fdf4" },
+  business: { label: "Business", icon: "briefcase", color: "#047857", bg: "#ecfdf5" },
+  transit: { label: "Transit", icon: "navigation", color: "#0e7490", bg: "#ecfeff" },
 };
 
 const HAPPENING_NOW: Record<string, HappeningItem[]> = {
   Mumbai: [
-    { id: 1, icon: "alert-triangle", color: "#f97316", text: "Heavy traffic on WEH near Borivali — 45 min delay", minutesAgo: 8 },
-    { id: 2, icon: "cloud-rain", color: "#3b82f6", text: "Orange alert: heavy rain expected through midnight", minutesAgo: 20 },
-    { id: 3, icon: "zap", color: "#ef4444", text: "Dharavi redevelopment groundbreaking live now", minutesAgo: 3 },
-    { id: 4, icon: "navigation", color: "#06b6d4", text: "Central line delayed 15 min — Kurla to Thane", minutesAgo: 31 },
-    { id: 5, icon: "activity", color: "#22c55e", text: "MI vs RCB tickets just sold out", minutesAgo: 14 },
+    { id: 1, icon: "alert-triangle", color: "#c2410c", text: "Heavy traffic on WEH near Borivali — 45 min delay", minutesAgo: 8 },
+    { id: 2, icon: "cloud-rain", color: "#2563eb", text: "Orange alert: heavy rain expected through midnight", minutesAgo: 20 },
+    { id: 3, icon: "zap", color: "#dc2626", text: "Dharavi redevelopment groundbreaking live now", minutesAgo: 3 },
+    { id: 4, icon: "navigation", color: "#0e7490", text: "Central line delayed 15 min — Kurla to Thane", minutesAgo: 31 },
+    { id: 5, icon: "activity", color: "#15803d", text: "MI vs RCB tickets just sold out", minutesAgo: 14 },
   ],
   Bangalore: [
-    { id: 1, icon: "navigation", color: "#06b6d4", text: "Metro trial runs on Whitefield extension today", minutesAgo: 5 },
-    { id: 2, icon: "alert-triangle", color: "#f97316", text: "Silk Board junction — 30 min peak-hour delays", minutesAgo: 18 },
-    { id: 3, icon: "cloud-rain", color: "#3b82f6", text: "Unseasonable rain: Sarjapur Rd waterlogged", minutesAgo: 42 },
-    { id: 4, icon: "zap", color: "#ef4444", text: "Bengaluru FC qualifies for ISL semi-finals", minutesAgo: 12 },
-    { id: 5, icon: "coffee", color: "#8b5cf6", text: "Third Wave opens a new roastery in Indiranagar", minutesAgo: 55 },
+    { id: 1, icon: "navigation", color: "#0e7490", text: "Metro trial runs on Whitefield extension today", minutesAgo: 5 },
+    { id: 2, icon: "alert-triangle", color: "#c2410c", text: "Silk Board junction — 30 min peak-hour delays", minutesAgo: 18 },
+    { id: 3, icon: "cloud-rain", color: "#2563eb", text: "Unseasonable rain: Sarjapur Rd waterlogged", minutesAgo: 42 },
+    { id: 4, icon: "zap", color: "#dc2626", text: "Bengaluru FC qualifies for ISL semi-finals", minutesAgo: 12 },
+    { id: 5, icon: "coffee", color: "#7c3aed", text: "Third Wave opens a new roastery in Indiranagar", minutesAgo: 55 },
   ],
   "New York City": [
-    { id: 1, icon: "navigation", color: "#06b6d4", text: "A, C, E train — no service this weekend on key segments", minutesAgo: 6 },
-    { id: 2, icon: "alert-triangle", color: "#f97316", text: "BQE lane closures expected toward Brooklyn Bridge", minutesAgo: 22 },
-    { id: 3, icon: "cloud-rain", color: "#3b82f6", text: "Heat advisory through Thursday — 105°F index", minutesAgo: 48 },
-    { id: 4, icon: "activity", color: "#22c55e", text: "Knicks just won in OT — city buzzing", minutesAgo: 9 },
-    { id: 5, icon: "calendar", color: "#8b5cf6", text: "NYC Marathon closures begin Sunday 5am", minutesAgo: 33 },
+    { id: 1, icon: "navigation", color: "#0e7490", text: "A, C, E train — no service this weekend on key segments", minutesAgo: 6 },
+    { id: 2, icon: "alert-triangle", color: "#c2410c", text: "BQE lane closures expected toward Brooklyn Bridge", minutesAgo: 22 },
+    { id: 3, icon: "cloud-rain", color: "#2563eb", text: "Heat advisory through Thursday — 105°F index", minutesAgo: 48 },
+    { id: 4, icon: "activity", color: "#15803d", text: "Knicks just won in OT — city buzzing", minutesAgo: 9 },
+    { id: 5, icon: "calendar", color: "#7c3aed", text: "NYC Marathon closures begin Sunday 5am", minutesAgo: 33 },
   ],
   "San Francisco": [
-    { id: 1, icon: "navigation", color: "#06b6d4", text: "BART strike averted — all lines running normally", minutesAgo: 11 },
-    { id: 2, icon: "cloud-rain", color: "#3b82f6", text: "Fog at Golden Gate Bridge — visibility ¼ mile", minutesAgo: 25 },
-    { id: 3, icon: "zap", color: "#ef4444", text: "PG&E shutoff possible this weekend in fire zones", minutesAgo: 40 },
-    { id: 4, icon: "activity", color: "#22c55e", text: "Warriors clinch playoff spot — Chase Center electric", minutesAgo: 17 },
-    { id: 5, icon: "coffee", color: "#8b5cf6", text: "Ferry Building farmers market starts 8am tomorrow", minutesAgo: 60 },
+    { id: 1, icon: "navigation", color: "#0e7490", text: "BART strike averted — all lines running normally", minutesAgo: 11 },
+    { id: 2, icon: "cloud-rain", color: "#2563eb", text: "Fog at Golden Gate Bridge — visibility ¼ mile", minutesAgo: 25 },
+    { id: 3, icon: "zap", color: "#dc2626", text: "PG&E shutoff possible this weekend in fire zones", minutesAgo: 40 },
+    { id: 4, icon: "activity", color: "#15803d", text: "Warriors clinch playoff spot — Chase Center electric", minutesAgo: 17 },
+    { id: 5, icon: "coffee", color: "#7c3aed", text: "Ferry Building farmers market starts 8am tomorrow", minutesAgo: 60 },
   ],
 };
 
@@ -318,8 +319,13 @@ export default function FeedsScreen() {
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
   const bottomPad = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
-  const { data: events = [], isLoading: eventsLoading, refetch: refetchEvents } = useGetEvents({ city: cityName });
-  const { data: deals = [], isLoading: dealsLoading, refetch: refetchDeals } = useGetDeals({ city: cityName });
+  const { data: events = [], isLoading: eventsLoading, isRefetching: eventsRefetching, refetch: refetchEvents } = useGetEvents({ city: cityName });
+  const { data: deals = [], isLoading: dealsLoading, isRefetching: dealsRefetching, refetch: refetchDeals } = useGetDeals({ city: cityName });
+
+  const refreshControl = useListRefreshControl(eventsRefetching || dealsRefetching, () => {
+    refetchEvents();
+    refetchDeals();
+  });
 
   const news = (cityName ? NEWS_DATA[cityName] : undefined) ?? DEFAULT_NEWS;
   const communities = (cityName ? COMMUNITY_DATA[cityName] : undefined) ?? [];
@@ -365,9 +371,9 @@ export default function FeedsScreen() {
           <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
           <Text style={[styles.wordmarkSub, { color: colors.mutedForeground }]}>{cityName ? `${cityName} · What's happening` : "Select a city to begin"}</Text>
         </View>
-        <View style={[styles.liveChip, { backgroundColor: "#ef444418" }]}>
+        <View style={[styles.liveChip, { backgroundColor: "#dc262618" }]} accessible accessibilityLabel="Live feed">
           <View style={styles.liveDot} />
-          <Text style={[styles.liveText, { color: "#ef4444" }]}>Live</Text>
+          <Text style={[styles.liveText, { color: "#dc2626" }]}>Live</Text>
         </View>
       </View>
 
@@ -375,7 +381,15 @@ export default function FeedsScreen() {
         {TABS.map((tab) => {
           const active = activeTab === tab.id;
           return (
-            <TouchableOpacity key={tab.id} style={styles.tabItem} onPress={() => setActiveTab(tab.id)} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={tab.id}
+              style={styles.tabItem}
+              onPress={() => setActiveTab(tab.id)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={tab.label}
+            >
               <View style={styles.tabInner}>
                 <Feather name={tab.icon as any} size={13} color={active ? colors.amber : colors.mutedForeground} />
                 <Text style={[styles.tabLabel, { color: active ? colors.amber : colors.mutedForeground }]}>{tab.label}</Text>
@@ -389,7 +403,11 @@ export default function FeedsScreen() {
   );
 
   const renderPulseTab = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPad }}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: bottomPad }}
+      refreshControl={refreshControl}
+    >
       {happeningNow.length > 0 && (
         <View style={[styles.happeningSection, { borderBottomColor: colors.border }]}>
           <View style={styles.happeningSectionHeader}>
@@ -484,7 +502,7 @@ export default function FeedsScreen() {
                         <Text style={styles.heroCaption} numberOfLines={3}>{post.caption}</Text>
                         <View style={styles.heroAuthorRow}><View style={[styles.heroTierDot, { backgroundColor: cfg.color }]} /><Text style={styles.heroAuthor}>{post.author}</Text><Text style={styles.heroMeta}>{post.handle} · {timeAgo(post.minutesAgo)}</Text></View>
                         <View style={styles.heroActions}>
-                          <TouchableOpacity style={styles.heroAction} onPress={() => toggleLike(post.id, post.likes)} activeOpacity={0.7}><Feather name="heart" size={16} color={isLiked ? "#ef4444" : "rgba(255,255,255,0.85)"} /><Text style={[styles.heroActionText, { color: isLiked ? "#ef4444" : "rgba(255,255,255,0.85)" }]}>{formatCount(likeCount)}</Text></TouchableOpacity>
+                          <TouchableOpacity style={styles.heroAction} onPress={() => toggleLike(post.id, post.likes)} activeOpacity={0.7}><Feather name="heart" size={16} color={isLiked ? "#dc2626" : "rgba(255,255,255,0.85)"} /><Text style={[styles.heroActionText, { color: isLiked ? "#dc2626" : "rgba(255,255,255,0.85)" }]}>{formatCount(likeCount)}</Text></TouchableOpacity>
                           <TouchableOpacity style={styles.heroAction} activeOpacity={0.7}><Feather name="message-circle" size={16} color="rgba(255,255,255,0.85)" /><Text style={styles.heroActionText}>{formatCount(post.comments)}</Text></TouchableOpacity>
                           <TouchableOpacity style={styles.heroAction} onPress={() => toggleSave(post.id, post.saves)} activeOpacity={0.7}><Feather name="bookmark" size={16} color={isSaved ? colors.amber : "rgba(255,255,255,0.85)"} /><Text style={[styles.heroActionText, { color: isSaved ? colors.amber : "rgba(255,255,255,0.85)" }]}>{formatCount(saveCount)}</Text></TouchableOpacity>
                           <TouchableOpacity style={[styles.heroAction, { marginLeft: "auto" }]} activeOpacity={0.7}><Feather name="share-2" size={16} color="rgba(255,255,255,0.85)" /></TouchableOpacity>
@@ -502,7 +520,7 @@ export default function FeedsScreen() {
                           <Text style={[styles.cardAuthorName, { color: colors.foreground }]}>{post.author}</Text>
                           <View style={[styles.cardTierDot, { backgroundColor: cfg.color }]} />
                           {post.trustLabel && <View style={[styles.trustBadge, { backgroundColor: cfg.color + "18" }]}><Text style={[styles.trustBadgeText, { color: cfg.color }]}>{post.trustLabel} · {post.confidence ?? "medium"}</Text></View>}
-                          {isNew && <View style={[styles.cardNewBadge, { backgroundColor: "#22c55e18" }]}><View style={[styles.cardNewDot, { backgroundColor: "#22c55e" }]} /><Text style={[styles.cardNewText, { color: "#22c55e" }]}>New</Text></View>}
+                          {isNew && <View style={[styles.cardNewBadge, { backgroundColor: "#15803d18" }]}><View style={[styles.cardNewDot, { backgroundColor: "#15803d" }]} /><Text style={[styles.cardNewText, { color: "#15803d" }]}>New</Text></View>}
                         </View>
                         <Text style={[styles.cardMetaLine, { color: colors.mutedForeground }]}>{post.handle}{post.neighborhood ? ` · ${post.neighborhood}` : ""} · {timeAgo(post.minutesAgo)}</Text>
                       </View>
@@ -514,7 +532,7 @@ export default function FeedsScreen() {
                       {post.mediaType === "video" && <View style={styles.cardVideoOverlay}><View style={styles.cardPlayBtn}><Feather name="play" size={18} color="#fff" /></View><View style={styles.cardDurationBadge}><Feather name="video" size={9} color="#fff" /><Text style={styles.cardDurationText}>{post.videoDuration}</Text></View></View>}
                     </View>
                     <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
-                      <TouchableOpacity style={styles.cardAction} onPress={() => toggleLike(post.id, post.likes)} activeOpacity={0.7}><Feather name="heart" size={18} color={isLiked ? "#ef4444" : colors.mutedForeground} /><Text style={[styles.cardActionCount, { color: isLiked ? "#ef4444" : colors.mutedForeground }]}>{formatCount(likeCount)}</Text></TouchableOpacity>
+                      <TouchableOpacity style={styles.cardAction} onPress={() => toggleLike(post.id, post.likes)} activeOpacity={0.7}><Feather name="heart" size={18} color={isLiked ? "#dc2626" : colors.mutedForeground} /><Text style={[styles.cardActionCount, { color: isLiked ? "#dc2626" : colors.mutedForeground }]}>{formatCount(likeCount)}</Text></TouchableOpacity>
                       <TouchableOpacity style={styles.cardAction} activeOpacity={0.7}><Feather name="message-circle" size={18} color={colors.mutedForeground} /><Text style={[styles.cardActionCount, { color: colors.mutedForeground }]}>{formatCount(post.comments)}</Text></TouchableOpacity>
                       <TouchableOpacity style={styles.cardAction} onPress={() => toggleSave(post.id, post.saves)} activeOpacity={0.7}><Feather name="bookmark" size={18} color={isSaved ? colors.amber : colors.mutedForeground} /><Text style={[styles.cardActionCount, { color: isSaved ? colors.amber : colors.mutedForeground }]}>{formatCount(saveCount)}</Text></TouchableOpacity>
                       <View style={styles.cardActionSpacer} />
@@ -717,7 +735,7 @@ const styles = StyleSheet.create({
   wordmark: { fontFamily: "Inter_700Bold", fontSize: 24, letterSpacing: -0.5 },
   wordmarkSub: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 1 },
   liveChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, marginTop: 4 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#ef4444" },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#dc2626" },
   liveText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
   tabBar: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
   tabItem: { flex: 1, alignItems: "center" },
@@ -727,7 +745,7 @@ const styles = StyleSheet.create({
   happeningSection: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 12, paddingTop: 12 },
   happeningSectionHeader: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, marginBottom: 10 },
   happeningLiveDotWrap: { width: 8, height: 8, alignItems: "center", justifyContent: "center" },
-  happeningLiveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#ef4444" },
+  happeningLiveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#dc2626" },
   happeningSectionLabel: { fontFamily: "Inter_700Bold", fontSize: 13 },
   happeningScroll: { paddingHorizontal: 16, gap: 8 },
   happeningCard: { width: 220, borderRadius: 14, borderWidth: 1, padding: 12, gap: 6, ...Platform.select({ web: { boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 } }) },
@@ -742,8 +760,8 @@ const styles = StyleSheet.create({
   heroSponsoredBadge: { backgroundColor: "rgba(0,0,0,0.45)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   heroSponsoredText: { fontFamily: "Inter_600SemiBold", fontSize: 10, color: "#fff" },
   heroNewBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(34,197,94,0.25)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  heroNewDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#22c55e" },
-  heroNewText: { fontFamily: "Inter_700Bold", fontSize: 10, color: "#22c55e" },
+  heroNewDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#15803d" },
+  heroNewText: { fontFamily: "Inter_700Bold", fontSize: 10, color: "#15803d" },
   heroVideoBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(0,0,0,0.45)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginLeft: "auto" },
   heroVideoText: { fontFamily: "Inter_700Bold", fontSize: 10, color: "#fff" },
   heroBottom: { gap: 8 },

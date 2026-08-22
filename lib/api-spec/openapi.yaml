@@ -37,6 +37,8 @@ tags:
     description: Transit operations
   - name: ai
     description: AI assistant operations
+  - name: search
+    description: Cross-catalogue search
 paths:
   /auth/user:
     get:
@@ -903,6 +905,58 @@ paths:
         "500":
           description: AI service error
 
+  /search:
+    get:
+      operationId: search
+      tags: [search]
+      summary: Search everything in a city at once
+      description: >-
+        Matches the query against places, events, deals, hotels, activities and movies in one
+        request. The query is expanded through the city's curated vocabulary first, so
+        alternative spellings, abbreviations and Devanagari all reach the same rows. Results
+        are ranked by a blend of text relevance, distance, rating and whether the venue is
+        open now.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: What the user typed. An empty query returns no results rather than an error.
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: kind
+          in: query
+          description: Restrict results to a single kind. Counts always cover every kind.
+          schema:
+            type: string
+            enum: [place, event, deal, hotel, activity, movie]
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ranked results across every kind
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CitySearchResponse"
+
   /explore/summary:
     get:
       operationId: getExploreSummary
@@ -1400,6 +1454,110 @@ components:
           type: boolean
       required:
         - success
+
+    SearchResult:
+      type: object
+      description: One match, flattened to a shape every kind can fill.
+      properties:
+        kind:
+          type: string
+          enum: [place, event, deal, hotel, activity, movie]
+        id:
+          type: integer
+        title:
+          type: string
+        subtitle:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        lat:
+          type: ["number", "null"]
+        lng:
+          type: ["number", "null"]
+        rating:
+          type: ["number", "null"]
+        reviewCount:
+          type: ["integer", "null"]
+        price:
+          type: ["number", "null"]
+        currency:
+          type: ["string", "null"]
+        badge:
+          type: ["string", "null"]
+          description: A short label the result carries, such as a discount or "Free".
+        startDate:
+          type: ["string", "null"]
+        isOpen:
+          type: ["boolean", "null"]
+        distanceKm:
+          type: ["number", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        score:
+          type: number
+          description: Final rank score, 0 to 1.
+      required:
+        - kind
+        - id
+        - title
+        - tags
+        - score
+
+    SearchCounts:
+      type: object
+      description: Exact number of matches per kind, whatever the current page or kind filter.
+      properties:
+        place:
+          type: integer
+        event:
+          type: integer
+        deal:
+          type: integer
+        hotel:
+          type: integer
+        activity:
+          type: integer
+        movie:
+          type: integer
+      required: [place, event, deal, hotel, activity, movie]
+
+    CitySearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        normalizedQuery:
+          type: string
+        total:
+          type: integer
+        counts:
+          $ref: "#/components/schemas/SearchCounts"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
+        suggestions:
+          type: array
+          description: Near-miss names to offer when nothing matched.
+          items:
+            type: string
+      required:
+        - query
+        - normalizedQuery
+        - total
+        - counts
+        - results
+        - suggestions
 
     Movie:
       type: object

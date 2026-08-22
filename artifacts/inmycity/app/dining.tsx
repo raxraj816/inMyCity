@@ -12,7 +12,7 @@ import { useGetPlaces } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 import { NearbyFilters } from "@/components/NearbyFilters";
@@ -26,7 +26,7 @@ const FILTERS = [
   { id: "bar",         label: "Bars"        },
 ];
 
-const ACCENT = "#f97316";
+const ACCENT = "#c2410c";
 
 export default function DiningScreen() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function DiningScreen() {
 
   const nearby = useNearby();
 
-  const { data: places = [], isLoading, error, refetch } = useGetPlaces({
+  const { data: places = [], isLoading, isRefetching, error, refetch } = useGetPlaces({
     city: selectedCity?.name,
     category: "food",
     ...nearby.queryParams,
@@ -59,7 +59,7 @@ export default function DiningScreen() {
     route:    `/place/${p.id}`,
   }));
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   // Header injected into FlatList so it scrolls with content
   const ListHeader = (
@@ -92,6 +92,9 @@ export default function DiningScreen() {
                 { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border },
               ]}
               onPress={() => setActiveFilter(f.id)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${f.label} in dining`}
             >
               <Text style={[styles.pillText, { color: active ? "#fff" : colors.foreground }]}>
                 {f.label}
@@ -104,26 +107,13 @@ export default function DiningScreen() {
       <NearbyFilters controls={nearby} accent={ACCENT} />
 
       {/* Content */}
-      {isLoading ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="dining spots" />
+      ) : isLoading ? (
         <>
           {ListHeader}
           <View style={styles.loadingContainer}>
             {[1, 2, 3].map(i => <SkeletonCard key={i} height={240} style={styles.skeleton} />)}
-          </View>
-        </>
-      ) : filtered.length === 0 ? (
-        <>
-          {ListHeader}
-          <View style={styles.emptyContainer}>
-            <View style={[styles.emptyIcon, { backgroundColor: ACCENT + "15" }]}>
-              <Feather name="coffee" size={32} color={ACCENT} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No restaurants found</Text>
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              {activeFilter !== "all"
-                ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
-                : `No dining spots in ${selectedCity?.name ?? "this city"} yet.`}
-            </Text>
           </View>
         </>
       ) : (
@@ -134,8 +124,20 @@ export default function DiningScreen() {
           ListHeaderComponent={ListHeader}
           contentContainerStyle={{ paddingTop: 0, paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
-          onRefresh={refetch}
-          refreshing={isLoading}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
+          ListEmptyComponent={
+            <EmptyState
+              icon="coffee"
+              title="No restaurants found"
+              accent={ACCENT}
+              message={
+                activeFilter !== "all"
+                  ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
+                  : `No dining spots in ${selectedCity?.name ?? "this city"} yet.`
+              }
+            />
+          }
         />
       )}
     </View>

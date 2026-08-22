@@ -6,7 +6,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetMovieById, getGetMovieByIdQueryKey } from "@workspace/api-client-react";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { ErrorState } from "@/components/ListStates";
 
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -19,7 +19,23 @@ export default function MovieDetailScreen() {
     query: { enabled: !!movieId, queryKey: getGetMovieByIdQueryKey(movieId) }
   });
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  // Inline rather than a full-screen fallback: the user arrived from a list and needs a way
+  // back, not an app-restart prompt.
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 20) }]}>
+        <ErrorState error={error} onRetry={refetch} subject="this movie" />
+        <TouchableOpacity
+          style={styles.errorBack}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Text style={[styles.errorBackText, { color: colors.mutedForeground }]}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   if (isLoading || !movie) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
 
   const isLocal = movie.city === "Mumbai" || movie.city === "Bangalore";
@@ -46,7 +62,7 @@ export default function MovieDetailScreen() {
           {/* Status badge on poster */}
           <View style={[
             styles.posterBadge,
-            { backgroundColor: movie.status === "now_showing" ? "#10b981" : "#f59e0b" }
+            { backgroundColor: movie.status === "now_showing" ? "#047857" : "#b45309" }
           ]}>
             <Text style={styles.posterBadgeText}>
               {movie.status === "now_showing" ? "Now Showing" : "Coming Soon"}
@@ -58,8 +74,8 @@ export default function MovieDetailScreen() {
         <View style={[styles.content, { backgroundColor: colors.background, paddingBottom: insets.bottom + 110 }]}>
           {/* Genre + Language */}
           <View style={styles.badgeRow}>
-            <View style={[styles.badge, { backgroundColor: "#8b5cf61a", borderColor: "#8b5cf620" }]}>
-              <Text style={[styles.badgeText, { color: "#8b5cf6" }]}>{movie.genre}</Text>
+            <View style={[styles.badge, { backgroundColor: "#7c3aed1a", borderColor: "#7c3aed20" }]}>
+              <Text style={[styles.badgeText, { color: "#7c3aed" }]}>{movie.genre}</Text>
             </View>
             <View style={[styles.badge, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>{movie.language}</Text>
@@ -72,7 +88,7 @@ export default function MovieDetailScreen() {
           <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {movie.rating && (
               <View style={styles.statItem}>
-                <Feather name="star" size={18} color="#f59e0b" />
+                <Feather name="star" size={18} color="#b45309" />
                 <Text style={[styles.statValue, { color: colors.foreground }]}>{movie.rating.toFixed(1)}</Text>
                 <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Rating</Text>
               </View>
@@ -81,7 +97,7 @@ export default function MovieDetailScreen() {
               <>
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
-                  <Feather name="clock" size={18} color="#8b5cf6" />
+                  <Feather name="clock" size={18} color="#7c3aed" />
                   <Text style={[styles.statValue, { color: colors.foreground }]}>
                     {Math.floor(movie.durationMinutes / 60)}h {movie.durationMinutes % 60}m
                   </Text>
@@ -93,7 +109,7 @@ export default function MovieDetailScreen() {
               <>
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
-                  <Feather name="calendar" size={18} color="#0ea5e9" />
+                  <Feather name="calendar" size={18} color="#0369a1" />
                   <Text style={[styles.statValue, { color: colors.foreground }]}>
                     {new Date(movie.releaseDate).getFullYear()}
                   </Text>
@@ -135,8 +151,8 @@ export default function MovieDetailScreen() {
           {/* Venue */}
           {movie.venue && (
             <View style={[styles.venueRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.iconBox, { backgroundColor: "#8b5cf61a" }]}>
-                <Feather name="map-pin" size={18} color="#8b5cf6" />
+              <View style={[styles.iconBox, { backgroundColor: "#7c3aed1a" }]}>
+                <Feather name="map-pin" size={18} color="#7c3aed" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.venueName, { color: colors.foreground }]}>{movie.venue}</Text>
@@ -167,7 +183,7 @@ export default function MovieDetailScreen() {
           </Text>
         </View>
         <TouchableOpacity
-          style={[styles.bookBtn, { backgroundColor: "#8b5cf6", opacity: movie.bookingUrl ? 1 : 0.5 }]}
+          style={[styles.bookBtn, { backgroundColor: "#7c3aed", opacity: movie.bookingUrl ? 1 : 0.5 }]}
           onPress={() => movie.bookingUrl && Linking.openURL(movie.bookingUrl)}
           disabled={!movie.bookingUrl}
         >
@@ -179,6 +195,8 @@ export default function MovieDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorBack: { alignSelf: "center", padding: 16, minHeight: 44 },
+  errorBackText: { fontFamily: "Inter_500Medium", fontSize: 15 },
   container: { flex: 1 },
   posterContainer: { height: 420, position: "relative" },
   poster: { width: "100%", height: "100%" },

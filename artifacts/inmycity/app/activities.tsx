@@ -11,7 +11,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetActivities, useGetPlaces } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
@@ -42,16 +42,17 @@ const NIGHTLIFE_FILTERS = [
   { id: "pub",      label: "Pubs"       },
 ];
 
-const ACT_COLOR   = "#ef4444";
-const NIGHT_COLOR = "#ec4899";
+const ACT_COLOR   = "#dc2626";
+const NIGHT_COLOR = "#be185d";
 
+// Deep enough to carry white pill text and to read as text on their own tint.
 const CATEGORY_COLORS: Record<string, string> = {
-  adventure: "#ef4444",
-  cultural:  "#6366f1",
-  wellness:  "#10b981",
-  sports:    "#0ea5e9",
-  workshop:  "#f59e0b",
-  tour:      "#ec4899",
+  adventure: "#dc2626",
+  cultural:  "#4f46e5",
+  wellness:  "#047857",
+  sports:    "#0369a1",
+  workshop:  "#b45309",
+  tour:      "#be185d",
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -93,7 +94,8 @@ export default function ActivitiesScreen() {
 
   // ── Data ────────────────────────────────────────────────────────────────
   const {
-    data: activities = [], isLoading: actLoading, error: actError, refetch: refetchAct,
+    data: activities = [], isLoading: actLoading, isRefetching: actRefetching,
+    error: actError, refetch: refetchAct,
   } = useGetActivities({
     city: cityName,
     category: activityFilter !== "all" ? activityFilter : undefined,
@@ -106,7 +108,8 @@ export default function ActivitiesScreen() {
   } = useGetActivities({ city: cityName });
 
   const {
-    data: nightlifePlaces = [], isLoading: nightLoading, error: nightError, refetch: refetchNight,
+    data: nightlifePlaces = [], isLoading: nightLoading, isRefetching: nightRefetching,
+    error: nightError, refetch: refetchNight,
   } = useGetPlaces({ city: cityName, category: "nightlife", ...nearby.queryParams });
 
   const filteredNightlife = nightlifeFilter === "all"
@@ -117,10 +120,13 @@ export default function ActivitiesScreen() {
 
   const currentError   = mainTab === "activities" ? actError   : nightError;
   const currentRefetch = mainTab === "activities" ? refetchAct : refetchNight;
+  const currentAccent  = mainTab === "activities" ? ACT_COLOR  : NIGHT_COLOR;
 
-  if (currentError) {
-    return <ErrorFallback error={currentError as Error} resetError={currentRefetch} />;
-  }
+  const refreshControl = useListRefreshControl(
+    mainTab === "activities" ? actRefetching : nightRefetching,
+    currentRefetch,
+    currentAccent,
+  );
 
   // ── Trending strip items ─────────────────────────────────────────────────
 
@@ -145,7 +151,7 @@ export default function ActivitiesScreen() {
   // ── Renders ─────────────────────────────────────────────────────────────
 
   const renderActivityCard = ({ item }: { item: typeof activities[number] }) => {
-    const catColor = CATEGORY_COLORS[item.category] ?? "#6366f1";
+    const catColor = CATEGORY_COLORS[item.category] ?? "#4f46e5";
     const catIcon  = CATEGORY_ICONS[item.category]  ?? "zap";
     const hours = item.durationMinutes ? Math.floor(item.durationMinutes / 60) : 0;
     const mins  = item.durationMinutes ? item.durationMinutes % 60 : 0;
@@ -192,7 +198,7 @@ export default function ActivitiesScreen() {
               )}
               {!!item.rating && (
                 <View style={styles.metaItem}>
-                  <Feather name="star" size={12} color="#f59e0b" />
+                  <Feather name="star" size={12} color="#b45309" />
                   <Text style={[styles.metaText, { color: colors.foreground }]}>{item.rating.toFixed(1)}</Text>
                 </View>
               )}
@@ -237,7 +243,7 @@ export default function ActivitiesScreen() {
           </View>
           {item.rating != null && (
             <View style={styles.ratingChip}>
-              <Feather name="star" size={11} color="#f59e0b" />
+              <Feather name="star" size={11} color="#b45309" />
               <Text style={[styles.ratingText, { color: colors.foreground }]}>
                 {item.rating.toFixed(1)}
               </Text>
@@ -403,7 +409,14 @@ export default function ActivitiesScreen() {
       )}
 
       {/* Content */}
-      {mainTab === "activities" ? (
+      {currentError ? (
+        <ErrorState
+          error={currentError}
+          onRetry={currentRefetch}
+          accent={currentAccent}
+          subject={mainTab === "activities" ? "activities" : "nightlife"}
+        />
+      ) : mainTab === "activities" ? (
         actLoading ? (
           <>
             <TrendingStrip
@@ -418,16 +431,6 @@ export default function ActivitiesScreen() {
               <SkeletonCard height={160} />
             </View>
           </>
-        ) : activities.length === 0 ? (
-          <>
-            <TrendingStrip
-              items={actTrendingItems}
-              accentColor={ACT_COLOR}
-              isLoading={false}
-              label="Trending Activities"
-            />
-            {renderEmpty("zap", "No activities found")}
-          </>
         ) : (
           <FlatList
             data={activities}
@@ -435,12 +438,26 @@ export default function ActivitiesScreen() {
             contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
             showsVerticalScrollIndicator={false}
             renderItem={renderActivityCard}
+            refreshControl={refreshControl}
+            {...LIST_PERFORMANCE_PROPS}
             ListHeaderComponent={
               <TrendingStrip
                 items={actTrendingItems}
                 accentColor={ACT_COLOR}
                 isLoading={false}
                 label="Trending Activities"
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="zap"
+                accent={ACT_COLOR}
+                title="No activities found"
+                message={
+                  activityFilter !== "all"
+                    ? "Nothing in this category right now. Try another one."
+                    : `No activities listed in ${cityName ?? "this city"} yet.`
+                }
               />
             }
           />
@@ -460,18 +477,6 @@ export default function ActivitiesScreen() {
               <SkeletonCard height={260} />
             </View>
           </>
-        ) : filteredNightlife.length === 0 ? (
-          <>
-            <TrendingStrip
-              items={nightTrendingItems}
-              accentColor={NIGHT_COLOR}
-              isLoading={false}
-              label="Trending Nightlife"
-            />
-            {renderEmpty("moon", cityName
-              ? `No nightlife venues in ${cityName} yet`
-              : "Select a city to browse nightlife")}
-          </>
         ) : (
           <FlatList
             data={filteredNightlife}
@@ -479,12 +484,26 @@ export default function ActivitiesScreen() {
             contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
             showsVerticalScrollIndicator={false}
             renderItem={renderNightlifeCard}
+            refreshControl={refreshControl}
+            {...LIST_PERFORMANCE_PROPS}
             ListHeaderComponent={
               <TrendingStrip
                 items={nightTrendingItems}
                 accentColor={NIGHT_COLOR}
                 isLoading={false}
                 label="Trending Nightlife"
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="moon"
+                accent={NIGHT_COLOR}
+                title="No nightlife venues found"
+                message={
+                  cityName
+                    ? `Nothing listed in ${cityName} for this filter yet.`
+                    : "Select a city to browse nightlife."
+                }
               />
             }
           />

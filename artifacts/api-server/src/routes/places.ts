@@ -1,65 +1,67 @@
 import { Router } from "express";
 import { db, placesTable } from "@workspace/db";
-import { eq, and, gte, sql, ilike, or } from "drizzle-orm";
+import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { resolveIsOpen } from "../lib/openingHours";
-import { haversineKm } from "../lib/geo";
+import { parseOrigin } from "../lib/geo";
+import { parseLimit, parseOffset } from "../lib/pagination";
+import {
+  cityMatches,
+  distanceKmExpression,
+  openNowCondition,
+  withinRadiusCondition,
+} from "../lib/sqlFilters";
 
 const router = Router();
 
 router.get("/places", async (req, res) => {
   try {
-    const lat = req.query.lat ? parseFloat(req.query.lat as string) : null;
-    const lng = req.query.lng ? parseFloat(req.query.lng as string) : null;
-    const radius = req.query.radius ? parseFloat(req.query.radius as string) : 10;
+    const origin = parseOrigin(req.query as Record<string, unknown>);
     const category = req.query.category as string | undefined;
     const minRating = req.query.rating ? parseFloat(req.query.rating as string) : null;
     const openNow = req.query.openNow === "true";
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
-
     const city = req.query.city as string | undefined;
+    const limit = parseLimit(req.query.limit);
+    const offset = parseOffset(req.query.offset);
 
-    const conditions = [];
-    if (city) conditions.push(ilike(placesTable.city, `%${city}%`));
-    if (category) conditions.push(eq(placesTable.category, category));
-    if (minRating) conditions.push(gte(placesTable.rating, minRating));
+    const now = new Date();
+    const distanceKm = origin
+      ? distanceKmExpression(placesTable.lat, placesTable.lng, origin)
+      : sql<number | null>`null::double precision`;
 
-    let places = await db
-      .select()
+    const conditions = [
+      city ? cityMatches(placesTable.city, city) : undefined,
+      category ? eq(placesTable.category, category) : undefined,
+      minRating !== null && Number.isFinite(minRating) ? gte(placesTable.rating, minRating) : undefined,
+      openNow ? openNowCondition(placesTable.openingHoursJson, now) : undefined,
+      origin ? withinRadiusCondition(placesTable.lat, placesTable.lng, origin) : undefined,
+    ].filter((condition) => condition !== undefined);
+
+    // Nearest first when the caller shared a location, best-rated first otherwise. Both run in
+    // the database, so `limit`/`offset` describe the same page the ordering produced.
+    const orderBy = origin ? [asc(distanceKm)] : [sql`${placesTable.rating} desc nulls last`];
+
+    const places = await db
+      .select({ place: placesTable, distanceKm })
       .from(placesTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .limit(500);
+      .orderBy(...orderBy)
+      .limit(limit)
+      .offset(offset);
 
-    const result = places
-      .map((p) => {
-        const distanceKm = lat !== null && lng !== null ? haversineKm(lat, lng, p.lat, p.lng) : null;
-        const isOpen = resolveIsOpen(p);
-        return { ...p, distanceKm, isOpen };
-      })
-      .filter((p) => {
-        if (lat !== null && lng !== null && p.distanceKm !== null) {
-          if (p.distanceKm > radius) return false;
-        }
-        if (openNow && p.isOpen === false) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        if (a.distanceKm !== null && b.distanceKm !== null) return a.distanceKm - b.distanceKm;
-        return (b.rating ?? 0) - (a.rating ?? 0);
-      })
-      .slice(offset, offset + limit)
-      .map((p) => ({
-        ...p,
-        rating: p.rating ?? null,
-        reviewCount: p.reviewCount ?? null,
-        phone: p.phone ?? null,
-        website: p.website ?? null,
-        openingHours: p.openingHours ?? null,
-        imageUrl: p.imageUrl ?? null,
-        description: p.description ?? null,
-      }));
-
-    res.json(result);
+    res.json(
+      places.map(({ place, distanceKm: distance }) => ({
+        ...place,
+        rating: place.rating ?? null,
+        reviewCount: place.reviewCount ?? null,
+        phone: place.phone ?? null,
+        website: place.website ?? null,
+        openingHours: place.openingHours ?? null,
+        imageUrl: place.imageUrl ?? null,
+        description: place.description ?? null,
+        distanceKm: distance === null ? null : Number(distance),
+        isOpen: resolveIsOpen(place, now),
+      })),
+    );
   } catch (err) {
     req.log.error({ err }, "Failed to get places");
     res.status(500).json({ error: "Internal server error" });

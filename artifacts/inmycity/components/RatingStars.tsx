@@ -13,7 +13,12 @@ export function RatingStars({ rating, maxStars = 5, size = 16 }: Props) {
   const colors = useColors();
 
   return (
-    <View style={styles.container}>
+    // Read as one value rather than five separate star icons.
+    <View
+      style={styles.container}
+      accessible
+      accessibilityLabel={`Rated ${rating.toFixed(1)} out of ${maxStars}`}
+    >
       {Array.from({ length: maxStars }).map((_, i) => (
         <Feather
           key={i}

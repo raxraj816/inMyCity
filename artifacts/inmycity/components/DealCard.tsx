@@ -11,7 +11,7 @@ type Props = {
   deal: Deal;
 };
 
-export function DealCard({ deal }: Props) {
+function DealCardComponent({ deal }: Props) {
   const colors = useColors();
   const router = useRouter();
 
@@ -24,11 +24,23 @@ export function DealCard({ deal }: Props) {
     daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
 
+  const accessibilityLabel = [
+    deal.title,
+    deal.discountText,
+    `at ${deal.placeName}`,
+    deal.expiresAt ? (daysLeft > 0 ? `${daysLeft} days left` : "Expires today") : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       style={[styles.card, { backgroundColor: colors.card }]}
       onPress={() => router.push(`/deal/${deal.id}`)}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Opens this deal"
     >
         <View style={styles.imageContainer}>
           {deal.imageUrl ? (
@@ -37,6 +49,9 @@ export function DealCard({ deal }: Props) {
               style={styles.image}
               contentFit="cover"
               transition={200}
+              cachePolicy="memory-disk"
+              accessibilityElementsHidden
+              importantForAccessibility="no"
             />
           ) : (
             <View style={[styles.image, { backgroundColor: colors.muted }]} />
@@ -83,6 +98,9 @@ export function DealCard({ deal }: Props) {
       </TouchableOpacity>
   );
 }
+
+/** Memoized: these sit in long lists that re-render whenever a filter above them changes. */
+export const DealCard = React.memo(DealCardComponent);
 
 const styles = StyleSheet.create({
   card: {

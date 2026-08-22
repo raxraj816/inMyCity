@@ -262,6 +262,87 @@ export interface SuccessResponse {
   success: boolean;
 }
 
+export type SearchResultKind =
+  (typeof SearchResultKind)[keyof typeof SearchResultKind];
+
+export const SearchResultKind = {
+  place: "place",
+  event: "event",
+  deal: "deal",
+  hotel: "hotel",
+  activity: "activity",
+  movie: "movie",
+} as const;
+
+/**
+ * One match, flattened to a shape every kind can fill.
+ */
+export interface SearchResult {
+  kind: SearchResultKind;
+  id: number;
+  title: string;
+  /** @nullable */
+  subtitle?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  category?: string | null;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
+  /** @nullable */
+  rating?: number | null;
+  /** @nullable */
+  reviewCount?: number | null;
+  /** @nullable */
+  price?: number | null;
+  /** @nullable */
+  currency?: string | null;
+  /**
+   * A short label the result carries, such as a discount or "Free".
+   * @nullable
+   */
+  badge?: string | null;
+  /** @nullable */
+  startDate?: string | null;
+  /** @nullable */
+  isOpen?: boolean | null;
+  /** @nullable */
+  distanceKm?: number | null;
+  tags: string[];
+  /** Final rank score, 0 to 1. */
+  score: number;
+}
+
+/**
+ * Exact number of matches per kind, whatever the current page or kind filter.
+ */
+export interface SearchCounts {
+  place: number;
+  event: number;
+  deal: number;
+  hotel: number;
+  activity: number;
+  movie: number;
+}
+
+export interface CitySearchResponse {
+  query: string;
+  normalizedQuery: string;
+  total: number;
+  counts: SearchCounts;
+  results: SearchResult[];
+  /** Near-miss names to offer when nothing matched. */
+  suggestions: string[];
+}
+
 export type MovieStatus = (typeof MovieStatus)[keyof typeof MovieStatus];
 
 export const MovieStatus = {
@@ -527,6 +608,33 @@ export type SearchTransitRoutesParams = {
   from?: string;
   to?: string;
 };
+
+export type SearchParams = {
+  /**
+   * What the user typed. An empty query returns no results rather than an error.
+   */
+  q: string;
+  city?: string;
+  /**
+   * Restrict results to a single kind. Counts always cover every kind.
+   */
+  kind?: SearchKind;
+  lat?: number;
+  lng?: number;
+  limit?: number;
+  offset?: number;
+};
+
+export type SearchKind = (typeof SearchKind)[keyof typeof SearchKind];
+
+export const SearchKind = {
+  place: "place",
+  event: "event",
+  deal: "deal",
+  hotel: "hotel",
+  activity: "activity",
+  movie: "movie",
+} as const;
 
 export type GetExploreSummaryParams = {
   city?: string;

@@ -45,6 +45,8 @@ function StripSkeletons({ colors }: { colors: ReturnType<typeof useColors> }) {
         <View
           key={i}
           style={[styles.skeleton, { backgroundColor: colors.card }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         />
       ))}
     </ScrollView>
@@ -69,6 +71,9 @@ function StripCard({
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push(item.route as any)}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={[item.title, item.meta1, item.meta2].filter(Boolean).join(", ")}
+      accessibilityHint="Opens this listing"
     >
       <Image
         source={{
@@ -77,6 +82,9 @@ function StripCard({
         }}
         style={styles.img}
         contentFit="cover"
+        cachePolicy="memory-disk"
+        accessibilityElementsHidden
+        importantForAccessibility="no"
       />
       <View style={styles.body}>
         <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={2}>

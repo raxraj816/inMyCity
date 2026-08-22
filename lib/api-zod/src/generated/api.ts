@@ -968,6 +968,89 @@ export const AiChatBody = zod.object({
 });
 
 /**
+ * Matches the query against places, events, deals, hotels, activities and movies in one request. The query is expanded through the city's curated vocabulary first, so alternative spellings, abbreviations and Devanagari all reach the same rows. Results are ranked by a blend of text relevance, distance, rating and whether the venue is open now.
+ * @summary Search everything in a city at once
+ */
+export const SearchQueryParams = zod.object({
+  q: zod.coerce
+    .string()
+    .describe(
+      "What the user typed. An empty query returns no results rather than an error.",
+    ),
+  city: zod.coerce.string().optional(),
+  kind: zod
+    .enum(["place", "event", "deal", "hotel", "activity", "movie"])
+    .optional()
+    .describe(
+      "Restrict results to a single kind. Counts always cover every kind.",
+    ),
+  lat: zod.coerce.number().optional(),
+  lng: zod.coerce.number().optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const SearchResponse = zod.object({
+  query: zod.string(),
+  normalizedQuery: zod.string(),
+  total: zod.number(),
+  counts: zod
+    .object({
+      place: zod.number(),
+      event: zod.number(),
+      deal: zod.number(),
+      hotel: zod.number(),
+      activity: zod.number(),
+      movie: zod.number(),
+    })
+    .describe(
+      "Exact number of matches per kind, whatever the current page or kind filter.",
+    ),
+  results: zod.array(
+    zod
+      .object({
+        kind: zod.enum([
+          "place",
+          "event",
+          "deal",
+          "hotel",
+          "activity",
+          "movie",
+        ]),
+        id: zod.number(),
+        title: zod.string(),
+        subtitle: zod.string().nullish(),
+        description: zod.string().nullish(),
+        category: zod.string().nullish(),
+        imageUrl: zod.string().nullish(),
+        address: zod.string().nullish(),
+        city: zod.string().nullish(),
+        lat: zod.number().nullish(),
+        lng: zod.number().nullish(),
+        rating: zod.number().nullish(),
+        reviewCount: zod.number().nullish(),
+        price: zod.number().nullish(),
+        currency: zod.string().nullish(),
+        badge: zod
+          .string()
+          .nullish()
+          .describe(
+            'A short label the result carries, such as a discount or \"Free\".',
+          ),
+        startDate: zod.string().nullish(),
+        isOpen: zod.boolean().nullish(),
+        distanceKm: zod.number().nullish(),
+        tags: zod.array(zod.string()),
+        score: zod.number().describe("Final rank score, 0 to 1."),
+      })
+      .describe("One match, flattened to a shape every kind can fill."),
+  ),
+  suggestions: zod
+    .array(zod.string())
+    .describe("Near-miss names to offer when nothing matched."),
+});
+
+/**
  * @summary Get category summary counts for a location
  */
 export const GetExploreSummaryQueryParams = zod.object({

@@ -71,9 +71,9 @@ function friendlyTag(tag: string): string {
   return MAP[tag.toLowerCase()] ?? (tag.charAt(0).toUpperCase() + tag.slice(1));
 }
 
-const SHOP_COLOR = "#f97316";
+const SHOP_COLOR = "#c2410c";
 
-export function ShopCard({ shop, deal }: Props) {
+function ShopCardComponent({ shop, deal }: Props) {
   const colors = useColors();
   const router = useRouter();
   const openStatus = isOpenNow(shop.openingHours);
@@ -88,23 +88,40 @@ export function ShopCard({ shop, deal }: Props) {
     .filter(t => t !== "mall" && t !== "street market" && t !== "branded" && t !== "iconic")
     .slice(0, 2);
 
+  const accessibilityLabel = [
+    shop.name,
+    shop.rating != null ? `rated ${shop.rating.toFixed(1)} out of 5` : null,
+    openStatus === true ? "Open now" : openStatus === false ? "Closed" : null,
+    deal ? `Deal: ${deal.discountText ?? "available"}` : null,
+    shop.address,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push(`/place/${shop.id}` as any)}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Opens this shop"
     >
       <View style={styles.imageWrap}>
         <Image
           source={{ uri: shop.imageUrl ?? "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600" }}
           style={styles.image}
           contentFit="cover"
+          cachePolicy="memory-disk"
+          accessibilityElementsHidden
+          importantForAccessibility="no"
         />
 
         {openStatus !== null && (
           <View style={[
             styles.openBadge,
-            { backgroundColor: openStatus ? "#16a34a" : "#dc2626" },
+              // White on green-700/red-600 rather than the lighter shades, which failed AA.
+            { backgroundColor: openStatus ? "#15803d" : "#dc2626" },
           ]}>
             <Text style={styles.openBadgeText}>{openStatus ? "Open" : "Closed"}</Text>
           </View>
@@ -135,8 +152,11 @@ export function ShopCard({ shop, deal }: Props) {
             <TouchableOpacity
               style={[styles.callBtn, { backgroundColor: SHOP_COLOR + "15", borderColor: SHOP_COLOR + "30" }]}
               onPress={handleCall}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Call ${shop.name}`}
+              accessibilityHint="Opens your phone app"
             >
               <Feather name="phone" size={14} color={SHOP_COLOR} />
             </TouchableOpacity>
@@ -146,7 +166,7 @@ export function ShopCard({ shop, deal }: Props) {
         <View style={styles.metaRow}>
           {shop.rating != null && (
             <View style={styles.metaChip}>
-              <Feather name="star" size={11} color="#f59e0b" />
+              <Feather name="star" size={11} color="#b45309" />
               <Text style={[styles.metaText, { color: colors.foreground }]}>
                 {shop.rating.toFixed(1)}
               </Text>
@@ -192,6 +212,9 @@ export function ShopCard({ shop, deal }: Props) {
   );
 }
 
+/** Memoized: the shops list re-renders on every category chip tap. */
+export const ShopCard = React.memo(ShopCardComponent);
+
 const styles = StyleSheet.create({
   card: {
     borderRadius: 18,
@@ -232,7 +255,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 10,
     right: 10,
-    backgroundColor: "#16a34a",
+    backgroundColor: "#15803d",
     flexDirection: "row",
     alignItems: "center",
     gap: 4,

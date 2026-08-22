@@ -10,7 +10,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetTransitLines } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 const TYPE_FILTERS = [
@@ -44,12 +44,12 @@ export default function TransitScreen() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchText, setSearchText] = useState("");
 
-  const { data: lines = [], isLoading, error, refetch } = useGetTransitLines({
+  const { data: lines = [], isLoading, isRefetching, error, refetch } = useGetTransitLines({
     city: selectedCity?.name,
     type: activeFilter !== "all" ? activeFilter : undefined,
   });
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  const refreshControl = useListRefreshControl(isRefetching, refetch);
 
   const isLocal = selectedCity?.name === "Mumbai" || selectedCity?.name === "Bangalore";
   const currencySymbol = isLocal ? "₹" : "$";
@@ -70,10 +70,10 @@ export default function TransitScreen() {
         topPadding={Math.max(insets.top, 20)}
         rightElement={
           <TouchableOpacity
-            style={[styles.planBtn, { backgroundColor: "#06b6d41a" }]}
+            style={[styles.planBtn, { backgroundColor: "#0e74901a" }]}
             onPress={() => router.push("/transit/plan" as any)}
           >
-            <Feather name="map" size={18} color="#06b6d4" />
+            <Feather name="map" size={18} color="#0e7490" />
           </TouchableOpacity>
         }
       />
@@ -100,7 +100,7 @@ export default function TransitScreen() {
         {TYPE_FILTERS.map(f => (
           <TouchableOpacity
             key={f.id}
-            style={[styles.pill, { backgroundColor: activeFilter === f.id ? "#06b6d4" : colors.card, borderColor: activeFilter === f.id ? "#06b6d4" : colors.border }]}
+            style={[styles.pill, { backgroundColor: activeFilter === f.id ? "#0e7490" : colors.card, borderColor: activeFilter === f.id ? "#0e7490" : colors.border }]}
             onPress={() => setActiveFilter(f.id)}
           >
             <Text style={[styles.pillText, { color: activeFilter === f.id ? "#fff" : colors.foreground }]}>{f.label}</Text>
@@ -110,7 +110,7 @@ export default function TransitScreen() {
 
       {/* Route Planner CTA */}
       <TouchableOpacity
-        style={[styles.plannerCta, { backgroundColor: "#06b6d4" }]}
+        style={[styles.plannerCta, { backgroundColor: "#0e7490" }]}
         onPress={() => router.push("/transit/plan" as any)}
         activeOpacity={0.85}
       >
@@ -127,18 +127,13 @@ export default function TransitScreen() {
       </TouchableOpacity>
 
       {/* Lines List */}
-      {isLoading ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} subject="transit lines" />
+      ) : isLoading ? (
         <View style={styles.loadingContainer}>
           {[1, 2, 3, 4].map(i => (
             <View key={i} style={[styles.skeletonCard, { backgroundColor: colors.card }]} />
           ))}
-        </View>
-      ) : filtered.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Feather name="share-2" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            {searchText ? "No lines match your search" : "No transit lines found"}
-          </Text>
         </View>
       ) : (
         <FlatList
@@ -146,6 +141,19 @@ export default function TransitScreen() {
           keyExtractor={item => String(item.id)}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
+          ListEmptyComponent={
+            <EmptyState
+              icon="share-2"
+              title={searchText ? "No lines match your search" : "No transit lines found"}
+              message={
+                searchText
+                  ? "Try a station name, or clear the search to see every line."
+                  : `No lines listed for ${selectedCity?.name ?? "this city"} yet.`
+              }
+            />
+          }
           renderItem={({ item }) => {
             const icon = TYPE_ICONS[item.type] ?? "share-2";
             const typeLabel = TYPE_LABELS[item.type] ?? item.type;
@@ -154,6 +162,9 @@ export default function TransitScreen() {
                 style={[styles.lineCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push(`/transit/line/${item.id}` as any)}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.name}, ${typeLabel}, from ${item.from} to ${item.to}`}
+                accessibilityHint="Opens this line"
               >
                 {/* Color stripe + type badge */}
                 <View style={[styles.lineStripe, { backgroundColor: item.color }]} />

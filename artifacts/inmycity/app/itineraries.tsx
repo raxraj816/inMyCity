@@ -12,7 +12,7 @@ import { useColors } from "@/hooks/useColors";
 import { useGetItineraries, type Itinerary } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 const DURATION_FILTERS = [
@@ -23,7 +23,7 @@ const DURATION_FILTERS = [
   { id: "4", label: "4 Days" },
 ];
 
-const ACCENT = "#6366f1";
+const ACCENT = "#4f46e5";
 
 export default function ItinerariesScreen() {
   const router = useRouter();
@@ -32,21 +32,24 @@ export default function ItinerariesScreen() {
   const { selectedCity } = useCity();
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const { data: itineraries = [], isLoading, error, refetch } = useGetItineraries({
+  const { data: itineraries = [], isLoading, isRefetching, error, refetch } = useGetItineraries({
     city: selectedCity?.name,
   });
+
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   const filtered = activeFilter === "all"
     ? itineraries
     : itineraries.filter(i => String(i.durationDays) === activeFilter);
-
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
 
   const renderCard = ({ item }: { item: Itinerary }) => (
     <TouchableOpacity
       activeOpacity={0.85}
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push(`/itinerary/${item.id}` as any)}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}, ${item.durationDays} day guide`}
+      accessibilityHint="Opens this guide"
     >
       <View style={styles.imageBox}>
         {item.coverImageUrl
@@ -108,21 +111,11 @@ export default function ItinerariesScreen() {
         })}
       </ScrollView>
 
-      {isLoading ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="guides" />
+      ) : isLoading ? (
         <View style={styles.loadingContainer}>
           {[1, 2, 3].map(i => <SkeletonCard key={i} height={220} style={styles.skeleton} />)}
-        </View>
-      ) : filtered.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIcon, { backgroundColor: ACCENT + "15" }]}>
-            <Feather name="map" size={32} color={ACCENT} />
-          </View>
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No guides found</Text>
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            {activeFilter !== "all"
-              ? `No ${activeFilter}-day guides for ${selectedCity?.name ?? "this city"} yet.`
-              : `No curated guides for ${selectedCity?.name ?? "this city"} yet.`}
-          </Text>
         </View>
       ) : (
         <FlatList
@@ -131,9 +124,21 @@ export default function ItinerariesScreen() {
           renderItem={renderCard}
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
-          onRefresh={refetch}
-          refreshing={isLoading}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ListEmptyComponent={
+            <EmptyState
+              icon="map"
+              title="No guides found"
+              accent={ACCENT}
+              message={
+                activeFilter !== "all"
+                  ? `No ${activeFilter}-day guides for ${selectedCity?.name ?? "this city"} yet.`
+                  : `No curated guides for ${selectedCity?.name ?? "this city"} yet.`
+              }
+            />
+          }
         />
       )}
     </View>

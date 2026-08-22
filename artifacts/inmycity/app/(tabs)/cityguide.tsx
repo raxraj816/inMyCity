@@ -17,7 +17,7 @@ import { useColors } from "@/hooks/useColors";
 import { useCity } from "@/context/CityContext";
 import { CityPicker } from "@/components/CityPicker";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { ErrorState, useListRefreshControl } from "@/components/ListStates";
 import { AppHeader } from "@/components/AppHeader";
 import { AiChatFab } from "@/components/AiChatFab";
 import {
@@ -119,9 +119,9 @@ const AUDIENCE_FILTERS = [
 ];
 
 const TIME_OF_DAY = [
-  { id: "morning",   label: "Morning",   icon: "sunrise",  color: "#f59e0b", hint: "Before noon",   categories: ["wellness", "sports", "tour"] },
-  { id: "afternoon", label: "Afternoon", icon: "sun",      color: "#f97316", hint: "12 pm – 6 pm",  categories: ["cultural", "adventure", "tours"] },
-  { id: "evening",   label: "Evening",   icon: "moon",     color: "#6366f1", hint: "After 6 pm",    categories: ["nightlife", "workshop"] },
+  { id: "morning",   label: "Morning",   icon: "sunrise",  color: "#b45309", hint: "Before noon",   categories: ["wellness", "sports", "tour"] },
+  { id: "afternoon", label: "Afternoon", icon: "sun",      color: "#c2410c", hint: "12 pm – 6 pm",  categories: ["cultural", "adventure", "tours"] },
+  { id: "evening",   label: "Evening",   icon: "moon",     color: "#4f46e5", hint: "After 6 pm",    categories: ["nightlife", "workshop"] },
 ];
 
 const GUIDE_FILTERS = [
@@ -134,67 +134,67 @@ const GUIDE_FILTERS = [
 
 const INSIDER_TIPS: Record<string, { icon: string; color: string; tip: string; label: string }[]> = {
   Mumbai: [
-    { icon: "clock",       color: "#f59e0b", label: "Best timing",    tip: "Visit Juhu Beach at sunrise — you'll have the whole beach to yourself before vendors arrive." },
-    { icon: "navigation",  color: "#0ea5e9", label: "Local hack",     tip: "The first carriage on Western Line is always less crowded during rush hour. A local secret." },
-    { icon: "coffee",      color: "#f97316", label: "Food tip",       tip: "Chai at Yazdani Bakery in Fort costs ₹10 and beats any coffee shop. Locals have known since 1953." },
-    { icon: "map-pin",     color: "#10b981", label: "Hidden gem",     tip: "Banganga Tank in Walkeshwar is peaceful and less photographed than the Gateway. Skip the crowds." },
-    { icon: "cloud-rain",  color: "#6366f1", label: "Monsoon tip",    tip: "Pre-book Bandra Worli Sealink photos for 30 min after rain — the city glistens unlike any other time." },
+    { icon: "clock",       color: "#b45309", label: "Best timing",    tip: "Visit Juhu Beach at sunrise — you'll have the whole beach to yourself before vendors arrive." },
+    { icon: "navigation",  color: "#0369a1", label: "Local hack",     tip: "The first carriage on Western Line is always less crowded during rush hour. A local secret." },
+    { icon: "coffee",      color: "#c2410c", label: "Food tip",       tip: "Chai at Yazdani Bakery in Fort costs ₹10 and beats any coffee shop. Locals have known since 1953." },
+    { icon: "map-pin",     color: "#047857", label: "Hidden gem",     tip: "Banganga Tank in Walkeshwar is peaceful and less photographed than the Gateway. Skip the crowds." },
+    { icon: "cloud-rain",  color: "#4f46e5", label: "Monsoon tip",    tip: "Pre-book Bandra Worli Sealink photos for 30 min after rain — the city glistens unlike any other time." },
   ],
   Bangalore: [
-    { icon: "clock",       color: "#f59e0b", label: "Best timing",    tip: "Cubbon Park is best on weekday mornings — the city's open-air office before 9am." },
-    { icon: "coffee",      color: "#f97316", label: "Coffee tip",     tip: "Blue Tokai roastery in Indiranagar lets you taste before you buy. Free cuppings every Saturday." },
-    { icon: "map-pin",     color: "#10b981", label: "Hidden gem",     tip: "Lalbagh's Botanical Garden glass house section is rarely crowded on Tuesday afternoons." },
-    { icon: "navigation",  color: "#0ea5e9", label: "Getting around", tip: "Auto-rickshaws on Indiranagar 100 Feet Road ignore apps. Just wave — they charge meter rates." },
-    { icon: "cloud-rain",  color: "#6366f1", label: "Weather tip",    tip: "Keep a light jacket — Bangalore evenings drop by 8–10°C even in summer, unlike the rest of India." },
+    { icon: "clock",       color: "#b45309", label: "Best timing",    tip: "Cubbon Park is best on weekday mornings — the city's open-air office before 9am." },
+    { icon: "coffee",      color: "#c2410c", label: "Coffee tip",     tip: "Blue Tokai roastery in Indiranagar lets you taste before you buy. Free cuppings every Saturday." },
+    { icon: "map-pin",     color: "#047857", label: "Hidden gem",     tip: "Lalbagh's Botanical Garden glass house section is rarely crowded on Tuesday afternoons." },
+    { icon: "navigation",  color: "#0369a1", label: "Getting around", tip: "Auto-rickshaws on Indiranagar 100 Feet Road ignore apps. Just wave — they charge meter rates." },
+    { icon: "cloud-rain",  color: "#4f46e5", label: "Weather tip",    tip: "Keep a light jacket — Bangalore evenings drop by 8–10°C even in summer, unlike the rest of India." },
   ],
   "New York City": [
-    { icon: "navigation",  color: "#0ea5e9", label: "Subway tip",     tip: "The 7 train is the world's cheapest food tour — from Times Sq to Jackson Heights, every stop is a cuisine." },
-    { icon: "clock",       color: "#f59e0b", label: "Best timing",    tip: "Go to MoMA on a Friday evening after 5:30pm — entrance is free and attendance drops sharply." },
-    { icon: "map-pin",     color: "#10b981", label: "Hidden gem",     tip: "Wave Hill in the Bronx has better Hudson River views than most Manhattan rooftops. No tourist crowds." },
-    { icon: "coffee",      color: "#f97316", label: "Food tip",       tip: "New York bagels are best at places that haven't changed their water or ovens since the 80s. Ask locals." },
-    { icon: "dollar-sign", color: "#8b5cf6", label: "Money tip",      tip: "The Staten Island Ferry is free and gives you a front-row view of the Statue of Liberty both ways." },
+    { icon: "navigation",  color: "#0369a1", label: "Subway tip",     tip: "The 7 train is the world's cheapest food tour — from Times Sq to Jackson Heights, every stop is a cuisine." },
+    { icon: "clock",       color: "#b45309", label: "Best timing",    tip: "Go to MoMA on a Friday evening after 5:30pm — entrance is free and attendance drops sharply." },
+    { icon: "map-pin",     color: "#047857", label: "Hidden gem",     tip: "Wave Hill in the Bronx has better Hudson River views than most Manhattan rooftops. No tourist crowds." },
+    { icon: "coffee",      color: "#c2410c", label: "Food tip",       tip: "New York bagels are best at places that haven't changed their water or ovens since the 80s. Ask locals." },
+    { icon: "dollar-sign", color: "#7c3aed", label: "Money tip",      tip: "The Staten Island Ferry is free and gives you a front-row view of the Statue of Liberty both ways." },
   ],
   "San Francisco": [
-    { icon: "cloud-rain",  color: "#6366f1", label: "Weather tip",    tip: "Pack a layer even in summer — SF micro-climates mean the Mission can be 18°C while the Sunset is 10°C." },
-    { icon: "clock",       color: "#f59e0b", label: "Best timing",    tip: "The Golden Gate Bridge is clear before 9am most days. Fog rolls in after 10am and stays until early afternoon." },
-    { icon: "map-pin",     color: "#10b981", label: "Hidden gem",     tip: "Lands End trail at sunset is extraordinary and barely on tourist itineraries. Free, 30-min drive from Downtown." },
-    { icon: "navigation",  color: "#0ea5e9", label: "Transit tip",    tip: "BART to the Mission is faster than any rideshare on weekends. 24th Street station is a 1-minute walk to good tacos." },
-    { icon: "coffee",      color: "#f97316", label: "Food tip",       tip: "Tartine Bakery's bread goes on sale at 5pm if any is left. Croissants sell out before 9am." },
+    { icon: "cloud-rain",  color: "#4f46e5", label: "Weather tip",    tip: "Pack a layer even in summer — SF micro-climates mean the Mission can be 18°C while the Sunset is 10°C." },
+    { icon: "clock",       color: "#b45309", label: "Best timing",    tip: "The Golden Gate Bridge is clear before 9am most days. Fog rolls in after 10am and stays until early afternoon." },
+    { icon: "map-pin",     color: "#047857", label: "Hidden gem",     tip: "Lands End trail at sunset is extraordinary and barely on tourist itineraries. Free, 30-min drive from Downtown." },
+    { icon: "navigation",  color: "#0369a1", label: "Transit tip",    tip: "BART to the Mission is faster than any rideshare on weekends. 24th Street station is a 1-minute walk to good tacos." },
+    { icon: "coffee",      color: "#c2410c", label: "Food tip",       tip: "Tartine Bakery's bread goes on sale at 5pm if any is left. Croissants sell out before 9am." },
   ],
 };
 
 const DEFAULT_INSIDER_TIPS = [
-  { icon: "clock",    color: "#f59e0b", label: "Best timing",  tip: "Early mornings before 9am are universally the best time to visit major attractions." },
-  { icon: "coffee",   color: "#f97316", label: "Food tip",     tip: "Ask locals where they eat — not where tourists eat. The best food is rarely near the landmarks." },
-  { icon: "map-pin",  color: "#10b981", label: "Hidden gem",   tip: "Walk 2–3 blocks off the main tourist strip — that's where the city actually lives." },
+  { icon: "clock",    color: "#b45309", label: "Best timing",  tip: "Early mornings before 9am are universally the best time to visit major attractions." },
+  { icon: "coffee",   color: "#c2410c", label: "Food tip",     tip: "Ask locals where they eat — not where tourists eat. The best food is rarely near the landmarks." },
+  { icon: "map-pin",  color: "#047857", label: "Hidden gem",   tip: "Walk 2–3 blocks off the main tourist strip — that's where the city actually lives." },
 ];
 
 type GuideNeighborhood = { id?: string; name: string; vibe: string; color: string };
 
 const NEIGHBORHOODS: Record<string, GuideNeighborhood[]> = {
   Mumbai: [
-    { name: "Colaba", vibe: "Heritage & cafes", color: "#0ea5e9" },
-    { name: "Bandra", vibe: "Food & nightlife", color: "#ec4899" },
-    { name: "Juhu", vibe: "Beachfront", color: "#f59e0b" },
-    { name: "Fort", vibe: "Old city", color: "#10b981" },
+    { name: "Colaba", vibe: "Heritage & cafes", color: "#0369a1" },
+    { name: "Bandra", vibe: "Food & nightlife", color: "#be185d" },
+    { name: "Juhu", vibe: "Beachfront", color: "#b45309" },
+    { name: "Fort", vibe: "Old city", color: "#047857" },
   ],
   Bangalore: [
-    { name: "Indiranagar", vibe: "Dining & bars", color: "#ec4899" },
-    { name: "Koramangala", vibe: "Startups & food", color: "#0ea5e9" },
-    { name: "MG Road", vibe: "Central district", color: "#f59e0b" },
-    { name: "Jayanagar", vibe: "Local markets", color: "#10b981" },
+    { name: "Indiranagar", vibe: "Dining & bars", color: "#be185d" },
+    { name: "Koramangala", vibe: "Startups & food", color: "#0369a1" },
+    { name: "MG Road", vibe: "Central district", color: "#b45309" },
+    { name: "Jayanagar", vibe: "Local markets", color: "#047857" },
   ],
   "New York City": [
-    { name: "Manhattan", vibe: "Iconic sights", color: "#0ea5e9" },
-    { name: "Brooklyn", vibe: "Creative scene", color: "#ec4899" },
-    { name: "Queens", vibe: "Food districts", color: "#f59e0b" },
-    { name: "SoHo", vibe: "Shopping & style", color: "#10b981" },
+    { name: "Manhattan", vibe: "Iconic sights", color: "#0369a1" },
+    { name: "Brooklyn", vibe: "Creative scene", color: "#be185d" },
+    { name: "Queens", vibe: "Food districts", color: "#b45309" },
+    { name: "SoHo", vibe: "Shopping & style", color: "#047857" },
   ],
   "San Francisco": [
-    { name: "Fisherman's Wharf", vibe: "Waterfront", color: "#0ea5e9" },
-    { name: "Mission", vibe: "Food & murals", color: "#ec4899" },
-    { name: "SoMa", vibe: "Museums", color: "#f59e0b" },
-    { name: "Nob Hill", vibe: "Classic city", color: "#10b981" },
+    { name: "Fisherman's Wharf", vibe: "Waterfront", color: "#0369a1" },
+    { name: "Mission", vibe: "Food & murals", color: "#be185d" },
+    { name: "SoMa", vibe: "Museums", color: "#b45309" },
+    { name: "Nob Hill", vibe: "Classic city", color: "#047857" },
   ],
 };
 
@@ -236,14 +236,15 @@ export default function CityGuideScreen() {
 
   const glance = (cityName ? CITY_AT_A_GLANCE[cityName] : undefined) ?? DEFAULT_GLANCE;
 
-  const { data: itineraries = [], isLoading: iLoading, error: iError, refetch: iRefetch } =
-    useGetItineraries({ city: cityName });
+  const { data: itineraries = [], isLoading: iLoading, isRefetching: iRefetching,
+    error: iError, refetch: iRefetch } = useGetItineraries({ city: cityName });
   const { data: allPlaces = [], isLoading: pLoading } = useGetPlaces({ city: cityName });
   const { data: events = [], isLoading: eLoading } = useGetEvents({ city: cityName });
   const { data: allHotels = [], isLoading: hLoading } = useGetHotels({ city: cityName });
   const { data: activities = [], isLoading: actLoading } = useGetActivities({ city: cityName });
 
-  if (iError) return <ErrorFallback error={iError as Error} resetError={iRefetch} />;
+  const refreshControl = useListRefreshControl(iRefetching, iRefetch);
+
 
   const filteredPlaces = (
     placeFilter === "all" ? allPlaces : allPlaces.filter((p) => p.category?.toLowerCase() === placeFilter)
@@ -255,7 +256,7 @@ export default function CityGuideScreen() {
           id: zone.id,
           name: zone.name,
           vibe: zone.vibe,
-          color: ["#ec4899", "#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#ef4444"][index % 6],
+          color: ["#be185d", "#0369a1", "#b45309", "#047857", "#4f46e5", "#dc2626"][index % 6],
         }))
       : (cityName ? NEIGHBORHOODS[cityName] : undefined) ?? [];
   const guideItems = useMemo(() => {
@@ -309,8 +310,16 @@ export default function CityGuideScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        refreshControl={refreshControl}
+      >
         <AppHeader subtitle="Your Visitor's Guide" topPadding={topPadding} showCityPicker />
+
+        {/* The guide is mostly curated content that renders without the server. Only the
+            itineraries section depends on it, so a failure is reported in place. */}
+        {iError ? <ErrorState error={iError} onRetry={iRefetch} subject="city guides" /> : null}
 
         <View style={[styles.heroBanner, { backgroundColor: colors.navy }]}>
           <View style={styles.heroTopRow}>
@@ -400,7 +409,7 @@ export default function CityGuideScreen() {
               return (
                 <TouchableOpacity
                   key={f.id}
-                  style={[styles.audiencePill, { backgroundColor: active ? "#ef4444" : colors.card, borderColor: active ? "#ef4444" : colors.border }]}
+                  style={[styles.audiencePill, { backgroundColor: active ? "#dc2626" : colors.card, borderColor: active ? "#dc2626" : colors.border }]}
                   onPress={() => setAudienceFilter(f.id)}
                 >
                   <Feather name={f.icon as any} size={12} color={active ? "#fff" : colors.mutedForeground} />
@@ -418,7 +427,7 @@ export default function CityGuideScreen() {
                 return (
                   <TouchableOpacity
                     key={f.id}
-                    style={[styles.durationPill, { backgroundColor: active ? "#0ea5e9" : colors.muted, borderColor: active ? "#0ea5e9" : "transparent" }]}
+                    style={[styles.durationPill, { backgroundColor: active ? "#0369a1" : colors.muted, borderColor: active ? "#0369a1" : "transparent" }]}
                     onPress={() => setActivityDuration(f.id)}
                   >
                     <Text style={[styles.durationPillText, { color: active ? "#fff" : colors.mutedForeground }]}>{f.label}</Text>
@@ -455,9 +464,9 @@ export default function CityGuideScreen() {
 
         {/* FREE EXPERIENCES SECTION */}
         {!actLoading && freeActivities.length > 0 && (
-          <View style={[styles.freeSection, { backgroundColor: "#10b981" + "12", borderColor: "#10b98133" }]}>
+          <View style={[styles.freeSection, { backgroundColor: "#047857" + "12", borderColor: "#04785733" }]}>
             <View style={styles.freeSectionHeader}>
-              <View style={[styles.freeIconBox, { backgroundColor: "#10b981" }]}>
+              <View style={[styles.freeIconBox, { backgroundColor: "#047857" }]}>
                 <Feather name="gift" size={16} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
@@ -465,14 +474,14 @@ export default function CityGuideScreen() {
                 <Text style={[styles.freeSectionSub, { color: colors.mutedForeground }]}>Explore {cityName ?? "the city"} at no cost</Text>
               </View>
               <TouchableOpacity onPress={() => router.push("/activities")}>
-                <Text style={[styles.seeAll, { color: "#10b981" }]}>See all</Text>
+                <Text style={[styles.seeAll, { color: "#047857" }]}>See all</Text>
               </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.freeScroll}>
               {freeActivities.map((act) => (
                 <TouchableOpacity
                   key={act.id}
-                  style={[styles.freeCard, { backgroundColor: colors.card, borderColor: "#10b98133" }]}
+                  style={[styles.freeCard, { backgroundColor: colors.card, borderColor: "#04785733" }]}
                   onPress={() => router.push(`/activity/${act.id}` as any)}
                   activeOpacity={0.85}
                 >
@@ -484,12 +493,12 @@ export default function CityGuideScreen() {
                   <View style={styles.freeCardBody}>
                     <Text style={[styles.freeCardName, { color: colors.foreground }]} numberOfLines={2}>{act.name}</Text>
                     <View style={styles.freeCardMeta}>
-                      <View style={[styles.freeBadge, { backgroundColor: "#10b981" }]}>
+                      <View style={[styles.freeBadge, { backgroundColor: "#047857" }]}>
                         <Text style={styles.freeBadgeText}>FREE</Text>
                       </View>
                       {act.rating != null && (
                         <View style={styles.freeRating}>
-                          <Feather name="star" size={10} color="#f59e0b" />
+                          <Feather name="star" size={10} color="#b45309" />
                           <Text style={[styles.freeRatingText, { color: colors.mutedForeground }]}>{act.rating.toFixed(1)}</Text>
                         </View>
                       )}
@@ -576,7 +585,7 @@ export default function CityGuideScreen() {
               return (
                 <TouchableOpacity
                   key={f.id}
-                  style={[styles.filterPill, { backgroundColor: active ? "#6366f1" : colors.card, borderColor: active ? "#6366f1" : colors.border }]}
+                  style={[styles.filterPill, { backgroundColor: active ? "#4f46e5" : colors.card, borderColor: active ? "#4f46e5" : colors.border }]}
                   onPress={() => setPlaceFilter(f.id)}
                 >
                   <Text style={[styles.filterPillText, { color: active ? "#fff" : colors.foreground }]}>{f.label}</Text>
@@ -610,7 +619,7 @@ export default function CityGuideScreen() {
               return (
                 <TouchableOpacity
                   key={filter.id}
-                  style={[styles.guideFilterPill, { backgroundColor: active ? "#6366f1" : colors.card, borderColor: active ? "#6366f1" : colors.border }]}
+                  style={[styles.guideFilterPill, { backgroundColor: active ? "#4f46e5" : colors.card, borderColor: active ? "#4f46e5" : colors.border }]}
                   onPress={() => setGuideFilter(filter.id)}
                 >
                   <Text style={[styles.guideFilterText, { color: active ? "#fff" : colors.foreground }]}>{filter.label}</Text>
@@ -673,11 +682,11 @@ export default function CityGuideScreen() {
                 return (
                   <TouchableOpacity
                     key={opt.id}
-                    style={[styles.sortMenuRow, { backgroundColor: selected ? "#ef4444" + "15" : colors.muted, borderColor: selected ? "#ef4444" : colors.border }]}
+                    style={[styles.sortMenuRow, { backgroundColor: selected ? "#dc2626" + "15" : colors.muted, borderColor: selected ? "#dc2626" : colors.border }]}
                     onPress={() => { setActivitySort(opt.id); setSortMenuOpen(false); }}
                   >
-                    <Text style={[styles.sortMenuLabel, { color: selected ? "#ef4444" : colors.foreground }]}>{opt.label}</Text>
-                    {selected && <Feather name="check" size={16} color="#ef4444" />}
+                    <Text style={[styles.sortMenuLabel, { color: selected ? "#dc2626" : colors.foreground }]}>{opt.label}</Text>
+                    {selected && <Feather name="check" size={16} color="#dc2626" />}
                   </TouchableOpacity>
                 );
               })}
@@ -771,7 +780,7 @@ function EmptySection({ icon, message, colors }: { icon: string; message: string
 }
 
 function PlaceGuideCard({ place, colors, onPress }: { place: Place; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
-  const categoryColor = place.category === "food" ? "#f97316" : place.category === "attraction" ? "#0ea5e9" : place.category === "nightlife" ? "#ec4899" : place.category === "essentials" ? "#10b981" : colors.mutedForeground;
+  const categoryColor = place.category === "food" ? "#c2410c" : place.category === "attraction" ? "#0369a1" : place.category === "nightlife" ? "#be185d" : place.category === "essentials" ? "#047857" : colors.mutedForeground;
   return (
     <TouchableOpacity activeOpacity={0.85} style={[styles.placeCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress}>
       <View style={styles.placeImageBox}>
@@ -785,7 +794,7 @@ function PlaceGuideCard({ place, colors, onPress }: { place: Place; colors: Retu
         <Text style={[styles.placeName, { color: colors.foreground }]} numberOfLines={2}>{place.name}</Text>
         {place.rating != null && (
           <View style={styles.placeRating}>
-            <Feather name="star" size={11} color="#f59e0b" />
+            <Feather name="star" size={11} color="#b45309" />
             <Text style={[styles.placeRatingText, { color: colors.mutedForeground }]}>{place.rating.toFixed(1)}</Text>
           </View>
         )}
@@ -816,10 +825,10 @@ function ItineraryGuideCard({ itinerary, colors, onPress }: { itinerary: Itinera
 }
 
 const HOTEL_CAT_COLORS: Record<string, string> = {
-  budget: "#10b981",
-  "mid-range": "#0ea5e9",
-  luxury: "#f59e0b",
-  boutique: "#ec4899",
+  budget: "#047857",
+  "mid-range": "#0369a1",
+  luxury: "#b45309",
+  boutique: "#be185d",
 };
 
 function HotelGuideCard({ hotel, colors, onPress }: { hotel: Hotel; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
@@ -843,7 +852,7 @@ function HotelGuideCard({ hotel, colors, onPress }: { hotel: Hotel; colors: Retu
         <Text style={[styles.hotelName, { color: colors.foreground }]} numberOfLines={2}>{hotel.name}</Text>
         {hotel.rating != null && (
           <View style={styles.hotelRatingRow}>
-            <Feather name="star" size={11} color="#f59e0b" />
+            <Feather name="star" size={11} color="#b45309" />
             <Text style={[styles.hotelRatingText, { color: colors.mutedForeground }]}>{hotel.rating.toFixed(1)}</Text>
           </View>
         )}
@@ -890,16 +899,16 @@ function ActivityCard({ activity, colors, sort }: { activity: Activity; colors: 
       : `${activity.durationMinutes}m`
     : null;
   const catColors: Record<string, string> = {
-    tours: "#6366f1", cultural: "#ec4899", sports: "#10b981",
-    fitness: "#f97316", adventure: "#0ea5e9", wellness: "#8b5cf6",
-    tour: "#ec4899", workshop: "#f59e0b",
+    tours: "#4f46e5", cultural: "#be185d", sports: "#047857",
+    fitness: "#c2410c", adventure: "#0369a1", wellness: "#7c3aed",
+    tour: "#be185d", workshop: "#b45309",
   };
-  const catColor = catColors[activity.category] ?? "#6366f1";
+  const catColor = catColors[activity.category] ?? "#4f46e5";
   const isTopRated = (activity.rating ?? 0) >= 4.5;
   const badge = isFree
-    ? { label: "FREE", bg: "#10b981" }
+    ? { label: "FREE", bg: "#047857" }
     : isTopRated
-    ? { label: "TOP RATED", bg: "#f59e0b" }
+    ? { label: "TOP RATED", bg: "#b45309" }
     : null;
   return (
     <TouchableOpacity
@@ -934,7 +943,7 @@ function ActivityCard({ activity, colors, sort }: { activity: Activity; colors: 
           )}
           {activity.rating != null && (
             <View style={styles.activityMetaItem}>
-              <Feather name="star" size={11} color="#f59e0b" />
+              <Feather name="star" size={11} color="#b45309" />
               <Text style={[styles.activityMetaText, { color: colors.mutedForeground }]}>{activity.rating.toFixed(1)}</Text>
               {activity.reviewCount != null && (
                 <Text style={[styles.activityMetaText, { color: colors.mutedForeground }]}>({activity.reviewCount.toLocaleString()})</Text>
@@ -943,7 +952,7 @@ function ActivityCard({ activity, colors, sort }: { activity: Activity; colors: 
           )}
         </View>
         <View style={[styles.activityPriceRow, { borderTopColor: colors.border }]}>
-          <Text style={[styles.activityPrice, { color: isFree ? "#10b981" : colors.amber }]}>{priceStr}</Text>
+          <Text style={[styles.activityPrice, { color: isFree ? "#047857" : colors.amber }]}>{priceStr}</Text>
           <View style={[styles.activityExploreBtn, { backgroundColor: catColor }]}>
             <Text style={styles.activityExploreTxt}>Explore</Text>
           </View>
@@ -1001,7 +1010,7 @@ const styles = StyleSheet.create({
   heroEyebrow: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1 },
   heroCity: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#fff", marginTop: 2 },
   heroTagline: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 },
-  heroInfoButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center", marginLeft: 12, ...Platform.select({ web: { boxShadow: "0 0 18px rgba(249,115,22,0.16)" }, default: { shadowColor: "#f97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 10, elevation: 2 } }) },
+  heroInfoButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center", marginLeft: 12, ...Platform.select({ web: { boxShadow: "0 0 18px rgba(249,115,22,0.16)" }, default: { shadowColor: "#c2410c", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 10, elevation: 2 } }) },
   heroDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.12)", marginVertical: 14 },
   heroFactsScroll: { gap: 8, paddingBottom: 2 },
   heroFactPill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 12 },

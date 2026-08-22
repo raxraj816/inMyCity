@@ -164,3 +164,5 @@ export function isLaunchCity(cityNameOrId: string | null | undefined) {
   const normalized = cityNameOrId.toLowerCase().replace(/\s+/g, "-");
   return normalized === "mumbai";
 }
+
+export * from "./search-synonyms";

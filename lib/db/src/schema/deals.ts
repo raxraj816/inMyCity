@@ -1,29 +1,39 @@
-import { pgTable, text, serial, timestamp, doublePrecision, real, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, doublePrecision, real, integer, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { placesTable } from "./places";
 
-export const dealsTable = pgTable("deals", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  description: text("description"),
-  placeId: integer("place_id").references(() => placesTable.id),
-  placeName: text("place_name").notNull(),
-  category: text("category").notNull(),
-  discountPercent: integer("discount_percent"),
-  discountText: text("discount_text").notNull(),
-  originalPrice: real("original_price"),
-  dealPrice: real("deal_price"),
-  code: text("code"),
-  qrData: text("qr_data"),
-  expiresAt: timestamp("expires_at", { withTimezone: true }),
-  imageUrl: text("image_url"),
-  lat: doublePrecision("lat"),
-  lng: doublePrecision("lng"),
-  city: text("city"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+export const dealsTable = pgTable(
+  "deals",
+  {
+    id: serial("id").primaryKey(),
+    title: text("title").notNull(),
+    description: text("description"),
+    placeId: integer("place_id").references(() => placesTable.id),
+    placeName: text("place_name").notNull(),
+    category: text("category").notNull(),
+    discountPercent: integer("discount_percent"),
+    discountText: text("discount_text").notNull(),
+    originalPrice: real("original_price"),
+    dealPrice: real("deal_price"),
+    code: text("code"),
+    qrData: text("qr_data"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    imageUrl: text("image_url"),
+    lat: doublePrecision("lat"),
+    lng: doublePrecision("lng"),
+    city: text("city"),
+    /** Flattened searchable text; see the matching field on `places`. */
+    searchText: text("search_text"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("deals_city_idx").on(table.city),
+    index("deals_category_idx").on(table.category),
+    index("deals_city_category_idx").on(table.city, table.category),
+  ],
+);
 
 export const insertDealSchema = createInsertSchema(dealsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertDeal = z.infer<typeof insertDealSchema>;

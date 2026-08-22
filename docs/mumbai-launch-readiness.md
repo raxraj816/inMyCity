@@ -109,11 +109,12 @@ Healthy:
   is consumed by the home screen, City Guide, neighborhood detail, CityPilot, and the
   recommendations route.
 
-Content inventory for Mumbai, from `artifacts/api-server/src/seed.ts`:
+Content inventory for Mumbai, from `artifacts/api-server/src/seed.ts` (places rose to 35 in
+Phase 1, when the street-food institutions the search work depended on were added):
 
 | Table | Mumbai rows |
 | --- | --- |
-| places | 27 |
+| places | 35 |
 | activities | 13 |
 | events | 8 |
 | deals | 8 |
@@ -135,9 +136,10 @@ Repository-level fixes made while working through Phase 0:
   strips for platforms nothing here targets are left in place.
 - **`app.json` is now `app.config.ts`**, so per-environment values (Maps keys, link domain)
   come from the environment instead of being committed.
-- **A test runner exists.** `corepack pnpm run test` runs 32 tests across api-server and the
+- **A test runner exists.** `corepack pnpm run test` runs the suite across api-server and the
   app, using Node's built-in runner — no extra tooling. This is the base to build the Phase 4
-  suite on.
+  suite on. Phase 1 took it from 32 tests to 88, including nine that exercise search against a
+  real Postgres and skip themselves when none is reachable.
 
 ---
 
@@ -409,9 +411,39 @@ loop is throttled within seconds.
 
 ## 5. Phase 1 — City-app table stakes
 
-Roughly three to four weeks. Parity work: things users expect from any competent city app.
+**Status: done**, apart from the dark theme and an on-device screen-reader pass, both called
+out under 1.3.
+
+Parity work: things users expect from any competent city app.
 
 ### 1.1 Real search
+
+**Status: done.**
+
+Search is a server endpoint now: `GET /api/search` matches places, events, deals, hotels,
+activities and movies in one request, and the app sends the query instead of downloading the
+catalogue. Matching runs against a `search_text` column through a `pg_trgm` GIN index, and the
+query is expanded first through the city's curated vocabulary in
+`lib/city-config/src/search-synonyms.ts` — 100-odd groups covering dish names, Hinglish
+spellings, station abbreviations, neighbourhood aliases and Devanagari, plus an approximate
+Devanagari→Latin transliterator for anything the list does not name.
+
+Measured against the seeded Mumbai catalogue: "vada pav", "vadapav", "vada paav" and
+"वडा पाव" return the same three places in 20-30ms; "cst" and "सीएसटी" both find Chhatrapati
+Shivaji Terminus; "elefanta" returns no results and suggests "elephanta caves". Ranking is a
+0.6/0.15/0.15/0.10 blend of text relevance, rating, distance and open-now. The screen debounces
+at 250ms, keeps the last eight searches on the device, and offers the server's near-miss
+suggestions when nothing matched. Nine integration tests in `routes/search.integration.test.ts`
+run against a real Postgres and skip when none is reachable.
+
+Two things worth knowing: fuzzy matching is deliberately limited to the row's name — trigram
+matching a whole document finds a 60%-similar fragment in almost anything, and "chaat" was
+returning an electronics shop — and the Mumbai catalogue gained eight street-food institutions
+(Ashok Vada Pav, Elco, Aaswad, Ram Ashraya and others), because a search for "vada pav" that
+finds nothing is a broken search however good the matching is.
+
+<details>
+<summary>Original defect and work items</summary>
 
 `artifacts/inmycity/app/(tabs)/search.tsx:70` fires six unfiltered list queries, downloads
 every place, event, deal, hotel, activity and movie for the city, then filters in JS with
@@ -431,7 +463,30 @@ Do:
 Done when: "vadapav", "vada paav" and "vada pav" all return the same sensible results in
 under 300ms.
 
+</details>
+
 ### 1.2 Offline and poor-network behaviour
+
+**Status: done.**
+
+The query cache is persisted to AsyncStorage and restored before the first render, with a
+24-hour maximum age and a `gcTime` that matches it so entries survive long enough to be worth
+persisting. Verified by stopping the API server and reloading the app: the deals screen still
+renders its content. `expo-network` drives both an offline banner and React Query's
+`onlineManager`, so queries stop retrying into a dead connection and resume when it returns.
+The banner absorbs the status-bar inset and hands its children a top inset of zero, so nothing
+below it shifts.
+
+List thumbnails are `cachePolicy="memory-disk"` with explicit dimensions. Empty, error and
+pull-to-refresh states now come from one place, `components/ListStates.tsx`, and every list
+screen uses them — refresh went from 4 screens to all of them, and an error no longer replaces
+the whole screen with a developer-facing fallback that loses the header and the way back.
+
+One case found while testing: a query that React Query has *paused* has neither data nor an
+error, and the search screen was rendering that as "no results". It now says so.
+
+<details>
+<summary>Original defect and work items</summary>
 
 The `QueryClient` in `artifacts/inmycity/app/_layout.tsx:38` sets a 2-minute `staleTime` and
 2 retries, with no persistence. Every cold start on a bad connection is a blank screen.
@@ -449,7 +504,37 @@ Do:
 Done when: airplane mode on a warm install still shows browsable Mumbai content with a
 clear "offline" indicator.
 
+</details>
+
 ### 1.3 Accessibility
+
+**Status: done, with one exclusion.**
+
+Every interactive element now carries a role, a label and — where the outcome is not obvious
+from the label — a hint. Cards read as one sentence in the order the eye reads them
+("Ashok Vada Pav, Place, rated 4.4 out of 5, 1.2 kilometres away, Open now") rather than as
+six separate stops, decorative images are hidden from assistive tech, filter chips are tabs
+with a selected state, and icon-only buttons have 44pt targets. The web accessibility tree
+confirms it: every control on the search screen reports a name and a role.
+
+Contrast is now a tested property of the palette rather than a judgement call.
+`constants/colors.test.ts` computes the WCAG ratio for every pair the app renders and asserts
+AA. Fixing what it caught changed several tokens: white on the brand orange was 2.80:1 and is
+now 5.18:1, white on the "Open" green was 2.28:1 and is now 5.02:1, and every per-screen accent
+moved one or two shades deeper. The hues are unchanged.
+
+**Excluded: the dark theme.** `useColors` supports a dark palette and none exists — the app
+renders light in dark mode today. Adding one is not a token flip: screens carry hardcoded
+light-only values (white card backgrounds, tinted badge fills, `rgba(0,0,0,0.5)` overlays), so
+a dark palette needs a design pass over every screen, not a new key in `colors.ts`. Contrast is
+verified for the theme that ships. Dark mode should be its own item.
+
+Still outstanding for this section: a real VoiceOver and TalkBack pass on a device. The labels
+are in place and verified through the web accessibility tree, but that is not the same as
+driving the "plan my evening" journey with a screen reader on a phone.
+
+<details>
+<summary>Original defect and work items</summary>
 
 Only three files in the app carry any accessibility props: `cityguide.tsx`,
 `AiChatFab.tsx` and `ErrorFallback.tsx`.
@@ -464,7 +549,43 @@ Do:
 
 Done when: the core journey is completable end to end with a screen reader.
 
+</details>
+
 ### 1.4 Performance and data-layer scaling
+
+**Status: done.**
+
+Every list endpoint now filters, sorts and paginates in SQL. Distance is a haversine expression
+in the query, behind a bounding-box prefilter that lets the `(lat, lng)` index discard most of
+the table before any trigonometry runs; "open now" is evaluated against the structured hours
+column in SQL, mirroring `isOpenAt` interval for interval, so it applies before the page
+boundary instead of after it. The content tables carry indexes on `city`, `category` and
+`(city, category)`, and `lib/db/src/bootstrap.ts` adds what Drizzle's DSL cannot express —
+the `pg_trgm` extension, the trigram indexes, and `lower(city)` expression indexes that the
+case-insensitive city filter can actually use. `corepack pnpm run db:push` applies both halves.
+
+Measured with 2,000 Mumbai rows seeded, via `corepack pnpm --filter @workspace/scripts run
+bench:places`, which inserts synthetic rows, measures, and deletes them again:
+
+| Request | p50 | p95 |
+| --- | --- | --- |
+| `/api/places?city=Mumbai` | 3.6ms | 6.2ms |
+| `+ category` | 2.7ms | 3.1ms |
+| `+ openNow` | 3.9ms | 5.8ms |
+| `+ near me (5km)` | 3.7ms | 4.4ms |
+| `+ near me + openNow` | 4.8ms | 6.5ms |
+| deep page (offset 1000) | 5.7ms | 7.0ms |
+| `/api/search?q=vada pav` | 23.1ms | 28.6ms |
+
+On the client, card components are memoized, lists share one rendering budget
+(`LIST_PERFORMANCE_PROPS`), the search list has a `getItemLayout` so it never measures rows,
+and thumbnails have explicit dimensions and disk caching.
+
+Two ordering bugs surfaced while rewriting the queries and are fixed: hotels and activities
+were ordered by ascending rating, so both lists opened on the worst option in the city.
+
+<details>
+<summary>Original defect and work items</summary>
 
 `GET /api/places` fetches up to 500 rows then filters, sorts and paginates in memory. The
 only index in the schema is `IDX_session_expire` on the sessions table.
@@ -479,6 +600,8 @@ Do:
   image dimensions to avoid layout thrash.
 
 Done when: `/api/places` for Mumbai responds in under 150ms with 2,000 rows seeded.
+
+</details>
 
 ---
 

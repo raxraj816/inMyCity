@@ -8,7 +8,7 @@ import { useColors } from "@/hooks/useColors";
 import { useGetFavorites, useGetCollections } from "@workspace/api-client-react";
 
 import { PlaceCard } from "@/components/PlaceCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { ErrorState } from "@/components/ListStates";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import {
   buildPlanShareText,
@@ -69,14 +69,13 @@ export default function SavedScreen() {
 
   const isRefreshing = favoritesLoading || collectionsLoading || plansLoading;
 
-  if (favoritesError || collectionsError) {
-    return <ErrorFallback error={(favoritesError || collectionsError) as Error} resetError={onRefresh} />;
-  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: topPadding, backgroundColor: colors.card }]}>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Saved</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]} accessibilityRole="header">
+          Saved
+        </Text>
         
         <View style={styles.tabContainer}>
           <TouchableOpacity 
@@ -85,6 +84,9 @@ export default function SavedScreen() {
               activeTab === "favorites" && [styles.activeTab, { borderBottomColor: colors.amber }]
             ]}
             onPress={() => setActiveTab("favorites")}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === "favorites" }}
+            accessibilityLabel="Favorites"
           >
             <Text style={[
               styles.tabText, 
@@ -99,6 +101,9 @@ export default function SavedScreen() {
               activeTab === "collections" && [styles.activeTab, { borderBottomColor: colors.amber }]
             ]}
             onPress={() => setActiveTab("collections")}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === "collections" }}
+            accessibilityLabel="Collections"
           >
             <Text style={[
               styles.tabText, 
@@ -113,6 +118,9 @@ export default function SavedScreen() {
               activeTab === "plans" && [styles.activeTab, { borderBottomColor: colors.amber }]
             ]}
             onPress={() => setActiveTab("plans")}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === "plans" }}
+            accessibilityLabel="Plans"
           >
             <Text style={[
               styles.tabText,
@@ -125,8 +133,25 @@ export default function SavedScreen() {
 
       <ScrollView 
         contentContainerStyle={{ paddingBottom: bottomPadding, paddingTop: 16 }}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.amber}
+            colors={[colors.amber]}
+          />
+        }
       >
+        {/* Errors stay inside the scroll view so the tabs above remain usable, and the saved
+            plans on the device still render even when the server cannot be reached. */}
+        {favoritesError || collectionsError ? (
+          <ErrorState
+            error={favoritesError || collectionsError}
+            onRetry={onRefresh}
+            subject="your saved items"
+          />
+        ) : null}
+
         {activeTab === "favorites" && (
           <View>
             {favoritesLoading && !favorites ? (
@@ -211,11 +236,11 @@ export default function SavedScreen() {
               savedPlans.map((plan) => (
                 <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.planTopRow}>
-                    <View style={[styles.planIcon, { backgroundColor: plan.kind === "itinerary" ? "#6366f118" : "#0ea5e918" }]}>
+                    <View style={[styles.planIcon, { backgroundColor: plan.kind === "itinerary" ? "#4f46e518" : "#0369a118" }]}>
                       <Feather
                         name={plan.kind === "itinerary" ? "map" : "compass"}
                         size={18}
-                        color={plan.kind === "itinerary" ? "#6366f1" : "#0ea5e9"}
+                        color={plan.kind === "itinerary" ? "#4f46e5" : "#0369a1"}
                       />
                     </View>
                     <View style={styles.planInfo}>

@@ -8,7 +8,7 @@
     "dev:app": "corepack pnpm --filter @workspace/inmycity run dev",
     "dev:app:lan": "LAN=$(corepack pnpm --filter @workspace/scripts run --silent lan-address) && echo \"Serving to phones on http://$LAN:8081 (API http://$LAN:3001)\" && EXPO_HOST=lan EXPO_PUBLIC_API_BASE_URL=http://$LAN:3001 corepack pnpm --filter @workspace/inmycity run dev",
     "dev:api": "corepack pnpm --filter @workspace/api-server run dev",
-    "db:push": "corepack pnpm --filter @workspace/db run push",
+    "db:push": "corepack pnpm --filter @workspace/db run push && corepack pnpm --filter @workspace/db run bootstrap",
     "db:seed": "corepack pnpm --filter @workspace/api-server run seed",
     "build": "corepack pnpm run typecheck && corepack pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",

@@ -10,14 +10,14 @@ import { useCity } from "@/context/CityContext";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { EventCard } from "@/components/EventCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 import { NearbyFilters } from "@/components/NearbyFilters";
 import { useNearby } from "@/hooks/useNearby";
 
 const CATEGORIES = ["music", "food", "art", "comedy", "film", "wellness", "networking", "sports"];
-const ACCENT = "#6366f1";
+const ACCENT = "#4f46e5";
 
 function fmtDate(d: string | null | undefined) {
   if (!d) return "";
@@ -35,6 +35,7 @@ export default function EventsScreen() {
   const {
     data: events,
     isLoading,
+    isRefetching,
     error,
     refetch,
   } = useGetEvents({
@@ -55,9 +56,7 @@ export default function EventsScreen() {
     route:    `/event/${e.id}`,
   }));
 
-  if (error) {
-    return <ErrorFallback error={error as Error} resetError={refetch} />;
-  }
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   const ListHeader = (
     <TrendingStrip
@@ -81,7 +80,9 @@ export default function EventsScreen() {
 
       <NearbyFilters controls={nearby} accent={ACCENT} showOpenNow={false} />
 
-      {isLoading && !events ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="events" />
+      ) : isLoading && !events ? (
         <>
           {ListHeader}
           <View style={styles.loadingArea}>
@@ -98,21 +99,20 @@ export default function EventsScreen() {
           ListHeaderComponent={ListHeader}
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
-          onRefresh={refetch}
-          refreshing={isLoading}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
           ListEmptyComponent={
             !isLoading ? (
-              <View style={styles.emptyContainer}>
-                <View style={[styles.emptyIconContainer, { backgroundColor: colors.muted }]}>
-                  <Feather name="calendar" size={32} color={colors.mutedForeground} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No events found</Text>
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                  {selectedCategory
-                    ? `No ${selectedCategory} events in ${selectedCity?.name ?? "this city"}.`
-                    : `No upcoming events in ${selectedCity?.name ?? "this city"}.`}
-                </Text>
-              </View>
+              <EmptyState
+                icon="calendar"
+                title="No events found"
+                accent={ACCENT}
+                message={
+                  selectedCategory
+                    ? `No ${selectedCategory} events in ${selectedCity?.name ?? "this city"} right now.`
+                    : `No upcoming events in ${selectedCity?.name ?? "this city"} right now.`
+                }
+              />
             ) : null
           }
         />

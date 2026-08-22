@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { db, hotelsTable } from "@workspace/db";
-import { eq, and, ilike, lte } from "drizzle-orm";
-import { applyProximity, parseOrigin } from "../lib/geo";
+import { and, asc, eq, lte, sql } from "drizzle-orm";
+import { parseOrigin } from "../lib/geo";
+import { parseLimit, parseOffset } from "../lib/pagination";
+import { cityMatches, distanceKmExpression, withinRadiusCondition } from "../lib/sqlFilters";
 
 const router = Router();
 
@@ -10,40 +12,48 @@ router.get("/hotels", async (req, res) => {
     const city = req.query.city as string | undefined;
     const category = req.query.category as string | undefined;
     const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : null;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+    const limit = parseLimit(req.query.limit);
+    const offset = parseOffset(req.query.offset);
     const origin = parseOrigin(req.query as Record<string, unknown>);
 
-    const conditions = [];
-    if (city) conditions.push(ilike(hotelsTable.city, `%${city}%`));
-    if (category) conditions.push(eq(hotelsTable.category, category));
-    if (maxPrice) conditions.push(lte(hotelsTable.pricePerNight, maxPrice));
+    const distanceKm = origin
+      ? distanceKmExpression(hotelsTable.lat, hotelsTable.lng, origin)
+      : sql<number | null>`null::double precision`;
 
-    const hotels = await db
-      .select()
+    const conditions = [
+      city ? cityMatches(hotelsTable.city, city) : undefined,
+      category ? eq(hotelsTable.category, category) : undefined,
+      maxPrice !== null && Number.isFinite(maxPrice) ? lte(hotelsTable.pricePerNight, maxPrice) : undefined,
+      origin ? withinRadiusCondition(hotelsTable.lat, hotelsTable.lng, origin) : undefined,
+    ].filter((condition) => condition !== undefined);
+
+    // Best rated first. The previous ordering was ascending, so the list opened on the worst
+    // hotel in the city.
+    const orderBy = origin ? [asc(distanceKm)] : [sql`${hotelsTable.rating} desc nulls last`];
+
+    const rows = await db
+      .select({ hotel: hotelsTable, distanceKm })
       .from(hotelsTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(hotelsTable.rating)
-      .limit(origin ? 500 : limit)
-      .offset(origin ? 0 : offset);
+      .orderBy(...orderBy)
+      .limit(limit)
+      .offset(offset);
 
-    const nearby = applyProximity(hotels, origin).slice(
-      origin ? offset : 0,
-      origin ? offset + limit : undefined,
+    res.json(
+      rows.map(({ hotel, distanceKm: distance }) => ({
+        ...hotel,
+        rating: hotel.rating ?? null,
+        reviewCount: hotel.reviewCount ?? null,
+        pricePerNight: hotel.pricePerNight ?? null,
+        imageUrl: hotel.imageUrl ?? null,
+        phone: hotel.phone ?? null,
+        website: hotel.website ?? null,
+        description: hotel.description ?? null,
+        lat: hotel.lat ?? null,
+        lng: hotel.lng ?? null,
+        distanceKm: distance === null ? null : Number(distance),
+      })),
     );
-
-    res.json(nearby.map(h => ({
-      ...h,
-      rating: h.rating ?? null,
-      reviewCount: h.reviewCount ?? null,
-      pricePerNight: h.pricePerNight ?? null,
-      imageUrl: h.imageUrl ?? null,
-      phone: h.phone ?? null,
-      website: h.website ?? null,
-      description: h.description ?? null,
-      lat: h.lat ?? null,
-      lng: h.lng ?? null,
-    })));
   } catch (err) {
     req.log.error({ err }, "Failed to get hotels");
     res.status(500).json({ error: "Internal server error" });

@@ -12,7 +12,11 @@ export function StatsBar({ places, events, deals }: Props) {
   const colors = useColors();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View
+      style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}
+      accessible
+      accessibilityLabel={`${places} places, ${events} events, ${deals} deals in this city`}
+    >
       <View style={styles.stat}>
         <Text style={[styles.value, { color: colors.foreground }]}>{places}</Text>
         <Text style={[styles.label, { color: colors.mutedForeground }]}>Places</Text>

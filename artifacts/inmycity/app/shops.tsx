@@ -16,10 +16,10 @@ import { useGetPlaces, useGetDeals } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ShopCard } from "@/components/ShopCard";
 
-const SHOP_COLOR = "#f97316";
+const SHOP_COLOR = "#c2410c";
 
 const SUB_CATEGORIES = [
   { id: "all",         label: "All"         },
@@ -49,6 +49,7 @@ export default function ShopsScreen() {
   const {
     data: shops = [],
     isLoading,
+    isRefetching,
     error,
     refetch,
   } = useGetPlaces({ city: cityName, category: "shopping" });
@@ -80,9 +81,7 @@ export default function ShopsScreen() {
     return result;
   }, [shops, subCategory, showDealsOnly, dealsByPlaceId]);
 
-  if (error) {
-    return <ErrorFallback error={error as Error} resetError={refetch} />;
-  }
+  const refreshControl = useListRefreshControl(isRefetching, refetch, SHOP_COLOR);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -124,8 +123,8 @@ export default function ShopsScreen() {
           style={[
             styles.toggleChip,
             {
-              backgroundColor: showDealsOnly ? "#16a34a" : colors.muted,
-              borderColor: showDealsOnly ? "#16a34a" : "transparent",
+              backgroundColor: showDealsOnly ? "#15803d" : colors.muted,
+              borderColor: showDealsOnly ? "#15803d" : "transparent",
             },
           ]}
           onPress={() => setShowDealsOnly(v => !v)}
@@ -143,27 +142,13 @@ export default function ShopsScreen() {
       </View>
 
       {/* Content */}
-      {isLoading ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={SHOP_COLOR} subject="shops" />
+      ) : isLoading ? (
         <View style={styles.skeletonWrap}>
           <SkeletonCard height={340} />
           <SkeletonCard height={340} />
           <SkeletonCard height={340} />
-        </View>
-      ) : filteredShops.length === 0 ? (
-        <View style={styles.emptyWrap}>
-          <MaterialCommunityIcons
-            name="shopping-outline"
-            size={48}
-            color={colors.mutedForeground}
-          />
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            {showDealsOnly ? "No deal shops right now" : "No shops found"}
-          </Text>
-          <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-            {cityName
-              ? `Try a different filter or check back later in ${cityName}.`
-              : "Select a city to browse shops."}
-          </Text>
         </View>
       ) : (
         <FlatList
@@ -177,6 +162,20 @@ export default function ShopsScreen() {
           )}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
           showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
+          ListEmptyComponent={
+            <EmptyState
+              icon="shopping-bag"
+              accent={SHOP_COLOR}
+              title={showDealsOnly ? "No deal shops right now" : "No shops found"}
+              message={
+                cityName
+                  ? `Try a different filter, or check back later in ${cityName}.`
+                  : "Select a city to browse shops."
+              }
+            />
+          }
         />
       )}
     </View>

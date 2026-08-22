@@ -37,12 +37,14 @@ interface TrendingItem {
   route:    string;
 }
 
+// Each badge colour is a fill behind white text and a text colour on the card, so all five
+// are the darker shade that clears AA in both roles.
 const BADGE: Record<TrendingType, { label: string; color: string; icon: string }> = {
-  event:    { label: "Event",    color: "#8b5cf6", icon: "calendar" },
-  deal:     { label: "Deal",     color: "#10b981", icon: "percent"  },
-  movie:    { label: "Movie",    color: "#6366f1", icon: "film"     },
-  activity: { label: "Activity", color: "#ef4444", icon: "zap"      },
-  sport:    { label: "Sport",    color: "#22c55e", icon: "activity" },
+  event:    { label: "Event",    color: "#7c3aed", icon: "calendar" },
+  deal:     { label: "Deal",     color: "#047857", icon: "percent"  },
+  movie:    { label: "Movie",    color: "#4f46e5", icon: "film"     },
+  activity: { label: "Activity", color: "#dc2626", icon: "zap"      },
+  sport:    { label: "Sport",    color: "#15803d", icon: "activity" },
 };
 
 const TREND_FILTERS: { id: TrendFilter; label: string; icon: string }[] = [
@@ -58,12 +60,12 @@ const H_PAD = 16;
 const CAP   = 5;
 
 const DECISION_PLANS = [
-  { id: "weekend", label: "This weekend", sub: "Curated Mumbai plans for Friday to Sunday.", icon: "calendar", color: "#f97316", route: "/activities" },
-  { id: "tonight", label: "I'm free tonight", sub: "Food, events, movies, or a low-friction plan.", icon: "moon", color: "#6366f1", route: "/ai-chat" },
-  { id: "rain", label: "Rain-safe plans", sub: "Indoor ideas and low travel stress backups.", icon: "cloud-rain", color: "#0ea5e9", route: "/movies" },
-  { id: "budget", label: "Under Rs 1000", sub: "Good plans without payday-level spending.", icon: "percent", color: "#10b981", route: "/deals" },
-  { id: "transit", label: "Near train or metro", sub: "Plans that respect Mumbai travel reality.", icon: "navigation", color: "#ef4444", route: "/transit" },
-  { id: "date", label: "Date night", sub: "Dinner, walk, movie, or backup indoor option.", icon: "heart", color: "#ec4899", route: "/ai-chat" },
+  { id: "weekend", label: "This weekend", sub: "Curated Mumbai plans for Friday to Sunday.", icon: "calendar", color: "#c2410c", route: "/activities" },
+  { id: "tonight", label: "I'm free tonight", sub: "Food, events, movies, or a low-friction plan.", icon: "moon", color: "#4f46e5", route: "/ai-chat" },
+  { id: "rain", label: "Rain-safe plans", sub: "Indoor ideas and low travel stress backups.", icon: "cloud-rain", color: "#0369a1", route: "/movies" },
+  { id: "budget", label: "Under Rs 1000", sub: "Good plans without payday-level spending.", icon: "percent", color: "#047857", route: "/deals" },
+  { id: "transit", label: "Near train or metro", sub: "Plans that respect Mumbai travel reality.", icon: "navigation", color: "#dc2626", route: "/transit" },
+  { id: "date", label: "Date night", sub: "Dinner, walk, movie, or backup indoor option.", icon: "heart", color: "#be185d", route: "/ai-chat" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -110,6 +112,9 @@ function SearchBar({ colors }: { colors: ReturnType<typeof useColors> }) {
       style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push("/search" as any)}
       activeOpacity={0.75}
+      accessibilityRole="search"
+      accessibilityLabel="Search places, events and deals"
+      accessibilityHint="Opens search"
     >
       <Feather name="search" size={15} color={colors.mutedForeground} />
       <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>
@@ -137,11 +142,17 @@ function DealStripCard({
       style={[styles.dealCard, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push(`/deal/${deal.id}` as any)}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={[deal.title, deal.discountText, deal.placeName].filter(Boolean).join(", ")}
+      accessibilityHint="Opens this deal"
     >
       <Image
         source={{ uri: deal.imageUrl ?? "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400" }}
         style={styles.dealImage}
         contentFit="cover"
+        cachePolicy="memory-disk"
+        accessibilityElementsHidden
+        importantForAccessibility="no"
       />
       <View style={styles.dealDiscountBadge}>
         <Text style={styles.dealDiscountText}>{deal.discountText ?? "Deal"}</Text>
@@ -177,11 +188,17 @@ function HotPickCard({
       style={[styles.hotPickCard, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push(item.route as any)}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}, ${cfg.label}, ${item.meta1}`}
+      accessibilityHint="Opens this listing"
     >
       <Image
         source={{ uri: item.imageUrl ?? "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600" }}
         style={styles.hotPickImage}
         contentFit="cover"
+        cachePolicy="memory-disk"
+        accessibilityElementsHidden
+        importantForAccessibility="no"
       />
       <View style={[styles.hotPickBadge, { backgroundColor: cfg.color }]}>
         <Text style={styles.hotPickBadgeText}>{cfg.label}</Text>
@@ -215,6 +232,9 @@ function TrendingCard({
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push(item.route as any)}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={[item.title, cfg.label, item.meta1, item.meta2].filter(Boolean).join(", ")}
+      accessibilityHint="Opens this listing"
     >
       <View style={styles.imageWrap}>
         <Image
@@ -224,6 +244,9 @@ function TrendingCard({
           }}
           style={styles.cardImage}
           contentFit="cover"
+          cachePolicy="memory-disk"
+          accessibilityElementsHidden
+          importantForAccessibility="no"
         />
         <View style={[styles.typeBadge, { backgroundColor: cfg.color }]}>
           <Feather name={cfg.icon as any} size={10} color="#fff" />
@@ -406,6 +429,8 @@ export default function ExploreScreen() {
                   ]}
                   onPress={() => router.push(plan.route as any)}
                   activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${plan.label}. ${plan.sub}`}
                 >
                   <View style={styles.decisionTopRow}>
                     <View style={[styles.decisionIcon, featured && styles.featuredDecisionIcon, { backgroundColor: plan.color + "18" }]}>
@@ -445,6 +470,9 @@ export default function ExploreScreen() {
               style={[styles.zoneCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push(`/neighborhood/${zone.id}` as any)}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`${zone.name}. ${zone.vibe}. ${zone.transitAccess}`}
+              accessibilityHint="Opens this neighbourhood"
             >
               <Text style={[styles.zoneName, { color: colors.foreground }]}>{zone.name}</Text>
               <Text style={[styles.zoneVibe, { color: colors.mutedForeground }]} numberOfLines={2}>{zone.vibe}</Text>
@@ -484,6 +512,9 @@ export default function ExploreScreen() {
                 ]}
                 onPress={() => setTrendFilter(f.id)}
                 activeOpacity={0.8}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`${f.label} trending`}
               >
                 <Feather name={f.icon as any} size={11} color={active ? "#fff" : colors.mutedForeground} />
                 <Text style={[styles.filterTabText, { color: active ? "#fff" : colors.foreground }]}>
@@ -660,7 +691,7 @@ const styles = StyleSheet.create({
     }),
   },
   dealImage:         { width: "100%", height: 100 },
-  dealDiscountBadge: { position: "absolute", top: 8, left: 8, backgroundColor: "#10b981", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  dealDiscountBadge: { position: "absolute", top: 8, left: 8, backgroundColor: "#047857", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   dealDiscountText:  { fontFamily: "Inter_700Bold", fontSize: 11, color: "#fff" },
   dealBody:          { padding: 10, gap: 3 },
   dealTitle:         { fontFamily: "Inter_600SemiBold", fontSize: 12, lineHeight: 16 },

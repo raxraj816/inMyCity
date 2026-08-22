@@ -18,7 +18,7 @@ import { useCity } from "@/context/CityContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { EventCard } from "@/components/EventCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 
 type SportsTab = "fitness" | "courts" | "outdoor" | "live";
 
@@ -29,11 +29,12 @@ const TABS: { id: SportsTab; label: string; mciIcon: string }[] = [
   { id: "live",    label: "Live Sports", mciIcon: "flag-checkered" },
 ];
 
+// Each tab colour is also a pill background with white text, so all four clear AA.
 const TAB_COLOR: Record<SportsTab, string> = {
-  fitness: "#ef4444",
-  courts:  "#f97316",
-  outdoor: "#22c55e",
-  live:    "#8b5cf6",
+  fitness: "#dc2626",
+  courts:  "#c2410c",
+  outdoor: "#15803d",
+  live:    "#7c3aed",
 };
 
 const FITNESS_FILTERS = [
@@ -70,22 +71,22 @@ export default function SportsScreen() {
   const currSymbol = isLocal ? "₹" : "$";
 
   const {
-    data: fitnessData = [], isLoading: fitnessLoading,
+    data: fitnessData = [], isLoading: fitnessLoading, isRefetching: fitnessRefetching,
     error: fitnessError, refetch: refetchFitness,
   } = useGetActivities({ city: cityName, category: "fitness" });
 
   const {
-    data: courtsData  = [], isLoading: courtsLoading,
+    data: courtsData  = [], isLoading: courtsLoading, isRefetching: courtsRefetching,
     error: courtsError, refetch: refetchCourts,
   } = useGetActivities({ city: cityName, category: "sports" });
 
   const {
-    data: outdoorData = [], isLoading: outdoorLoading,
+    data: outdoorData = [], isLoading: outdoorLoading, isRefetching: outdoorRefetching,
     error: outdoorError, refetch: refetchOutdoor,
   } = useGetActivities({ city: cityName, category: "outdoor" });
 
   const {
-    data: liveEvents  = [], isLoading: liveLoading,
+    data: liveEvents  = [], isLoading: liveLoading, isRefetching: liveRefetching,
     error: liveError, refetch: refetchLive,
   } = useGetEvents({ city: cityName, category: "sports" });
 
@@ -107,11 +108,14 @@ export default function SportsScreen() {
     : activeTab === "outdoor" ? refetchOutdoor
     : refetchLive;
 
-  if (currentError) {
-    return <ErrorFallback error={currentError as Error} resetError={currentRefetch} />;
-  }
+  const currentRefetching = activeTab === "fitness" ? fitnessRefetching
+    : activeTab === "courts"  ? courtsRefetching
+    : activeTab === "outdoor" ? outdoorRefetching
+    : liveRefetching;
 
   const tabColor = TAB_COLOR[activeTab];
+
+  const refreshControl = useListRefreshControl(currentRefetching, currentRefetch, tabColor);
 
   // ── Activity card ──────────────────────────────────────────────────────────
   const renderActivityCard = ({ item }: { item: typeof fitnessData[number] }) => (
@@ -149,7 +153,7 @@ export default function SportsScreen() {
           )}
           {!!item.rating && (
             <View style={styles.metaChip}>
-              <Feather name="star" size={11} color="#f59e0b" />
+              <Feather name="star" size={11} color="#b45309" />
               <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
                 {item.rating.toFixed(1)}
               </Text>
@@ -185,6 +189,19 @@ export default function SportsScreen() {
 
   // ── Main content (flex: 1 child) ───────────────────────────────────────────
   const renderContent = () => {
+    // An error replaces the list, not the screen: the tabs above it still work, and one tap
+    // retries without losing the tab the user was on.
+    if (currentError) {
+      return (
+        <ErrorState
+          error={currentError}
+          onRetry={currentRefetch}
+          accent={tabColor}
+          subject={activeTab === "live" ? "sports events" : activeTab}
+        />
+      );
+    }
+
     // ── LIVE SPORTS tab ──
     if (activeTab === "live") {
       if (liveLoading) return renderSkeleton();
@@ -205,6 +222,8 @@ export default function SportsScreen() {
           renderItem={({ item }) => <EventCard event={item} />}
           contentContainerStyle={{ paddingBottom: bottomPadding, paddingTop: 8 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
         />
       );
     }
@@ -246,6 +265,8 @@ export default function SportsScreen() {
         renderItem={renderActivityCard}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
+        {...LIST_PERFORMANCE_PROPS}
       />
     );
   };

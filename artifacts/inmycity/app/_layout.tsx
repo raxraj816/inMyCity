@@ -5,7 +5,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SecureStore from "expo-secure-store";
@@ -15,10 +15,13 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OfflineBannerHost } from "@/components/OfflineBanner";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import { LocationProvider } from "@/context/LocationContext";
 import { CityProvider } from "@/context/CityContext";
+import { NetworkProvider } from "@/context/NetworkContext";
 import { AuthProvider } from "@/lib/auth";
+import { persistOptions, queryClient } from "@/lib/queryPersistence";
 
 // Safe token getter — skips SecureStore on web (not needed there)
 function safeGetToken(): Promise<string | null> {
@@ -34,15 +37,6 @@ setBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3001");
 setAuthTokenGetter(safeGetToken);
 
 SplashScreen.preventAutoHideAsync();
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 2,
-      retry: 2,
-    },
-  },
-});
 
 function RootLayoutNav() {
   return (
@@ -106,19 +100,23 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            {/* Location wraps City so the city can be auto-detected from coordinates once
-                the user has opted into sharing them. */}
-            <LocationProvider>
-              <CityProvider>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  {withKeyboard}
-                </GestureHandlerRootView>
-              </CityProvider>
-            </LocationProvider>
-          </AuthProvider>
-        </QueryClientProvider>
+        {/* Restores the last cache from disk before the first render, so a cold start on a
+            bad connection opens on real content instead of a blank screen. */}
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+          <NetworkProvider>
+            <AuthProvider>
+              {/* Location wraps City so the city can be auto-detected from coordinates once
+                  the user has opted into sharing them. */}
+              <LocationProvider>
+                <CityProvider>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <OfflineBannerHost>{withKeyboard}</OfflineBannerHost>
+                  </GestureHandlerRootView>
+                </CityProvider>
+              </LocationProvider>
+            </AuthProvider>
+          </NetworkProvider>
+        </PersistQueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

@@ -12,7 +12,7 @@ type Props = {
   place: Place;
 };
 
-export function PlaceCard({ place }: Props) {
+function PlaceCardComponent({ place }: Props) {
   const colors = useColors();
   const router = useRouter();
 
@@ -20,7 +20,7 @@ export function PlaceCard({ place }: Props) {
     switch (category.toLowerCase()) {
       case "food": return colors.amber;
       case "attraction": return colors.info;
-      case "nightlife": return "#a855f7"; // purple
+      case "nightlife": return "#9333ea"; // purple
       case "essentials": return colors.success;
       default: return colors.mutedForeground;
     }
@@ -39,11 +39,27 @@ export function PlaceCard({ place }: Props) {
   const categoryColor = getCategoryColor(place.category);
   const categoryBg = getCategoryBg(place.category);
 
+  // One sentence for a screen reader, in the order the eye reads the card.
+  const accessibilityLabel = [
+    place.name,
+    place.category,
+    place.rating != null ? `rated ${place.rating.toFixed(1)} out of 5` : null,
+    place.reviewCount != null ? `${place.reviewCount} reviews` : null,
+    place.distanceKm != null ? `${place.distanceKm.toFixed(1)} kilometres away` : null,
+    place.isOpen === true ? "Open now" : place.isOpen === false ? "Closed" : null,
+    place.address,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       style={[styles.card, { backgroundColor: colors.card }]}
       onPress={() => router.push(`/place/${place.id}`)}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Opens this place"
     >
         <View style={styles.imageContainer}>
           {place.imageUrl ? (
@@ -52,6 +68,11 @@ export function PlaceCard({ place }: Props) {
               style={styles.image}
               contentFit="cover"
               transition={200}
+              // Thumbnails are re-shown constantly as the user moves between lists, and are
+              // exactly what a weak connection struggles to fetch twice.
+              cachePolicy="memory-disk"
+              accessibilityElementsHidden
+              importantForAccessibility="no"
             />
           ) : (
             <View style={[styles.image, { backgroundColor: categoryBg }]} />
@@ -106,6 +127,9 @@ export function PlaceCard({ place }: Props) {
       </TouchableOpacity>
   );
 }
+
+/** Memoized: list re-renders on every filter change, and the cards themselves rarely change. */
+export const PlaceCard = React.memo(PlaceCardComponent);
 
 const styles = StyleSheet.create({
   card: {

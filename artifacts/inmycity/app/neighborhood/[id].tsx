@@ -47,12 +47,12 @@ type PickItem = {
 };
 
 const ZONE_COLORS = [
-  "#ec4899",
-  "#0ea5e9",
-  "#f59e0b",
-  "#10b981",
-  "#6366f1",
-  "#ef4444",
+  "#be185d",
+  "#0369a1",
+  "#b45309",
+  "#047857",
+  "#4f46e5",
+  "#dc2626",
 ] as const;
 
 const DEFAULT_ZONE_IMAGE =
@@ -191,7 +191,7 @@ export default function NeighborhoodGuideScreen() {
       meta: `${place.category}${place.rating ? ` · ${place.rating.toFixed(1)}` : ""}`,
       imageUrl: place.imageUrl,
       route: `/place/${place.id}`,
-      color: "#0ea5e9",
+      color: "#0369a1",
       icon: "map-pin" as const,
     }));
 
@@ -207,7 +207,7 @@ export default function NeighborhoodGuideScreen() {
       meta: activity.price ? `Rs ${activity.price}` : "Free or low-cost",
       imageUrl: activity.imageUrl,
       route: `/activity/${activity.id}`,
-      color: "#ef4444",
+      color: "#dc2626",
       icon: "zap" as const,
     }));
 
@@ -223,7 +223,7 @@ export default function NeighborhoodGuideScreen() {
       meta: event.isFree ? "Free event" : event.venue,
       imageUrl: event.imageUrl,
       route: `/event/${event.id}`,
-      color: "#8b5cf6",
+      color: "#7c3aed",
       icon: "calendar" as const,
     }));
 
@@ -239,7 +239,7 @@ export default function NeighborhoodGuideScreen() {
       meta: deal.discountText,
       imageUrl: deal.imageUrl,
       route: `/deal/${deal.id}`,
-      color: "#10b981",
+      color: "#047857",
       icon: "percent" as const,
     }));
 

@@ -66,7 +66,7 @@ export default function TransitPlanScreen() {
       <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {/* From */}
         <View style={styles.inputRow}>
-          <View style={[styles.stationDot, { backgroundColor: "#06b6d4" }]} />
+          <View style={[styles.stationDot, { backgroundColor: "#0e7490" }]} />
           <TextInput
             style={[styles.input, { color: colors.foreground }]}
             placeholder="From — enter station or area"
@@ -89,14 +89,14 @@ export default function TransitPlanScreen() {
             style={[styles.swapBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
             onPress={swapStations}
           >
-            <Feather name="repeat" size={14} color="#06b6d4" />
+            <Feather name="repeat" size={14} color="#0e7490" />
           </TouchableOpacity>
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
         </View>
 
         {/* To */}
         <View style={styles.inputRow}>
-          <View style={[styles.stationSquare, { borderColor: "#06b6d4" }]} />
+          <View style={[styles.stationSquare, { borderColor: "#0e7490" }]} />
           <TextInput
             style={[styles.input, { color: colors.foreground }]}
             placeholder="To — enter station or area"
@@ -114,7 +114,7 @@ export default function TransitPlanScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.searchBtn, { backgroundColor: "#06b6d4", opacity: (from || to) ? 1 : 0.5 }]}
+          style={[styles.searchBtn, { backgroundColor: "#0e7490", opacity: (from || to) ? 1 : 0.5 }]}
           onPress={handleSearch}
           disabled={!from && !to}
         >
@@ -136,10 +136,10 @@ export default function TransitPlanScreen() {
             Try different station names or browse all lines
           </Text>
           <TouchableOpacity
-            style={[styles.browseBtn, { borderColor: "#06b6d4" }]}
+            style={[styles.browseBtn, { borderColor: "#0e7490" }]}
             onPress={() => router.back()}
           >
-            <Text style={[styles.browseBtnText, { color: "#06b6d4" }]}>Browse All Lines</Text>
+            <Text style={[styles.browseBtnText, { color: "#0e7490" }]}>Browse All Lines</Text>
           </TouchableOpacity>
         </View>
       ) : !searched ? (
@@ -152,8 +152,8 @@ export default function TransitPlanScreen() {
               { icon: "share-2" as const, text: "Browse all lines using the Transit screen" },
             ].map((tip, i) => (
               <View key={i} style={[styles.hintItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={[styles.hintIcon, { backgroundColor: "#06b6d41a" }]}>
-                  <Feather name={tip.icon} size={14} color="#06b6d4" />
+                <View style={[styles.hintIcon, { backgroundColor: "#0e74901a" }]}>
+                  <Feather name={tip.icon} size={14} color="#0e7490" />
                 </View>
                 <Text style={[styles.hintText, { color: colors.mutedForeground }]}>{tip.text}</Text>
               </View>
@@ -217,7 +217,7 @@ export default function TransitPlanScreen() {
                     {item.fare != null && (
                       <View style={styles.statItem}>
                         <Feather name="credit-card" size={12} color={colors.mutedForeground} />
-                        <Text style={[styles.statText, { color: "#06b6d4" }]}>{currencySymbol}{item.fare}</Text>
+                        <Text style={[styles.statText, { color: "#0e7490" }]}>{currencySymbol}{item.fare}</Text>
                       </View>
                     )}
                     <View style={styles.statItem}>

@@ -12,7 +12,7 @@ import { useGetPlaces } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorFallback } from "@/components/ErrorFallback";
+import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { NearbyFilters } from "@/components/NearbyFilters";
 import { useNearby } from "@/hooks/useNearby";
@@ -24,7 +24,7 @@ const FILTERS = [
   { id: "essentials", label: "Essentials",   category: "essentials"  },
 ];
 
-const ACCENT = "#6366f1";
+const ACCENT = "#4f46e5";
 
 export default function PlacesScreen() {
   const router = useRouter();
@@ -39,13 +39,13 @@ export default function PlacesScreen() {
   const activeCategory = FILTERS.find(f => f.id === activeFilter)?.category;
   const nearby = useNearby();
 
-  const { data: places = [], isLoading, error, refetch } = useGetPlaces({
+  const { data: places = [], isLoading, isRefetching, error, refetch } = useGetPlaces({
     city: selectedCity?.name,
     category: activeCategory,
     ...nearby.queryParams,
   });
 
-  if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
+  const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -68,6 +68,9 @@ export default function PlacesScreen() {
                 { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border }
               ]}
               onPress={() => setActiveFilter(f.id)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${f.label} places`}
             >
               <Text style={[styles.pillText, { color: active ? "#fff" : colors.foreground }]}>{f.label}</Text>
             </TouchableOpacity>
@@ -78,23 +81,11 @@ export default function PlacesScreen() {
       <NearbyFilters controls={nearby} accent={ACCENT} />
 
       {/* Content */}
-      {isLoading ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="places" />
+      ) : isLoading ? (
         <View style={styles.loadingContainer}>
           {[1, 2, 3].map(i => <SkeletonCard key={i} height={240} style={styles.skeleton} />)}
-        </View>
-      ) : places.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIcon, { backgroundColor: ACCENT + "15" }]}>
-            <Feather name="map-pin" size={32} color={ACCENT} />
-          </View>
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No places found</Text>
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            {nearby.nearbyEnabled || nearby.openNowEnabled
-              ? "Nothing matches those filters right now. Try turning one off."
-              : activeFilter !== "all"
-                ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
-                : `No places in ${selectedCity?.name ?? "this city"} yet.`}
-          </Text>
         </View>
       ) : (
         <FlatList
@@ -103,8 +94,22 @@ export default function PlacesScreen() {
           renderItem={({ item }) => <PlaceCard place={item} />}
           contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
-          onRefresh={refetch}
-          refreshing={isLoading}
+          refreshControl={refreshControl}
+          {...LIST_PERFORMANCE_PROPS}
+          ListEmptyComponent={
+            <EmptyState
+              icon="map-pin"
+              title="No places found"
+              accent={ACCENT}
+              message={
+                nearby.nearbyEnabled || nearby.openNowEnabled
+                  ? "Nothing matches those filters right now. Try turning one off."
+                  : activeFilter !== "all"
+                    ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
+                    : `No places in ${selectedCity?.name ?? "this city"} yet.`
+              }
+            />
+          }
         />
       )}
     </View>

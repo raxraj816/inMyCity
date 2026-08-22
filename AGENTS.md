@@ -41,14 +41,19 @@ Everything runs from the repo root, and pnpm is invoked through Corepack:
 corepack pnpm install         # install workspace deps
 corepack pnpm run dev:api     # API server on :3001
 corepack pnpm run dev:app     # Expo app on :8081
-corepack pnpm run db:push     # push Drizzle schema
+corepack pnpm run db:push     # push Drizzle schema, then apply search extension + indexes
 corepack pnpm run db:seed     # seed local city data
 corepack pnpm run typecheck   # libs + api-server + app + scripts
+corepack pnpm run test        # api-server + app test suites
 corepack pnpm run build       # typecheck, then build every package
 ```
 
-`corepack pnpm run typecheck` is the check to run before handing work back — there is
-no test suite or linter configured. A `preinstall` guard rejects npm and yarn.
+`corepack pnpm run typecheck` and `corepack pnpm run test` are the checks to run before
+handing work back; there is no linter configured. A `preinstall` guard rejects npm and yarn.
+
+Tests use Node's built-in runner. Anything that needs Postgres must skip itself when the
+database is unreachable, the way `routes/search.integration.test.ts` does — `pnpm test` has
+to pass on a machine with no Docker running.
 
 Scope work to one package with `--filter`:
 
@@ -99,6 +104,17 @@ run codegen, then fix the app screens that consume it.
 
 **Schema changes** go in `lib/db/src/schema`, then `db:push`, then update
 `artifacts/api-server/src/seed.ts` if the new columns need data, then `db:seed`.
+
+**Database objects Drizzle cannot express** — extensions, and indexes over an expression with
+an operator class — go in `lib/db/src/bootstrap.ts`, which `db:push` runs afterwards. Every
+statement there must stay idempotent. That is where the `pg_trgm` extension, the trigram
+indexes search uses, and the `lower(city)` indexes the list endpoints need are created.
+
+**Search vocabulary is city content**, not code: dish names, Hinglish spellings, station
+abbreviations and neighbourhood aliases live in `lib/city-config/src/search-synonyms.ts`.
+Adding a term is a data change there — never a branch in the search route. A row's searchable
+text is written at seed time from `SEARCH_TEXT_FIELDS`, and always starts with the row's name,
+which is how relevance separates an exact name match from a mention in a description.
 
 **Secrets stay out of the repo.** `.env.local` is local-only; document new variables in
 `.env.example` and the README instead of committing values. The app runs without

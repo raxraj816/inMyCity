@@ -1072,3 +1072,97 @@ export const GetExploreSummaryResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * @summary List the launch neighbourhood zones for a city
+ */
+export const ListNeighborhoodsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+});
+
+export const ListNeighborhoodsResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  vibe: zod.string(),
+  bestFor: zod.array(zod.string()),
+  transitAccess: zod.string(),
+  priceBand: zod.string(),
+  bestTime: zod.string(),
+  monsoonNote: zod.string(),
+  safetyContext: zod.string(),
+});
+export const ListNeighborhoodsResponse = zod.array(
+  ListNeighborhoodsResponseItem,
+);
+
+/**
+ * @summary Get ranked plan recommendations for a city
+ */
+export const GetRecommendationsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  mood: zod.coerce
+    .string()
+    .optional()
+    .describe("Free-text intent, e.g. `chill`, `date night`."),
+  neighborhood: zod.coerce
+    .string()
+    .optional()
+    .describe("Launch zone id, e.g. `bandra`."),
+  budget: zod.coerce
+    .number()
+    .optional()
+    .describe("Upper price bound, in the city's own currency."),
+  weatherMode: zod.enum(["rain-safe"]).optional(),
+  transitAccess: zod.coerce
+    .string()
+    .optional()
+    .describe("Any non-empty value boosts transit-friendly results."),
+});
+
+export const GetRecommendationsResponse = zod.object({
+  city: zod.string(),
+  title: zod.string(),
+  filters: zod.object({
+    mood: zod.string().nullable(),
+    neighborhood: zod.string().nullable(),
+    budget: zod.number().nullable(),
+    weatherMode: zod.string().nullable(),
+    transitAccess: zod.string().nullable(),
+  }),
+  prompts: zod.array(
+    zod.object({
+      id: zod.string(),
+      label: zod.string(),
+      prompt: zod.string(),
+      icon: zod.string(),
+    }),
+  ),
+  neighborhoods: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      vibe: zod.string(),
+      bestFor: zod.array(zod.string()),
+      transitAccess: zod.string(),
+      priceBand: zod.string(),
+      bestTime: zod.string(),
+      monsoonNote: zod.string(),
+      safetyContext: zod.string(),
+    }),
+  ),
+  items: zod.array(
+    zod.object({
+      id: zod.string(),
+      entityType: zod.enum(["place", "activity", "deal", "event", "transit"]),
+      entityId: zod.number(),
+      title: zod.string(),
+      neighborhood: zod.string().nullable(),
+      imageUrl: zod.string().nullable(),
+      reason: zod.string(),
+      actionLabel: zod.string(),
+      route: zod.string(),
+      tags: zod.array(zod.string()),
+      scoreText: zod.string(),
+    }),
+  ),
+});

@@ -62,7 +62,7 @@ const CAP   = 5;
 const DECISION_PLANS = [
   { id: "weekend", label: "This weekend", sub: "Curated Mumbai plans for Friday to Sunday.", icon: "calendar", color: "#c2410c", route: "/activities" },
   { id: "tonight", label: "I'm free tonight", sub: "Food, events, movies, or a low-friction plan.", icon: "moon", color: "#4f46e5", route: "/ai-chat" },
-  { id: "rain", label: "Rain-safe plans", sub: "Indoor ideas and low travel stress backups.", icon: "cloud-rain", color: "#0369a1", route: "/movies" },
+  { id: "rain", label: "Rain-safe plans", sub: "Indoor ideas and low travel stress backups.", icon: "cloud-rain", color: "#0369a1", route: "/plans?weatherMode=rain-safe&title=Rain-safe+plans" },
   { id: "budget", label: "Under Rs 1000", sub: "Good plans without payday-level spending.", icon: "percent", color: "#047857", route: "/deals" },
   { id: "transit", label: "Near train or metro", sub: "Plans that respect Mumbai travel reality.", icon: "navigation", color: "#dc2626", route: "/transit" },
   { id: "date", label: "Date night", sub: "Dinner, walk, movie, or backup indoor option.", icon: "heart", color: "#be185d", route: "/ai-chat" },

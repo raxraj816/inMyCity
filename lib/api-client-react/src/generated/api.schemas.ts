@@ -245,6 +245,74 @@ export interface AddPlaceToCollectionInput {
   placeId: number;
 }
 
+export interface RecommendationFilters {
+  /** @nullable */
+  mood: string | null;
+  /** @nullable */
+  neighborhood: string | null;
+  /** @nullable */
+  budget: number | null;
+  /** @nullable */
+  weatherMode: string | null;
+  /** @nullable */
+  transitAccess: string | null;
+}
+
+export interface LaunchPrompt {
+  id: string;
+  label: string;
+  prompt: string;
+  icon: string;
+}
+
+export interface LaunchZone {
+  id: string;
+  name: string;
+  vibe: string;
+  bestFor: string[];
+  transitAccess: string;
+  priceBand: string;
+  bestTime: string;
+  monsoonNote: string;
+  safetyContext: string;
+}
+
+export type RecommendationEntityType =
+  (typeof RecommendationEntityType)[keyof typeof RecommendationEntityType];
+
+export const RecommendationEntityType = {
+  place: "place",
+  activity: "activity",
+  deal: "deal",
+  event: "event",
+  transit: "transit",
+} as const;
+
+export interface Recommendation {
+  id: string;
+  entityType: RecommendationEntityType;
+  entityId: number;
+  title: string;
+  /** @nullable */
+  neighborhood: string | null;
+  /** @nullable */
+  imageUrl: string | null;
+  reason: string;
+  actionLabel: string;
+  route: string;
+  tags: string[];
+  scoreText: string;
+}
+
+export interface RecommendationsResponse {
+  city: string;
+  title: string;
+  filters: RecommendationFilters;
+  prompts: LaunchPrompt[];
+  neighborhoods: LaunchZone[];
+  items: Recommendation[];
+}
+
 export interface CategoryCount {
   category: string;
   count: number;
@@ -642,3 +710,35 @@ export type GetExploreSummaryParams = {
   lng?: number;
   radius?: number;
 };
+
+export type ListNeighborhoodsParams = {
+  city?: string;
+};
+
+export type GetRecommendationsParams = {
+  city?: string;
+  /**
+   * Free-text intent, e.g. `chill`, `date night`.
+   */
+  mood?: string;
+  /**
+   * Launch zone id, e.g. `bandra`.
+   */
+  neighborhood?: string;
+  /**
+   * Upper price bound, in the city's own currency.
+   */
+  budget?: number;
+  weatherMode?: GetRecommendationsWeatherMode;
+  /**
+   * Any non-empty value boosts transit-friendly results.
+   */
+  transitAccess?: string;
+};
+
+export type GetRecommendationsWeatherMode =
+  (typeof GetRecommendationsWeatherMode)[keyof typeof GetRecommendationsWeatherMode];
+
+export const GetRecommendationsWeatherMode = {
+  "rain-safe": "rain-safe",
+} as const;

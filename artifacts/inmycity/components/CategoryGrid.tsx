@@ -16,18 +16,18 @@ type Category = {
 };
 
 const CATEGORIES: Category[] = [
-  // Row 1 — Discovery (What's on today?)
-  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#c2410c", active: true, route: "/dining"                  },
-  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#dc2626", active: true, route: "/activities"               },
-  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0369a1", active: true, route: "/events"                   },
-  // Row 2 — Lifestyle (How I spend my week)
-  { id: "shops",      label: "Shops",      icon: "shopping-outline",      color: "#c2410c", active: true, route: "/shops"                    },
-  { id: "sports",     label: "Sports &\nFitness", icon: "dumbbell",      color: "#15803d", active: true, route: "/sports"                   },
-  { id: "hotels",     label: "Hotels",     icon: "hanger",                color: "#b45309", active: true, route: "/hotels"                   },
-  // Row 3 — Practical (Utility + entertainment)
-  { id: "transit",    label: "Transit",    icon: "train-variant",         color: "#0e7490", active: true, route: "/transit"                  },
-  { id: "deals",      label: "Deals",      icon: "percent",               color: "#047857", active: true, route: "/deals"                    },
-  { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#be185d", active: true, route: "/nightlife"                },
+  // Row 1 — Going out (What's on today?)
+  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0369a1", active: true, route: "/events"     },
+  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#dc2626", active: true, route: "/activities" },
+  { id: "sports",     label: "Sports &\nFitness", icon: "dumbbell",      color: "#15803d", active: true, route: "/sports"     },
+  // Row 2 — After dark and on screen
+  { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#be185d", active: true, route: "/nightlife"  },
+  { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#4f46e5", active: true, route: "/movies"     },
+  { id: "explore",    label: "Explore",    icon: "map-outline",           color: "#0e7490", active: true, route: "/cityguide"  },
+  // Row 3 — Everyday (Spending and eating)
+  { id: "deals",      label: "Deals",      icon: "percent",               color: "#047857", active: true, route: "/deals"      },
+  { id: "shops",      label: "Shops",      icon: "shopping-outline",      color: "#c2410c", active: true, route: "/shops"      },
+  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#c2410c", active: true, route: "/dining"     },
 ];
 
 export function CategoryGrid() {

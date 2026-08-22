@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import {
   MUMBAI_LAUNCH_PROMPTS,
   MUMBAI_LAUNCH_ZONES,
+  formatPriceForCity,
   isLaunchCity,
 } from "@workspace/city-config";
 import {
@@ -18,12 +19,27 @@ const router: IRouter = Router();
 
 const LAUNCH_CITY = "Mumbai";
 
+const EMPTY_FILTERS = {
+  mood: null,
+  neighborhood: null,
+  budget: null,
+  weatherMode: null,
+  transitAccess: null,
+};
+
 function normalize(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim().toLowerCase() : undefined;
 }
 
 function titleCase(value: string) {
   return value.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatEventDate(value: Date | string | null | undefined) {
+  if (!value) return "Date TBA";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date TBA";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function getZoneTerms(zoneId?: string) {
@@ -54,7 +70,9 @@ router.get("/recommendations", async (req, res) => {
     res.json({
       city: LAUNCH_CITY,
       title: "Mumbai launch recommendations",
+      filters: EMPTY_FILTERS,
       prompts: MUMBAI_LAUNCH_PROMPTS,
+      neighborhoods: MUMBAI_LAUNCH_ZONES,
       items: [],
     });
     return;
@@ -113,7 +131,9 @@ router.get("/recommendations", async (req, res) => {
       actionLabel: "Explore activity",
       route: `/activity/${item.id}`,
       tags: item.tags ?? [],
-      scoreText: `${item.durationMinutes ?? 60} min · ${item.price ? `Rs ${item.price}` : "Free"}`,
+      scoreText: `${item.durationMinutes ?? 60} min · ${
+        item.price ? formatPriceForCity(item.price, LAUNCH_CITY, item.currency) : "Free"
+      }`,
       rankBoost: matchesIntent(item.tags, `${item.name} ${item.address} ${item.category}`, intentTerms) ? 4 : 1,
       })),
     ...deals
@@ -143,7 +163,7 @@ router.get("/recommendations", async (req, res) => {
       actionLabel: "View event",
       route: `/event/${item.id}`,
       tags: item.tags ?? [],
-      scoreText: item.venue ?? "Event",
+      scoreText: `${titleCase(item.category)} · ${formatEventDate(item.startDate)}`,
       rankBoost: matchesIntent(item.tags, `${item.title} ${item.venue} ${item.category}`, intentTerms) ? 4 : 2,
     })),
     ...transitLines.map((item) => ({

@@ -47,13 +47,21 @@ function Banner({ topInset }: { topInset: number }) {
 export function OfflineBannerHost({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const { isOnline } = useNetwork();
+  const offline = isOnline === false;
 
-  if (isOnline !== false) return <>{children}</>;
+  // The tree shape stays the same whether or not the banner is showing. Returning children
+  // bare when online and wrapped when offline would move them to a different position in the
+  // tree, which unmounts and remounts the whole navigator the moment the network drops —
+  // losing the screen the user was on, mid-journey, on exactly the connection where it hurts.
+  const insetsForChildren = React.useMemo(
+    () => (offline ? { ...insets, top: 0 } : insets),
+    [offline, insets],
+  );
 
   return (
     <View style={styles.host}>
-      <Banner topInset={insets.top} />
-      <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0 }}>
+      {offline ? <Banner topInset={insets.top} /> : null}
+      <SafeAreaInsetsContext.Provider value={insetsForChildren}>
         <View style={styles.host}>{children}</View>
       </SafeAreaInsetsContext.Provider>
     </View>

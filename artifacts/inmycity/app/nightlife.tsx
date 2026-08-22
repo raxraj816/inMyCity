@@ -4,7 +4,6 @@ import {
   Platform, FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetPlaces } from "@workspace/api-client-react";
@@ -180,20 +179,4 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-  empty: {
-    alignItems: "center",
-    paddingTop: 60,
-    paddingHorizontal: 40,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 20,
-  },
-  emptyText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 15,
-    textAlign: "center",
-    lineHeight: 22,
-  },
 });

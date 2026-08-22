@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { View, FlatList, StyleSheet, Platform, Text } from "react-native";
+import { View, FlatList, StyleSheet, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetDeals } from "@workspace/api-client-react";
@@ -120,8 +119,4 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingArea: { flex: 1, paddingTop: 8 },
   skeleton: { marginHorizontal: 20, marginBottom: 16 },
-  emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 60, paddingHorizontal: 40 },
-  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20, marginBottom: 8 },
-  emptyText: { fontFamily: "Inter_400Regular", fontSize: 16, textAlign: "center" },
 });

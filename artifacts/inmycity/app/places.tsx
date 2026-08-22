@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, FlatList
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  FlatList,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { useGetPlaces } from "@workspace/api-client-react";
@@ -147,8 +150,4 @@ const styles = StyleSheet.create({
   pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
   loadingContainer: { padding: 16, gap: 12 },
   skeleton: { marginHorizontal: 20, marginBottom: 4 },
-  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 40 },
-  emptyIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },
-  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20 },
-  emptyText: { fontFamily: "Inter_400Regular", fontSize: 15, textAlign: "center", lineHeight: 22 },
 });

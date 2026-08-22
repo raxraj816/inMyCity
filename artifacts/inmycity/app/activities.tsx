@@ -290,12 +290,6 @@ export default function ActivitiesScreen() {
     </TouchableOpacity>
   );
 
-  const renderEmpty = (icon: string, title: string) => (
-    <View style={styles.emptyContainer}>
-      <Feather name={icon as any} size={40} color={colors.mutedForeground} />
-      <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{title}</Text>
-    </View>
-  );
 
   // ── Layout ──────────────────────────────────────────────────────────────
   return (
@@ -555,8 +549,6 @@ const styles = StyleSheet.create({
   skeletonWrap: { flex: 1, padding: 16, gap: 12 },
 
   // ── Empty ──
-  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  emptyText: { fontFamily: "Inter_500Medium", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
 
   // ── Shared list ──
   listContent: { padding: 16, gap: 14 },

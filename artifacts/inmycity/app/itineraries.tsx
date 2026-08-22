@@ -153,10 +153,6 @@ const styles = StyleSheet.create({
   pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
   loadingContainer: { padding: 20, gap: 12 },
   skeleton: { marginBottom: 4 },
-  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 40 },
-  emptyIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },
-  emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20 },
-  emptyText: { fontFamily: "Inter_400Regular", fontSize: 15, textAlign: "center", lineHeight: 22 },
   card: {
     borderRadius: 18,
     borderWidth: 1,

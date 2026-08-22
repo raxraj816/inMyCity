@@ -266,8 +266,6 @@ const styles = StyleSheet.create({
   plannerCtaSub: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 1 },
   loadingContainer: { padding: 16, gap: 12 },
   skeletonCard: { height: 160, borderRadius: 16 },
-  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 32 },
-  emptyText: { fontFamily: "Inter_500Medium", fontSize: 15, textAlign: "center" },
   listContent: { paddingHorizontal: 16, paddingTop: 4, gap: 12 },
   lineCard: {
     borderRadius: 18, overflow: "hidden", borderWidth: StyleSheet.hairlineWidth,

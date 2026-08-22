@@ -211,8 +211,6 @@ const styles = StyleSheet.create({
   pillText: { fontFamily: "Inter_500Medium", fontSize: 13 },
   loadingContainer: { padding: 16, gap: 12 },
   skeletonCard: { height: 240, borderRadius: 16 },
-  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  emptyText: { fontFamily: "Inter_500Medium", fontSize: 16 },
   listContent: { padding: 16, gap: 16 },
   hotelCard: {
     borderRadius: 20, overflow: "hidden", borderWidth: StyleSheet.hairlineWidth,

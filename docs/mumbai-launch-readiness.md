@@ -138,8 +138,9 @@ Repository-level fixes made while working through Phase 0:
   come from the environment instead of being committed.
 - **A test runner exists.** `corepack pnpm run test` runs the suite across api-server and the
   app, using Node's built-in runner — no extra tooling. This is the base to build the Phase 4
-  suite on. Phase 1 took it from 32 tests to 88, including nine that exercise search against a
-  real Postgres and skip themselves when none is reachable.
+  suite on. Phase 1 took it from 32 tests to 92, including thirteen that run against a real
+  Postgres — nine covering search end to end, four asserting that the SQL "open now" filter and
+  the JavaScript evaluator agree row for row — and skip themselves when none is reachable.
 
 ---
 
@@ -558,8 +559,9 @@ Done when: the core journey is completable end to end with a screen reader.
 Every list endpoint now filters, sorts and paginates in SQL. Distance is a haversine expression
 in the query, behind a bounding-box prefilter that lets the `(lat, lng)` index discard most of
 the table before any trigonometry runs; "open now" is evaluated against the structured hours
-column in SQL, mirroring `isOpenAt` interval for interval, so it applies before the page
-boundary instead of after it. The content tables carry indexes on `city`, `category` and
+column in SQL, mirroring `isOpenAt` interval for interval — an equivalence four tests assert
+row for row against the seeded catalogue — so it applies before the page boundary rather than
+after it. The content tables carry indexes on `city`, `category` and
 `(city, category)`, and `lib/db/src/bootstrap.ts` adds what Drizzle's DSL cannot express —
 the `pg_trgm` extension, the trigram indexes, and `lower(city)` expression indexes that the
 case-insensitive city filter can actually use. `corepack pnpm run db:push` applies both halves.

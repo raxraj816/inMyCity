@@ -114,5 +114,9 @@ on city names in screens.
 - Match the surrounding file's style rather than introducing new patterns.
 - The Expo app reaches the API through `EXPO_PUBLIC_API_BASE_URL` (default `http://localhost:3001`) —
   never hard-code hosts or ports in app code.
-- Do not add dependencies without asking; the workspace pins versions through the
-  `catalog:` block in `pnpm-workspace.yaml`.
+- Adding a well-established dependency is fine — one with real adoption, active
+  maintenance, and a license that suits a commercial app. Prefer it over hand-rolling
+  security, parsing, or platform code. Do ask before anything niche, unmaintained,
+  abandoned, or copyleft. Pin shared versions through the `catalog:` block in
+  `pnpm-workspace.yaml`, and use `expo install` for anything the Expo app depends on so the
+  version matches the SDK.

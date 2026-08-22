@@ -1,3 +1,5 @@
+import { CURRENCIES, DEFAULT_CURRENCY, formatPrice, type Currency } from "./currency";
+
 export type CityStatus = "live" | "soon" | "demo";
 
 export type SupportedCity = {
@@ -10,6 +12,10 @@ export type SupportedCity = {
   lng: number;
   status: CityStatus;
   tagline: string;
+  /** ISO 4217 code, resolved to a symbol and grouping by `currencyFor`. */
+  currencyCode: string;
+  /** Other names this city appears under in content, so lookups by name still resolve. */
+  aliases?: string[];
   launchNote?: string;
 };
 
@@ -44,6 +50,7 @@ export const SUPPORTED_CITIES: SupportedCity[] = [
     lat: 19.076,
     lng: 72.8777,
     status: "live",
+    currencyCode: "INR",
     tagline: "Know what to do next in Mumbai",
   },
   {
@@ -55,6 +62,7 @@ export const SUPPORTED_CITIES: SupportedCity[] = [
     lat: 12.9716,
     lng: 77.5946,
     status: "soon",
+    currencyCode: "INR",
     tagline: "Launching after Mumbai",
     launchNote: "Coming after Mumbai v1 proves repeat local decisions.",
   },
@@ -67,6 +75,7 @@ export const SUPPORTED_CITIES: SupportedCity[] = [
     lat: 28.7041,
     lng: 77.1025,
     status: "soon",
+    currencyCode: "INR",
     tagline: "Heart of India",
   },
   {
@@ -78,6 +87,7 @@ export const SUPPORTED_CITIES: SupportedCity[] = [
     lat: 18.5204,
     lng: 73.8567,
     status: "soon",
+    currencyCode: "INR",
     tagline: "Oxford of the East",
   },
   {
@@ -89,6 +99,7 @@ export const SUPPORTED_CITIES: SupportedCity[] = [
     lat: 17.385,
     lng: 78.4867,
     status: "soon",
+    currencyCode: "INR",
     tagline: "City of Pearls",
   },
   {
@@ -100,17 +111,20 @@ export const SUPPORTED_CITIES: SupportedCity[] = [
     lat: 13.0827,
     lng: 80.2707,
     status: "soon",
+    currencyCode: "INR",
     tagline: "Gateway to South India",
   },
   {
     id: "new-york",
     name: "New York",
+    aliases: ["New York City"],
     displayName: "New York, USA",
     country: "USA",
     state: "New York",
     lat: 40.7128,
     lng: -74.006,
     status: "demo",
+    currencyCode: "USD",
     tagline: "Internal demo city",
   },
   {
@@ -122,9 +136,48 @@ export const SUPPORTED_CITIES: SupportedCity[] = [
     lat: 37.7749,
     lng: -122.4194,
     status: "demo",
+    currencyCode: "USD",
     tagline: "Internal demo city",
   },
 ];
+
+/**
+ * The currency to price something in.
+ *
+ * `currencyCode` is the row's own currency where the table carries one — hotels and
+ * activities both do, and a row knows its own price better than the city around it does.
+ * `city` accepts either an id or a display name, because callers have one or the other.
+ * Anything unrecognised falls back to the launch city's currency rather than to dollars.
+ */
+export function currencyFor(
+  city?: string | null,
+  currencyCode?: string | null,
+): Currency {
+  const fromCode = currencyCode ? CURRENCIES[currencyCode.toUpperCase()] : undefined;
+  if (fromCode) return fromCode;
+
+  if (city) {
+    const needle = city.trim().toLowerCase();
+    const match = SUPPORTED_CITIES.find(
+      (candidate) =>
+        candidate.id === needle ||
+        candidate.name.toLowerCase() === needle ||
+        candidate.aliases?.some((alias) => alias.toLowerCase() === needle),
+    );
+    if (match) return CURRENCIES[match.currencyCode] ?? DEFAULT_CURRENCY;
+  }
+
+  return DEFAULT_CURRENCY;
+}
+
+/** `formatPrice` with the lookup folded in, for callers formatting a single price. */
+export function formatPriceForCity(
+  amount: number,
+  city?: string | null,
+  currencyCode?: string | null,
+): string {
+  return formatPrice(amount, currencyFor(city, currencyCode));
+}
 
 export const MUMBAI_LAUNCH_ZONES: MumbaiLaunchZone[] = [
   { id: "bandra", name: "Bandra", vibe: "food, nightlife, cafes, sea-facing evenings", bestFor: ["date night", "food crawl", "creator spots"], transitAccess: "Bandra station, autos, ride-hailing, Western Line", priceBand: "mixed", bestTime: "evening after 5pm", monsoonNote: "Good for cafes and indoor dinner plans when rain hits.", safetyContext: "Busy and well-lit in main lanes; plan rides late at night." },
@@ -165,4 +218,5 @@ export function isLaunchCity(cityNameOrId: string | null | undefined) {
   return normalized === "mumbai";
 }
 
+export * from "./currency";
 export * from "./search-synonyms";

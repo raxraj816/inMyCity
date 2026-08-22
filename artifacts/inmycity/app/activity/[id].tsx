@@ -9,6 +9,7 @@ import { useGetActivityById, getGetActivityByIdQueryKey } from "@workspace/api-c
 import { ErrorState } from "@/components/ListStates";
 import { VenueActions } from "@/components/VenueActions";
 import { MapPreview } from "@/components/MapPreview";
+import { formatPriceForCity } from "@workspace/city-config";
 
 const CATEGORY_COLORS: Record<string, string> = {
   adventure: "#dc2626",
@@ -60,8 +61,6 @@ export default function ActivityDetailScreen() {
 
   const catColor = CATEGORY_COLORS[activity.category] ?? "#4f46e5";
   const catIcon = CATEGORY_ICONS[activity.category] ?? "zap";
-  const isLocal = activity.city === "Mumbai" || activity.city === "Bangalore";
-  const currencySymbol = isLocal ? "₹" : "$";
   const hours = activity.durationMinutes ? Math.floor(activity.durationMinutes / 60) : 0;
   const mins = activity.durationMinutes ? activity.durationMinutes % 60 : 0;
   const durationStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
@@ -137,7 +136,9 @@ export default function ActivityDetailScreen() {
                     <Feather name="tag" size={18} color={catColor} />
                   </View>
                   <Text style={[styles.statValue, { color: colors.foreground }]}>
-                    {activity.price === 0 ? "Free" : `${currencySymbol}${Math.round(activity.price).toLocaleString()}`}
+                    {activity.price === 0
+                      ? "Free"
+                      : formatPriceForCity(Math.round(activity.price), activity.city, activity.currency)}
                   </Text>
                   <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Per Person</Text>
                 </View>
@@ -205,7 +206,7 @@ export default function ActivityDetailScreen() {
             {activity.price === 0
               ? "Free"
               : activity.price
-              ? `${currencySymbol}${Math.round(activity.price).toLocaleString()} / person`
+              ? `${formatPriceForCity(Math.round(activity.price), activity.city, activity.currency)} / person`
               : "Contact for price"}
           </Text>
         </View>

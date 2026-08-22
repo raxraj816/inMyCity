@@ -17,6 +17,7 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 import { NearbyFilters } from "@/components/NearbyFilters";
 import { useNearby } from "@/hooks/useNearby";
+import { formatPriceForCity } from "@workspace/city-config";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -87,8 +88,6 @@ export default function ActivitiesScreen() {
   const topPadding    = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
   const cityName      = selectedCity?.name;
-  const isLocal       = cityName === "Mumbai" || cityName === "Bangalore";
-  const currSymbol    = isLocal ? "₹" : "$";
 
   const nearby = useNearby();
 
@@ -206,7 +205,9 @@ export default function ActivitiesScreen() {
 
             <View style={[styles.activityFooter, { borderTopColor: colors.border }]}>
               <Text style={[styles.priceText, { color: catColor }]}>
-                {item.price ? `${currSymbol}${Math.round(item.price).toLocaleString()} / person` : "Free"}
+                {item.price
+                  ? `${formatPriceForCity(Math.round(item.price), item.city, item.currency)} / person`
+                  : "Free"}
               </Text>
               <View style={[styles.arrowBtn, { backgroundColor: catColor + "15" }]}>
                 <Feather name="arrow-right" size={14} color={catColor} />

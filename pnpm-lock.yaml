@@ -585,7 +585,14 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
 
-  lib/city-config: {}
+  lib/city-config:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.3.5
+      tsx:
+        specifier: 'catalog:'
+        version: 4.21.0
 
   lib/db:
     dependencies:

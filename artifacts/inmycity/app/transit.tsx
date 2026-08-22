@@ -12,6 +12,7 @@ import { useGetTransitLines } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { formatPriceForCity } from "@workspace/city-config";
 
 const TYPE_FILTERS = [
   { id: "all", label: "All" },
@@ -51,8 +52,6 @@ export default function TransitScreen() {
 
   const refreshControl = useListRefreshControl(isRefetching, refetch);
 
-  const isLocal = selectedCity?.name === "Mumbai" || selectedCity?.name === "Bangalore";
-  const currencySymbol = isLocal ? "₹" : "$";
 
   const filtered = searchText.trim()
     ? lines.filter(l =>
@@ -205,7 +204,7 @@ export default function TransitScreen() {
                       <View style={styles.metaChip}>
                         <Feather name="credit-card" size={11} color={colors.mutedForeground} />
                         <Text style={[styles.metaChipText, { color: colors.mutedForeground }]}>
-                          {currencySymbol}{item.fare}+
+                          {formatPriceForCity(item.fare, item.city)}+
                         </Text>
                       </View>
                     )}

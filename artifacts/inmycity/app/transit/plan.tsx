@@ -10,6 +10,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useSearchTransitRoutes, getSearchTransitRoutesQueryKey } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
+import { formatPriceForCity } from "@workspace/city-config";
 
 const TYPE_ICONS: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
   metro: "zap",
@@ -29,8 +30,6 @@ export default function TransitPlanScreen() {
   const [to, setTo] = useState("");
   const [searched, setSearched] = useState(false);
 
-  const isLocal = selectedCity?.name === "Mumbai" || selectedCity?.name === "Bangalore";
-  const currencySymbol = isLocal ? "₹" : "$";
 
   const searchParams = { city: selectedCity?.name, from: from || undefined, to: to || undefined };
   const { data: routes = [], isLoading, refetch } = useSearchTransitRoutes(
@@ -217,7 +216,9 @@ export default function TransitPlanScreen() {
                     {item.fare != null && (
                       <View style={styles.statItem}>
                         <Feather name="credit-card" size={12} color={colors.mutedForeground} />
-                        <Text style={[styles.statText, { color: "#0e7490" }]}>{currencySymbol}{item.fare}</Text>
+                        <Text style={[styles.statText, { color: "#0e7490" }]}>
+                          {formatPriceForCity(item.fare, item.city)}
+                        </Text>
                       </View>
                     )}
                     <View style={styles.statItem}>

@@ -9,6 +9,7 @@ import { useGetHotelById, getGetHotelByIdQueryKey } from "@workspace/api-client-
 import { ErrorState } from "@/components/ListStates";
 import { VenueActions } from "@/components/VenueActions";
 import { MapPreview } from "@/components/MapPreview";
+import { formatPriceForCity } from "@workspace/city-config";
 
 const CATEGORY_COLORS: Record<string, string> = {
   budget: "#047857",
@@ -48,8 +49,6 @@ export default function HotelDetailScreen() {
   if (isLoading || !hotel) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
 
   const catColor = CATEGORY_COLORS[hotel.category] ?? "#4f46e5";
-  const isLocal = hotel.city === "Mumbai" || hotel.city === "Bangalore";
-  const currencySymbol = isLocal ? "₹" : "$";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -129,7 +128,9 @@ export default function HotelDetailScreen() {
             <View style={styles.infoCell}>
               <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Per Night</Text>
               <Text style={[styles.priceValue, { color: catColor }]}>
-                {hotel.pricePerNight ? `${currencySymbol}${Math.round(hotel.pricePerNight).toLocaleString()}` : "—"}
+                {hotel.pricePerNight
+                  ? formatPriceForCity(Math.round(hotel.pricePerNight), hotel.city, hotel.currency)
+                  : "—"}
               </Text>
             </View>
           </View>
@@ -200,7 +201,9 @@ export default function HotelDetailScreen() {
         <View>
           <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Starting from</Text>
           <Text style={[styles.bottomPrice, { color: colors.foreground }]}>
-            {hotel.pricePerNight ? `${currencySymbol}${Math.round(hotel.pricePerNight).toLocaleString()}/night` : "Check availability"}
+            {hotel.pricePerNight
+              ? `${formatPriceForCity(Math.round(hotel.pricePerNight), hotel.city, hotel.currency)}/night`
+              : "Check availability"}
           </Text>
         </View>
         <TouchableOpacity

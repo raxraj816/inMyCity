@@ -7,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetDealById, getGetDealByIdQueryKey } from "@workspace/api-client-react";
 import { ErrorState } from "@/components/ListStates";
+import { formatPriceForCity } from "@workspace/city-config";
 
 export default function DealDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -92,14 +93,14 @@ export default function DealDetailScreen() {
           <Text style={[styles.placeName, { color: colors.mutedForeground }]}>{deal.placeName}</Text>
           
           <View style={styles.priceRow}>
-            {deal.originalPrice !== null && (
+            {deal.originalPrice != null && (
               <Text style={[styles.originalPrice, { color: colors.mutedForeground }]}>
-                ${deal.originalPrice}
+                {formatPriceForCity(deal.originalPrice, deal.city)}
               </Text>
             )}
-            {deal.dealPrice !== null && (
+            {deal.dealPrice != null && (
               <Text style={[styles.dealPrice, { color: colors.amber }]}>
-                ${deal.dealPrice}
+                {formatPriceForCity(deal.dealPrice, deal.city)}
               </Text>
             )}
           </View>

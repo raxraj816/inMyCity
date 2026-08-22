@@ -1,0 +1,15 @@
+#!/bin/sh
+# Block direct commits on protected branches. Work happens on feature/* branches
+# and reaches develop (and later master) only through pull requests.
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+case "$branch" in
+  master|main|develop)
+    echo "blocked: direct commits to '$branch' are not allowed." >&2
+    echo "create a feature branch instead:" >&2
+    echo "  git checkout -b feature/<name>" >&2
+    echo "(override for a genuine exception: git commit --no-verify)" >&2
+    exit 1
+    ;;
+esac
+exit 0

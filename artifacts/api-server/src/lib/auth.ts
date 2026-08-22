@@ -20,6 +20,8 @@ export interface SessionData {
 let oidcConfig: client.Configuration | null = null;
 
 export async function getOidcConfig(): Promise<client.Configuration> {
+  const clientSecret = process.env.OIDC_CLIENT_SECRET;
+
   if (!ISSUER_URL || !OIDC_CLIENT_ID) {
     throw new Error("OIDC_ISSUER_URL and OIDC_CLIENT_ID are required for auth");
   }
@@ -28,6 +30,7 @@ export async function getOidcConfig(): Promise<client.Configuration> {
     oidcConfig = await client.discovery(
       new URL(ISSUER_URL),
       OIDC_CLIENT_ID,
+      clientSecret,
     );
   }
   return oidcConfig;

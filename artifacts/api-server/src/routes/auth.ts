@@ -25,7 +25,9 @@ const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 const router: IRouter = Router();
 
 function getOrigin(req: Request): string {
-  const proto = req.headers["x-forwarded-proto"] || "https";
+  const proto =
+    req.headers["x-forwarded-proto"] ||
+    (process.env.NODE_ENV === "production" ? "https" : "http");
   const host =
     req.headers["x-forwarded-host"] || req.headers["host"] || "localhost";
   return `${proto}://${host}`;
@@ -34,7 +36,7 @@ function getOrigin(req: Request): string {
 function setSessionCookie(res: Response, sid: string) {
   res.cookie(SESSION_COOKIE, sid, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_TTL,
@@ -44,7 +46,7 @@ function setSessionCookie(res: Response, sid: string) {
 function setOidcCookie(res: Response, name: string, value: string) {
   res.cookie(name, value, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: OIDC_COOKIE_TTL,
@@ -92,7 +94,13 @@ router.get("/auth/user", (req: Request, res: Response) => {
 });
 
 router.get("/login", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
+  let config: oidc.Configuration;
+  try {
+    config = await getOidcConfig();
+  } catch {
+    res.status(503).json({ error: "OIDC login is not configured" });
+    return;
+  }
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
   const returnTo = getSafeReturnTo(req.query.returnTo);
@@ -121,7 +129,13 @@ router.get("/login", async (req: Request, res: Response) => {
 });
 
 router.get("/callback", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
+  let config: oidc.Configuration;
+  try {
+    config = await getOidcConfig();
+  } catch {
+    res.status(503).json({ error: "OIDC login is not configured" });
+    return;
+  }
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
   const codeVerifier = req.cookies?.code_verifier;
@@ -187,11 +201,18 @@ router.get("/callback", async (req: Request, res: Response) => {
 });
 
 router.get("/logout", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
   const origin = getOrigin(req);
 
   const sid = getSessionId(req);
   await clearSession(res, sid);
+
+  let config: oidc.Configuration;
+  try {
+    config = await getOidcConfig();
+  } catch {
+    res.redirect(origin);
+    return;
+  }
 
   const endSessionUrl = oidc.buildEndSessionUrl(config, {
     client_id: OIDC_CLIENT_ID!,
@@ -214,6 +235,10 @@ router.post(
 
     try {
       const config = await getOidcConfig();
+      if (!ISSUER_URL) {
+        res.status(503).json({ error: "OIDC login is not configured" });
+        return;
+      }
 
       const callbackUrl = new URL(redirect_uri);
       callbackUrl.searchParams.set("code", code);

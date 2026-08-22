@@ -57,7 +57,10 @@ router.get("/itineraries/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [itin] = await db.select().from(itinerariesTable).where(eq(itinerariesTable.id, id));
-    if (!itin) return res.status(404).json({ error: "Itinerary not found" });
+    if (!itin) {
+      res.status(404).json({ error: "Itinerary not found" });
+      return;
+    }
 
     const stopRows = await db
       .select()

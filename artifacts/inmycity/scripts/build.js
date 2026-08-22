@@ -134,8 +134,9 @@ async function startMetro(expoPublicAppUrl) {
   };
 
   metroProcess = spawn(
-    "pnpm",
+    "corepack",
     [
+      "pnpm",
       "exec",
       "expo",
       "start",
@@ -504,7 +505,7 @@ async function main() {
   prepareDirectories(timestamp);
   clearMetroCache();
 
-  await startMetro(domain);
+  await startMetro(baseUrl);
 
   const downloadTimeout = 600000;
   const downloadPromise = downloadBundlesAndManifests(timestamp);

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { View, Text, StyleSheet, Platform, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { View, Text, StyleSheet, Platform, TouchableOpacity, ScrollView, RefreshControl, Share } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
@@ -9,11 +10,20 @@ import { useGetFavorites, useGetCollections } from "@workspace/api-client-react"
 import { PlaceCard } from "@/components/PlaceCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { SkeletonCard } from "@/components/SkeletonCard";
+import {
+  buildPlanShareText,
+  getSavedPlans,
+  removeSavedPlan,
+  type SavedPlan,
+} from "@/lib/savedPlans";
 
 export default function SavedScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<"favorites" | "collections">("favorites");
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"favorites" | "collections" | "plans">("favorites");
+  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
 
   const {
     data: favorites,
@@ -32,12 +42,32 @@ export default function SavedScreen() {
   const topPadding = Math.max(insets.top, 20);
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
+  const loadPlans = useCallback(async () => {
+    setPlansLoading(true);
+    try {
+      setSavedPlans(await getSavedPlans());
+    } finally {
+      setPlansLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPlans();
+  }, [loadPlans]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPlans();
+    }, [loadPlans]),
+  );
+
   const onRefresh = () => {
     refetchFavorites();
     refetchCollections();
+    loadPlans();
   };
 
-  const isRefreshing = favoritesLoading || collectionsLoading;
+  const isRefreshing = favoritesLoading || collectionsLoading || plansLoading;
 
   if (favoritesError || collectionsError) {
     return <ErrorFallback error={(favoritesError || collectionsError) as Error} resetError={onRefresh} />;
@@ -75,6 +105,20 @@ export default function SavedScreen() {
               { color: activeTab === "collections" ? colors.amber : colors.mutedForeground },
               activeTab === "collections" && { fontFamily: "Inter_600SemiBold" }
             ]}>Collections</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "plans" && [styles.activeTab, { borderBottomColor: colors.amber }]
+            ]}
+            onPress={() => setActiveTab("plans")}
+          >
+            <Text style={[
+              styles.tabText,
+              { color: activeTab === "plans" ? colors.amber : colors.mutedForeground },
+              activeTab === "plans" && { fontFamily: "Inter_600SemiBold" }
+            ]}>Plans</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -140,6 +184,70 @@ export default function SavedScreen() {
                     </Text>
                   </View>
                   <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {activeTab === "plans" && (
+          <View>
+            {plansLoading && savedPlans.length === 0 ? (
+              <>
+                <SkeletonCard height={116} style={styles.skeleton} />
+                <SkeletonCard height={116} style={styles.skeleton} />
+              </>
+            ) : savedPlans.length === 0 ? (
+              <View style={[styles.emptyContainer, { paddingTop: 60 }]}>
+                <View style={[styles.emptyIconContainer, { backgroundColor: colors.muted }]}>
+                  <Feather name="bookmark" size={32} color={colors.mutedForeground} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No saved plans yet</Text>
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                  Save an itinerary or neighborhood guide to keep it here.
+                </Text>
+              </View>
+            ) : (
+              savedPlans.map((plan) => (
+                <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.planTopRow}>
+                    <View style={[styles.planIcon, { backgroundColor: plan.kind === "itinerary" ? "#6366f118" : "#0ea5e918" }]}>
+                      <Feather
+                        name={plan.kind === "itinerary" ? "map" : "compass"}
+                        size={18}
+                        color={plan.kind === "itinerary" ? "#6366f1" : "#0ea5e9"}
+                      />
+                    </View>
+                    <View style={styles.planInfo}>
+                      <Text style={[styles.planTitle, { color: colors.foreground }]} numberOfLines={1}>{plan.title}</Text>
+                      <Text style={[styles.planSubtitle, { color: colors.mutedForeground }]} numberOfLines={2}>{plan.subtitle}</Text>
+                    </View>
+                  </View>
+
+                  {plan.summary ? (
+                    <Text style={[styles.planSummary, { color: colors.mutedForeground }]} numberOfLines={2}>{plan.summary}</Text>
+                  ) : null}
+
+                  <View style={styles.planActionRow}>
+                    <TouchableOpacity
+                      style={[styles.planPrimaryAction, { backgroundColor: colors.amber }]}
+                      onPress={() => router.push(plan.route as any)}
+                    >
+                      <Text style={styles.planPrimaryActionText}>Open</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.planSmallAction, { borderColor: colors.border }]}
+                      onPress={() => Share.share({ title: plan.title, message: buildPlanShareText(plan) })}
+                    >
+                      <Feather name="share-2" size={15} color={colors.foreground} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.planSmallAction, { borderColor: colors.border }]}
+                      onPress={async () => setSavedPlans(await removeSavedPlan(plan.id))}
+                    >
+                      <Feather name="trash-2" size={15} color={colors.destructive} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))
             )}
@@ -251,5 +359,79 @@ const styles = StyleSheet.create({
   collectionCount: {
     fontFamily: "Inter_500Medium",
     fontSize: 12,
-  }
+  },
+  planCard: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    ...Platform.select({
+      native: {
+        shadowColor: "#0f172a",
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 2,
+      },
+      web: { boxShadow: "0 2px 8px rgba(15,23,42,0.04)" },
+    }),
+  },
+  planTopRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+  },
+  planIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  planInfo: {
+    flex: 1,
+  },
+  planTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  planSubtitle: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  planSummary: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 12,
+  },
+  planActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 14,
+  },
+  planPrimaryAction: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  planPrimaryActionText: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+  },
+  planSmallAction: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

@@ -52,7 +52,10 @@ router.get("/collections", async (req, res) => {
 router.post("/collections", async (req, res) => {
   try {
     const { name, description } = req.body;
-    if (!name) return res.status(400).json({ error: "name is required" });
+    if (!name) {
+      res.status(400).json({ error: "name is required" });
+      return;
+    }
 
     const [col] = await db.insert(collectionsTable).values({ name, description }).returning();
     res.status(201).json({ ...col, places: [] });
@@ -66,7 +69,10 @@ router.get("/collections/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const col = await getCollectionWithPlaces(id);
-    if (!col) return res.status(404).json({ error: "Collection not found" });
+    if (!col) {
+      res.status(404).json({ error: "Collection not found" });
+      return;
+    }
     res.json(col);
   } catch (err) {
     req.log.error({ err }, "Failed to get collection");
@@ -89,7 +95,10 @@ router.post("/collections/:id/places", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { placeId } = req.body;
-    if (!placeId) return res.status(400).json({ error: "placeId is required" });
+    if (!placeId) {
+      res.status(400).json({ error: "placeId is required" });
+      return;
+    }
 
     const [existing] = await db
       .select()
@@ -103,7 +112,10 @@ router.post("/collections/:id/places", async (req, res) => {
     }
 
     const col = await getCollectionWithPlaces(id);
-    if (!col) return res.status(404).json({ error: "Collection not found" });
+    if (!col) {
+      res.status(404).json({ error: "Collection not found" });
+      return;
+    }
     res.json(col);
   } catch (err) {
     req.log.error({ err }, "Failed to add place to collection");
@@ -123,7 +135,10 @@ router.delete("/collections/:id/places/:placeId", async (req, res) => {
       );
 
     const col = await getCollectionWithPlaces(id);
-    if (!col) return res.status(404).json({ error: "Collection not found" });
+    if (!col) {
+      res.status(404).json({ error: "Collection not found" });
+      return;
+    }
     res.json(col);
   } catch (err) {
     req.log.error({ err }, "Failed to remove place from collection");

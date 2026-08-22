@@ -24,6 +24,7 @@ import { AiChatFab } from "@/components/AiChatFab";
 type MainTab = "pulse" | "news" | "community" | "qa";
 type PosterTier = "official" | "local_expert" | "creator" | "business";
 type PulseFilter = "all" | "videos" | "food" | "transit" | "tips" | "events";
+type TrustLabel = "verified" | "editorial" | "partner" | "community" | "user-submitted";
 
 type NewsCategory = "local" | "traffic" | "weather" | "civic" | "sports" | "business" | "transit";
 
@@ -45,6 +46,8 @@ interface PulsePost {
   likes: number;
   comments: number;
   saves: number;
+  trustLabel?: TrustLabel;
+  confidence?: "high" | "medium";
   isSponsored?: boolean;
   isFeatured?: boolean;
 }
@@ -66,6 +69,8 @@ interface NewsItem {
   source: string;
   sourceKind: NewsSourceKind;
   minutesAgo: number;
+  trustLabel?: TrustLabel;
+  confidence?: "high" | "medium";
   city?: string;
 }
 
@@ -143,14 +148,14 @@ const HAPPENING_NOW: Record<string, HappeningItem[]> = {
 
 const PULSE_POSTS: Record<string, PulsePost[]> = {
   Mumbai: [
-    { id: 1, tier: "official", author: "inMyCity Mumbai", handle: "@inmycity.mumbai", location: "Mumbai", caption: "We've verified 40+ new street food stalls around Mohammad Ali Road, Juhu Beach, and Dharavi. The map is now live — every stall is GPS-pinned, rated, and open-hours verified.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=1200&q=80", neighborhood: "City-wide", filterTags: ["all", "food", "tips"], minutesAgo: 15, likes: 3102, comments: 88, saves: 412, isFeatured: true },
-    { id: 2, tier: "creator", author: "Riya Desai", handle: "@riyaexplores", location: "Bandra", caption: "4 evenings, 6 benches tested. The bench at coordinates I'm sharing gives the cleanest unobstructed sunset + the chai stall 40 metres north closes at 8:30 sharp — don't be late.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?auto=format&fit=crop&w=1200&q=80", videoDuration: "0:47", neighborhood: "Bandra", filterTags: ["all", "videos", "tips"], minutesAgo: 38, likes: 1840, comments: 54, saves: 233 },
-    { id: 3, tier: "local_expert", author: "Aarav Mehta", handle: "@aarav.trains", location: "Western Line", caption: "2 years of daily Western Line rides. Leave before 7:55am or after 9:20am. Avoid carriage 3 from the engine. Kandivali ladies compartment exit saves 8 minutes at Churchgate.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1514578915946-8b0a7c3f1f60?auto=format&fit=crop&w=1200&q=80", videoDuration: "1:02", neighborhood: "Western Line", filterTags: ["all", "videos", "transit", "tips"], minutesAgo: 72, likes: 2211, comments: 97, saves: 388 },
-    { id: 4, tier: "business", author: "Bohri Kitchen", handle: "@bohrikitchen", location: "Colaba", caption: "Sunday home dining returns. Bohri thaal for 8 guests, ₹1,200 per head, all inclusive. DM to reserve — only 2 seatings left this week.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=1200&q=80", neighborhood: "Colaba", filterTags: ["all", "food", "events"], minutesAgo: 120, likes: 740, comments: 41, saves: 95, isSponsored: true },
-    { id: 5, tier: "creator", author: "Mumbai Lens", handle: "@mumbailens", location: "Dharavi", caption: "14 workshops, 3 schools, 1 cricket ground. Dharavi isn't what outsiders imagine. Shot over 6 visits across different times of day.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80", videoDuration: "0:58", neighborhood: "Dharavi", filterTags: ["all", "videos", "tips"], minutesAgo: 190, likes: 4120, comments: 203, saves: 688 },
+    { id: 1, tier: "official", author: "inMyCity Mumbai", handle: "@inmycity.mumbai", location: "Mumbai", caption: "We've verified 40+ new street food stalls around Mohammad Ali Road, Juhu Beach, and Dharavi. The map is now live — every stall is GPS-pinned, rated, and open-hours verified.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=1200&q=80", neighborhood: "City-wide", filterTags: ["all", "food", "tips"], minutesAgo: 15, likes: 3102, comments: 88, saves: 412, trustLabel: "verified", confidence: "high", isFeatured: true },
+    { id: 2, tier: "creator", author: "Riya Desai", handle: "@riyaexplores", location: "Bandra", caption: "4 evenings, 6 benches tested. The bench at coordinates I'm sharing gives the cleanest unobstructed sunset + the chai stall 40 metres north closes at 8:30 sharp — don't be late.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?auto=format&fit=crop&w=1200&q=80", videoDuration: "0:47", neighborhood: "Bandra", filterTags: ["all", "videos", "tips"], minutesAgo: 38, likes: 1840, comments: 54, saves: 233, trustLabel: "community", confidence: "medium" },
+    { id: 3, tier: "local_expert", author: "Aarav Mehta", handle: "@aarav.trains", location: "Western Line", caption: "2 years of daily Western Line rides. Leave before 7:55am or after 9:20am. Avoid carriage 3 from the engine. Kandivali ladies compartment exit saves 8 minutes at Churchgate.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1514578915946-8b0a7c3f1f60?auto=format&fit=crop&w=1200&q=80", videoDuration: "1:02", neighborhood: "Western Line", filterTags: ["all", "videos", "transit", "tips"], minutesAgo: 72, likes: 2211, comments: 97, saves: 388, trustLabel: "editorial", confidence: "high" },
+    { id: 4, tier: "business", author: "Bohri Kitchen", handle: "@bohrikitchen", location: "Colaba", caption: "Sunday home dining returns. Bohri thaal for 8 guests, Rs 1,200 per head, all inclusive. DM to reserve — only 2 seatings left this week.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=1200&q=80", neighborhood: "Colaba", filterTags: ["all", "food", "events"], minutesAgo: 120, likes: 740, comments: 41, saves: 95, trustLabel: "partner", confidence: "medium", isSponsored: true },
+    { id: 5, tier: "creator", author: "Mumbai Lens", handle: "@mumbailens", location: "Dharavi", caption: "14 workshops, 3 schools, 1 cricket ground. Dharavi isn't what outsiders imagine. Shot over 6 visits across different times of day.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80", videoDuration: "0:58", neighborhood: "Dharavi", filterTags: ["all", "videos", "tips"], minutesAgo: 190, likes: 4120, comments: 203, saves: 688, trustLabel: "user-submitted", confidence: "medium" },
   ],
   Bangalore: [
-    { id: 1, tier: "official", author: "inMyCity Bangalore", handle: "@inmycity.blr", location: "Bangalore", caption: "Namma Metro Phase 2 opens next month — 12 new stations, Whitefield to MG Road in 35 minutes. We've mapped every new interchange, exit, and first/last mile connection.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80", neighborhood: "City-wide", filterTags: ["all", "transit", "tips"], minutesAgo: 22, likes: 2840, comments: 112, saves: 540, isFeatured: true },
+    { id: 1, tier: "official", author: "inMyCity Bangalore", handle: "@inmycity.blr", location: "Bangalore", caption: "Namma Metro Phase 2 opens next month — 12 new stations, Whitefield to MG Road in 35 minutes. We've mapped every new interchange, exit, and first/last mile connection.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80", neighborhood: "City-wide", filterTags: ["all", "transit", "tips"], minutesAgo: 22, likes: 2840, comments: 112, saves: 540, trustLabel: "verified", confidence: "high", isFeatured: true },
     { id: 2, tier: "creator", author: "Sneha Vishwanath", handle: "@snehavblr", location: "Indiranagar", caption: "Matteo → Hao → Araku → Third Wave roastery. 4 stops, 2 hours, 1 excellent afternoon. Exact timings, seat recommendations, and what to order at each.", mediaType: "video", mediaUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80", videoDuration: "0:53", neighborhood: "Indiranagar", filterTags: ["all", "videos", "food", "tips"], minutesAgo: 55, likes: 1320, comments: 48, saves: 177 },
     { id: 3, tier: "local_expert", author: "Karthik Rajan", handle: "@kartik.blr", location: "HSR Layout", caption: "Tracked 22 problem road stretches since October. Here's which roads flood first in rain, and which alternate routes hold up — with actual travel times tested.", mediaType: "image", mediaUrl: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?auto=format&fit=crop&w=1200&q=80", neighborhood: "HSR Layout", filterTags: ["all", "transit", "tips"], minutesAgo: 130, likes: 980, comments: 67, saves: 144 },
   ],
@@ -169,12 +174,12 @@ const PULSE_POSTS: Record<string, PulsePost[]> = {
 
 const NEWS_DATA: Record<string, NewsItem[]> = {
   Mumbai: [
-    { id: 1, category: "traffic", headline: "Western Express Highway hit by major peak-hour delays", summary: "Traffic police advise using JVLR and alternate routes until 8:30 pm.", imageUrl: "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80", source: "Mumbai Traffic Police", sourceKind: "traffic", minutesAgo: 12, city: "Mumbai" },
-    { id: 2, category: "weather", headline: "Orange alert issued for Mumbai as heavy rain returns", summary: "IMD expects intense showers in low-lying areas through midnight.", imageUrl: "https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=1200&q=80", source: "IMD Mumbai", sourceKind: "weather", minutesAgo: 22, city: "Mumbai" },
-    { id: 3, category: "civic", headline: "BMC announces water cut in Andheri and Bandra today", summary: "Supply will remain off from 10am to 6pm for pipeline maintenance.", imageUrl: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80", source: "BMC", sourceKind: "government", minutesAgo: 45, city: "Mumbai" },
-    { id: 4, category: "local", headline: "Dharavi redevelopment project breaks ground officially", summary: "Maharashtra CM inaugurated the ₹20,000 Cr project this morning.", imageUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80", source: "Hindustan Times", sourceKind: "publisher", minutesAgo: 60, city: "Mumbai" },
-    { id: 5, category: "sports", headline: "Mumbai Indians sell out Wankhede for RCB clash", summary: "All 33,000 tickets sold within 90 minutes of release.", imageUrl: "https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=1200&q=80", source: "Times of India Sport", sourceKind: "publisher", minutesAgo: 90, city: "Mumbai" },
-    { id: 6, category: "local", headline: "New verified food stalls added around Mohammad Ali Road", summary: "City guide team expanded the street food map with 40+ vetted stalls.", imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80", source: "inMyCity Mumbai", sourceKind: "publisher", minutesAgo: 110, city: "Mumbai" },
+    { id: 1, category: "traffic", headline: "Western Express Highway hit by major peak-hour delays", summary: "Traffic police advise using JVLR and alternate routes until 8:30 pm.", imageUrl: "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80", source: "Mumbai Traffic Police", sourceKind: "traffic", minutesAgo: 12, trustLabel: "verified", confidence: "high", city: "Mumbai" },
+    { id: 2, category: "weather", headline: "Orange alert issued for Mumbai as heavy rain returns", summary: "IMD expects intense showers in low-lying areas through midnight.", imageUrl: "https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=1200&q=80", source: "IMD Mumbai", sourceKind: "weather", minutesAgo: 22, trustLabel: "verified", confidence: "high", city: "Mumbai" },
+    { id: 3, category: "civic", headline: "BMC announces water cut in Andheri and Bandra today", summary: "Supply will remain off from 10am to 6pm for pipeline maintenance.", imageUrl: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80", source: "BMC", sourceKind: "government", minutesAgo: 45, trustLabel: "verified", confidence: "high", city: "Mumbai" },
+    { id: 4, category: "local", headline: "Dharavi redevelopment project breaks ground officially", summary: "Maharashtra CM inaugurated the Rs 20,000 Cr project this morning.", imageUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=1200&q=80", source: "Hindustan Times", sourceKind: "publisher", minutesAgo: 60, trustLabel: "editorial", confidence: "medium", city: "Mumbai" },
+    { id: 5, category: "sports", headline: "Mumbai Indians sell out Wankhede for RCB clash", summary: "All 33,000 tickets sold within 90 minutes of release.", imageUrl: "https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=1200&q=80", source: "Times of India Sport", sourceKind: "publisher", minutesAgo: 90, trustLabel: "editorial", confidence: "medium", city: "Mumbai" },
+    { id: 6, category: "local", headline: "New verified food stalls added around Mohammad Ali Road", summary: "City guide team expanded the street food map with 40+ vetted stalls.", imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80", source: "inMyCity Mumbai", sourceKind: "publisher", minutesAgo: 110, trustLabel: "verified", confidence: "high", city: "Mumbai" },
   ],
   Bangalore: [
     { id: 1, category: "civic", headline: "Namma Metro Phase 2 Whitefield extension opens next month", summary: "The 13.71 km stretch adds 12 stations and cuts Whitefield to MG Road to 35 minutes.", imageUrl: "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?auto=format&fit=crop&w=1200&q=80", source: "BMRCL", sourceKind: "government", minutesAgo: 20, city: "Bangalore" },
@@ -268,7 +273,7 @@ const QA_DATA: Record<string, QAItem[]> = {
   ],
 };
 
-const NEWS_CATEGORY_ORDER: NewsCategory[] = ["traffic", "weather", "civic", "local", "sports", "business"];
+const NEWS_CATEGORY_ORDER: NewsCategory[] = ["traffic", "transit", "weather", "civic", "local", "sports", "business"];
 
 const NEWS_CATEGORY_FILTERS = ["all", ...NEWS_CATEGORY_ORDER] as const;
 
@@ -426,7 +431,9 @@ export default function FeedsScreen() {
                     </View>
                     <View style={styles.pulseNewsTagRow}>
                       <Text style={[styles.pulseNewsTag, { color: meta.color, backgroundColor: meta.bg }]}>{meta.label}</Text>
-                      <Text style={[styles.pulseNewsShort, { color: colors.mutedForeground }]} numberOfLines={1}>Trusted publisher update</Text>
+                      <Text style={[styles.pulseNewsShort, { color: colors.mutedForeground }]} numberOfLines={1}>
+                        {newsItem.trustLabel ?? newsItem.sourceKind} · {newsItem.confidence ?? "medium"} confidence
+                      </Text>
                     </View>
                     <Text style={[styles.pulseNewsHeadline, { color: colors.foreground }]} numberOfLines={2}>{newsItem.headline}</Text>
                     <Text style={[styles.pulseNewsSummary, { color: colors.mutedForeground }]} numberOfLines={3}>{newsItem.summary}</Text>
@@ -468,6 +475,7 @@ export default function FeedsScreen() {
                     <View style={styles.heroOverlay}>
                       <View style={styles.heroTop}>
                         {post.isSponsored && <View style={styles.heroSponsoredBadge}><Text style={styles.heroSponsoredText}>Sponsored</Text></View>}
+                        {post.trustLabel && <View style={styles.heroSponsoredBadge}><Text style={styles.heroSponsoredText}>{post.trustLabel} · {post.confidence ?? "medium"}</Text></View>}
                         {isNew && <View style={styles.heroNewBadge}><View style={styles.heroNewDot} /><Text style={styles.heroNewText}>New</Text></View>}
                         {post.mediaType === "video" && <View style={styles.heroVideoBadge}><Feather name="play" size={10} color="#fff" /><Text style={styles.heroVideoText}>{post.videoDuration}</Text></View>}
                       </View>
@@ -493,6 +501,7 @@ export default function FeedsScreen() {
                         <View style={styles.cardAuthorNameRow}>
                           <Text style={[styles.cardAuthorName, { color: colors.foreground }]}>{post.author}</Text>
                           <View style={[styles.cardTierDot, { backgroundColor: cfg.color }]} />
+                          {post.trustLabel && <View style={[styles.trustBadge, { backgroundColor: cfg.color + "18" }]}><Text style={[styles.trustBadgeText, { color: cfg.color }]}>{post.trustLabel} · {post.confidence ?? "medium"}</Text></View>}
                           {isNew && <View style={[styles.cardNewBadge, { backgroundColor: "#22c55e18" }]}><View style={[styles.cardNewDot, { backgroundColor: "#22c55e" }]} /><Text style={[styles.cardNewText, { color: "#22c55e" }]}>New</Text></View>}
                         </View>
                         <Text style={[styles.cardMetaLine, { color: colors.mutedForeground }]}>{post.handle}{post.neighborhood ? ` · ${post.neighborhood}` : ""} · {timeAgo(post.minutesAgo)}</Text>
@@ -543,6 +552,8 @@ export default function FeedsScreen() {
                         <Text style={[styles.publisherTime, { color: colors.mutedForeground }]}>{timeAgo(item.minutesAgo)}</Text>
                         {isPublisher ? <Text style={[styles.publisherDot, { color: colors.mutedForeground }]}>·</Text> : null}
                         {isPublisher ? <Text style={[styles.publisherShortLabel, { color: meta.color, backgroundColor: meta.bg }]}>{meta.label}</Text> : null}
+                        {item.trustLabel ? <Text style={[styles.publisherDot, { color: colors.mutedForeground }]}>·</Text> : null}
+                        {item.trustLabel ? <Text style={[styles.publisherTime, { color: colors.mutedForeground }]}>{item.trustLabel} · {item.confidence ?? "medium"}</Text> : null}
                       </View>
                     </View>
                   </View>
@@ -759,6 +770,8 @@ const styles = StyleSheet.create({
   cardNewBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   cardNewDot: { width: 5, height: 5, borderRadius: 2.5 },
   cardNewText: { fontFamily: "Inter_700Bold", fontSize: 10 },
+  trustBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
+  trustBadgeText: { fontFamily: "Inter_700Bold", fontSize: 9, textTransform: "capitalize" },
   cardMetaLine: { fontFamily: "Inter_400Regular", fontSize: 11 },
   cardMore: { padding: 4 },
   cardCaption: { fontFamily: "Inter_400Regular", fontSize: 14, lineHeight: 20, paddingHorizontal: 14, paddingBottom: 10 },

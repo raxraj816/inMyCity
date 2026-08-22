@@ -30,7 +30,10 @@ router.get("/transit/lines/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [line] = await db.select().from(transitLinesTable).where(eq(transitLinesTable.id, id));
-    if (!line) return res.status(404).json({ error: "Transit line not found" });
+    if (!line) {
+      res.status(404).json({ error: "Transit line not found" });
+      return;
+    }
     res.json(line);
   } catch (err) {
     req.log.error({ err }, "Failed to get transit line");
@@ -76,7 +79,10 @@ router.get("/transit/routes/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [route] = await db.select().from(transitRoutesTable).where(eq(transitRoutesTable.id, id));
-    if (!route) return res.status(404).json({ error: "Transit route not found" });
+    if (!route) {
+      res.status(404).json({ error: "Transit route not found" });
+      return;
+    }
     res.json(route);
   } catch (err) {
     req.log.error({ err }, "Failed to get transit route");

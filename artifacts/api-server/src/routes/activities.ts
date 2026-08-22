@@ -47,7 +47,10 @@ router.get("/activities/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [activity] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, id));
-    if (!activity) return res.status(404).json({ error: "Activity not found" });
+    if (!activity) {
+      res.status(404).json({ error: "Activity not found" });
+      return;
+    }
     res.json({
       ...activity,
       rating: activity.rating ?? null,

@@ -45,7 +45,10 @@ router.get("/events/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, id));
-    if (!event) return res.status(404).json({ error: "Event not found" });
+    if (!event) {
+      res.status(404).json({ error: "Event not found" });
+      return;
+    }
     res.json({
       ...event,
       startDate: event.startDate.toISOString(),

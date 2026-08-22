@@ -18,7 +18,6 @@ const TYPE_FILTERS = [
   { id: "metro", label: "Metro" },
   { id: "suburban_rail", label: "Train" },
   { id: "bus", label: "Bus" },
-  { id: "tram", label: "Tram" },
 ];
 
 const TYPE_ICONS: Record<string, React.ComponentProps<typeof Feather>["name"]> = {

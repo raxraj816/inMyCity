@@ -47,7 +47,10 @@ router.get("/hotels/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const [hotel] = await db.select().from(hotelsTable).where(eq(hotelsTable.id, id));
-    if (!hotel) return res.status(404).json({ error: "Hotel not found" });
+    if (!hotel) {
+      res.status(404).json({ error: "Hotel not found" });
+      return;
+    }
     res.json({
       ...hotel,
       rating: hotel.rating ?? null,

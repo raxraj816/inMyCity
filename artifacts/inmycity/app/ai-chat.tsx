@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useCity } from "@/context/CityContext";
 import { RobotGreeting } from "@/components/RobotGreeting";
+import { MUMBAI_LAUNCH_PROMPTS } from "@workspace/city-config";
 
 type MessageRole = "user" | "assistant";
 
@@ -31,12 +32,8 @@ interface ChatMessage {
 }
 
 const SUGGESTED_QUESTIONS = [
-  "Best street food near me?",
-  "How do I get around by transit?",
-  "Hidden gems to visit?",
-  "Best cafes to work from?",
-  "What's happening this weekend?",
-  "Safest neighborhoods?",
+  ...MUMBAI_LAUNCH_PROMPTS.map((item) => item.prompt),
+  "What should I do in Mumbai tonight?",
 ];
 
 function getApiBase(): string {
@@ -244,7 +241,7 @@ export default function AiChatScreen() {
           <HeaderRobotIcon color={colors.primary} bg={colors.accent} />
           <View>
             <Text style={[s.headerTitle, { color: colors.text }]}>CityPilot</Text>
-            <Text style={[s.headerSub, { color: colors.mutedForeground }]}>{cityName} • AI city guide</Text>
+            <Text style={[s.headerSub, { color: colors.mutedForeground }]}>{cityName} • plans, food, transit, rain-safe ideas</Text>
           </View>
         </View>
         <View style={{ width: 38 }} />
@@ -258,10 +255,10 @@ export default function AiChatScreen() {
         {messages.length === 0 ? (
           <View style={s.emptyState}>
             <RobotGreeting size={40} color={colors.primary} backgroundColor={colors.accent} />
-            <Text style={[s.greetingText, { color: colors.primary }]}>Hi there! 👋</Text>
-            <Text style={[s.emptyTitle, { color: colors.text }]}>Ask me anything about {cityName}</Text>
+            <Text style={[s.greetingText, { color: colors.primary }]}>CityPilot for Mumbai</Text>
+            <Text style={[s.emptyTitle, { color: colors.text }]}>Know what to do next in {cityName}</Text>
             <Text style={[s.emptySubtitle, { color: colors.mutedForeground }]}>
-              I know the best food spots, transit tips, hidden gems, neighborhoods, events, and more.
+              Ask for plans by neighborhood, budget, rain, local train access, food cravings, or weekend mood.
             </Text>
             <View style={s.suggestionsGrid}>
               {SUGGESTED_QUESTIONS.map((q) => (

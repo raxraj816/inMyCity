@@ -18,6 +18,7 @@ import { CityPicker } from "@/components/CityPicker";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { AppHeader } from "@/components/AppHeader";
 import { AiChatFab } from "@/components/AiChatFab";
+import { MUMBAI_LAUNCH_ZONES } from "@workspace/city-config";
 
 const ONBOARDING_DONE_KEY = "onboarding_complete";
 
@@ -56,20 +57,14 @@ const TREND_FILTERS: { id: TrendFilter; label: string; icon: string }[] = [
 const H_PAD = 16;
 const CAP   = 5;
 
-const WEEKEND_GOALS = [
-  { id: "family", label: "Family day",  icon: "heart",      color: "#ef4444", route: "/activities" },
-  { id: "food",   label: "Food crawl",  icon: "coffee",     color: "#f97316", route: "/dining"     },
-  { id: "fun",    label: "Fun plans",   icon: "zap",        color: "#8b5cf6", route: "/activities" },
-  { id: "rain",   label: "Rain-safe",   icon: "cloud-rain", color: "#0ea5e9", route: "/movies"     },
+const DECISION_PLANS = [
+  { id: "weekend", label: "This weekend", sub: "Curated Mumbai plans for Friday to Sunday.", icon: "calendar", color: "#f97316", route: "/activities" },
+  { id: "tonight", label: "I'm free tonight", sub: "Food, events, movies, or a low-friction plan.", icon: "moon", color: "#6366f1", route: "/ai-chat" },
+  { id: "rain", label: "Rain-safe plans", sub: "Indoor ideas and low travel stress backups.", icon: "cloud-rain", color: "#0ea5e9", route: "/movies" },
+  { id: "budget", label: "Under Rs 1000", sub: "Good plans without payday-level spending.", icon: "percent", color: "#10b981", route: "/deals" },
+  { id: "transit", label: "Near train or metro", sub: "Plans that respect Mumbai travel reality.", icon: "navigation", color: "#ef4444", route: "/transit" },
+  { id: "date", label: "Date night", sub: "Dinner, walk, movie, or backup indoor option.", icon: "heart", color: "#ec4899", route: "/ai-chat" },
 ];
-
-const WEEKEND_HINTS = {
-  event: "Book ahead",
-  deal: "Best value",
-  movie: "Easy fallback",
-  activity: "Great plans",
-  sport: "Active pick",
-} as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -377,42 +372,89 @@ export default function ExploreScreen() {
         <SearchBar colors={colors} />
 
         {/* ── Category grid ── */}
+        <View style={styles.sectionRow}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Mumbai At Your Fingertips</Text>
+          <Feather name="grid" size={15} color={colors.amber} />
+        </View>
         <CategoryGrid />
 
-        {/* ── Weekend planner ── */}
-        <View style={[styles.weekendCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.weekendHeader}>
-            <View style={styles.weekendTextBlock}>
-              <Text style={[styles.weekendEyebrow, { color: colors.amber }]}>This weekend</Text>
-              <Text style={[styles.weekendTitle, { color: colors.foreground }]}>
-                {cityName ?? "Your city"} weekend plans
+        {/* ── Mumbai decision planner ── */}
+        <View style={[styles.launchHero, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.launchHeroTop}>
+            <View style={styles.launchHeroText}>
+              <Text style={[styles.launchEyebrow, { color: colors.amber }]}>Mumbai-first beta</Text>
+              <Text style={[styles.launchTitle, { color: colors.foreground }]}>Find Your Mumbai Vibe</Text>
+              <Text style={[styles.launchSub, { color: colors.mutedForeground }]}>
+                Plans for your mood, budget, weather, and where you are in the city.
               </Text>
-              <Text style={[styles.weekendSub, { color: colors.mutedForeground }]}>
-                Pick a vibe and jump straight into the best things to do.
-              </Text>
-            </View>
-            <View style={[styles.weekendIcon, { backgroundColor: colors.amber + "18" }]}>
-              <Feather name="calendar" size={18} color={colors.amber} />
             </View>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekendGoalsScroll}>
-            {WEEKEND_GOALS.map((goal) => (
-              <TouchableOpacity
-                key={goal.id}
-                style={[styles.weekendGoalPill, { backgroundColor: colors.background, borderColor: colors.border }]}
-                onPress={() => router.push(goal.route as any)}
-                activeOpacity={0.85}
-              >
-                <View style={[styles.weekendGoalIcon, { backgroundColor: goal.color + "18" }]}>
-                  <Feather name={goal.icon as any} size={14} color={goal.color} />
-                </View>
-                <Text style={[styles.weekendGoalText, { color: colors.foreground }]}>{goal.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
+          <View style={styles.decisionGrid}>
+            {DECISION_PLANS.map((plan) => {
+              const featured = plan.id === "weekend";
+              return (
+                <TouchableOpacity
+                  key={plan.id}
+                  style={[
+                    styles.decisionCard,
+                    featured && styles.featuredDecisionCard,
+                    {
+                      backgroundColor: featured ? plan.color + "12" : colors.background,
+                      borderColor: featured ? plan.color + "55" : colors.border,
+                    },
+                  ]}
+                  onPress={() => router.push(plan.route as any)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.decisionTopRow}>
+                    <View style={[styles.decisionIcon, featured && styles.featuredDecisionIcon, { backgroundColor: plan.color + "18" }]}>
+                      <Feather name={plan.icon as any} size={featured ? 17 : 15} color={plan.color} />
+                    </View>
+                    {featured ? (
+                      <View style={[styles.decisionBadge, { backgroundColor: plan.color }]}>
+                        <Text style={styles.decisionBadgeText}>Weekend</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={styles.decisionTextBlock}>
+                    <Text style={[styles.decisionLabel, featured && styles.featuredDecisionLabel, { color: colors.foreground }]}>{plan.label}</Text>
+                    <Text style={[styles.decisionSub, featured && styles.featuredDecisionSub, { color: colors.mutedForeground }]} numberOfLines={featured ? 3 : 2}>{plan.sub}</Text>
+                  </View>
+                  {featured ? (
+                    <View style={styles.featuredDecisionFooter}>
+                      <Text style={[styles.featuredDecisionCta, { color: plan.color }]}>Open weekend ideas</Text>
+                      <Feather name="arrow-right" size={14} color={plan.color} />
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
+
+        {/* ── Mumbai launch neighborhoods ── */}
+        <View style={styles.sectionRow}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Trending by neighborhood</Text>
+          <Feather name="map-pin" size={15} color={colors.amber} />
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneScroll}>
+          {MUMBAI_LAUNCH_ZONES.slice(0, 12).map((zone) => (
+            <TouchableOpacity
+              key={zone.id}
+              style={[styles.zoneCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push(`/neighborhood/${zone.id}` as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.zoneName, { color: colors.foreground }]}>{zone.name}</Text>
+              <Text style={[styles.zoneVibe, { color: colors.mutedForeground }]} numberOfLines={2}>{zone.vibe}</Text>
+              <View style={styles.zoneMetaRow}>
+                <Feather name="navigation" size={11} color={colors.amber} />
+                <Text style={[styles.zoneMeta, { color: colors.amber }]} numberOfLines={1}>{zone.transitAccess}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {/* ── Trending header + filter tabs ── */}
         <View style={styles.sectionRow}>
@@ -519,6 +561,93 @@ const styles = StyleSheet.create({
   searchPlaceholder: { fontFamily: "Inter_400Regular", fontSize: 13, flex: 1 },
   searchMic: { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
 
+  // ── Mumbai launch decision hero ──
+  launchHero: {
+    marginHorizontal: H_PAD,
+    marginTop: 8,
+    marginBottom: 8,
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    ...Platform.select({
+      web: { boxShadow: "0 2px 12px rgba(0,0,0,0.06)" } as any,
+      default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 },
+    }),
+  },
+  launchHeroTop: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  launchHeroText: { flex: 1 },
+  launchEyebrow: { fontFamily: "Inter_700Bold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 },
+  launchTitle: { fontFamily: "Inter_700Bold", fontSize: 22, marginTop: 3, lineHeight: 28 },
+  launchSub: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, marginTop: 5 },
+  decisionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 15,
+  },
+  decisionCard: {
+    width: "48%",
+    minHeight: 118,
+    borderRadius: 15,
+    borderWidth: 1,
+    padding: 12,
+  },
+  featuredDecisionCard: {
+    width: "100%",
+    minHeight: 132,
+    padding: 14,
+  },
+  decisionTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 9,
+  },
+  decisionIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  featuredDecisionIcon: { width: 36, height: 36, borderRadius: 11, marginBottom: 0 },
+  decisionBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  decisionBadgeText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    color: "#fff",
+    textTransform: "uppercase",
+  },
+  decisionTextBlock: {
+    flex: 1,
+  },
+  decisionLabel: { fontFamily: "Inter_700Bold", fontSize: 13, lineHeight: 17 },
+  featuredDecisionLabel: { fontSize: 17, lineHeight: 22 },
+  decisionSub: { fontFamily: "Inter_400Regular", fontSize: 11, lineHeight: 16, marginTop: 4 },
+  featuredDecisionSub: { fontSize: 13, lineHeight: 18, maxWidth: 460 },
+  featuredDecisionFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+  },
+  featuredDecisionCta: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+  },
+
+  // ── Neighborhood zones ──
+  zoneScroll: { paddingHorizontal: H_PAD, gap: 10, paddingBottom: 8 },
+  zoneCard: {
+    width: 190,
+    borderRadius: 15,
+    borderWidth: 1,
+    padding: 13,
+    minHeight: 120,
+  },
+  zoneName: { fontFamily: "Inter_700Bold", fontSize: 15 },
+  zoneVibe: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 17, marginTop: 5 },
+  zoneMetaRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: "auto", paddingTop: 10 },
+  zoneMeta: { fontFamily: "Inter_600SemiBold", fontSize: 10, flex: 1 },
+
   // ── Deal strip card ──
   dealCard: {
     width:        160,
@@ -537,32 +666,6 @@ const styles = StyleSheet.create({
   dealTitle:         { fontFamily: "Inter_600SemiBold", fontSize: 12, lineHeight: 16 },
   dealPlace:         { fontFamily: "Inter_400Regular", fontSize: 11 },
 
-  // ── Weekend card ──
-  weekendCard: {
-    marginHorizontal: H_PAD,
-    marginTop:        4,
-    marginBottom:     6,
-    borderRadius:     18,
-    padding:          16,
-    borderWidth:      1,
-    ...Platform.select({
-      web:     { boxShadow: "0 2px 12px rgba(0,0,0,0.06)" } as any,
-      default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 },
-    }),
-  },
-  weekendTextBlock: { flex: 1, paddingRight: 12 },
-  weekendHeader:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  weekendEyebrow:   { fontFamily: "Inter_700Bold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 },
-  weekendTitle:     { fontFamily: "Inter_700Bold", fontSize: 18, marginTop: 2 },
-  weekendSub:       { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 4, lineHeight: 18 },
-  weekendIcon:      { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  weekendGoalsScroll: { gap: 10, paddingTop: 14 },
-  weekendGoalPill: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    borderRadius: 16, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10,
-  },
-  weekendGoalIcon: { width: 28, height: 28, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  weekendGoalText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
   // ── Hot Picks ──
   hotPicksScroll: { paddingHorizontal: H_PAD, gap: 12 },
   hotPickCard: {

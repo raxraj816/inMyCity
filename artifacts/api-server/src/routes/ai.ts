@@ -1,5 +1,15 @@
 import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { eq } from "drizzle-orm";
+import { MUMBAI_LAUNCH_ZONES, isLaunchCity } from "@workspace/city-config";
+import {
+  activitiesTable,
+  dealsTable,
+  eventsTable,
+  placesTable,
+  transitLinesTable,
+  db,
+} from "@workspace/db";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -51,26 +61,125 @@ function buildSystemPrompt(city: string): string {
   const normalizedCity = city.toLowerCase().replace(/\s+/g, "-");
   const cityKnowledge = CITY_KNOWLEDGE[normalizedCity] || "";
 
-  return `You are an expert AI city assistant for inMyCity, a hyperlocal city guide app. You help users discover the best of their city — places to eat, things to do, local tips, transit info, events, neighborhoods, culture, and more.
+  return `You are CityPilot, the AI city companion inside inMyCity. For launch, your job is to help Mumbai locals make practical decisions: what to do now, tonight, this weekend, within budget, near transit, and with Mumbai-specific constraints like monsoon, traffic, local trains, metro access, and neighborhood fit.
 
 You are currently set to: ${city}
 
 ${cityKnowledge ? `## Your ${city} Knowledge Base\n${cityKnowledge}\n` : ""}
 
 ## Your Behavior
-- Be conversational, concise, and genuinely helpful. Avoid long walls of text — use bullet points or short paragraphs.
-- You know a lot about ${city} — answer confidently for general knowledge questions.
+- Be conversational, concise, and genuinely helpful. Avoid long walls of text.
+- Prefer actionable mini-plans over generic lists.
+- For Mumbai, mention practical details: neighborhood, travel friction, budget, best time, rain-safe backup, and why it fits.
+- When app context is provided, prioritize those places, deals, events, activities, and transit lines over generic recommendations.
 - For hyper-specific real-time info (today's events, current wait times, live prices, today's weather) that you cannot verify, say: "I don't have live data on that, but here's what I know generally..." and give your best answer based on typical patterns.
-- When the user asks something outside your city knowledge, suggest what they might search or check.
-- Always be warm, local-feeling — like a knowledgeable friend who lives in ${city}.
+- Always be warm and local-feeling, like a knowledgeable friend who lives in ${city}.
 - Keep answers short and actionable unless the user asks for detail.
 - If asked about another city, politely note you're specialized for ${city} but can still try to help.
 - Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
 }
 
+async function getMumbaiAppContext() {
+  const [places, events, deals, activities, transitLines] = await Promise.all([
+    db.select().from(placesTable).where(eq(placesTable.city, "Mumbai")).limit(10),
+    db.select().from(eventsTable).where(eq(eventsTable.city, "Mumbai")).limit(8),
+    db.select().from(dealsTable).where(eq(dealsTable.city, "Mumbai")).limit(8),
+    db.select().from(activitiesTable).where(eq(activitiesTable.city, "Mumbai")).limit(10),
+    db.select().from(transitLinesTable).where(eq(transitLinesTable.city, "Mumbai")).limit(8),
+  ]);
+
+  return [
+    "## inMyCity Mumbai App Context",
+    "Use these app entities when they fit the user's intent. Include clear next actions like view, save, route, or ask for a narrower area.",
+    "",
+    "### Launch neighborhoods",
+    ...MUMBAI_LAUNCH_ZONES.map(
+      (zone) => `- ${zone.name}: ${zone.vibe}; best for ${zone.bestFor.join(", ")}; transit: ${zone.transitAccess}; monsoon: ${zone.monsoonNote}`,
+    ),
+    "",
+    "### Places",
+    ...places.map((item) => `- ${item.name} (${item.category}) — ${item.address}; rating ${item.rating ?? "new"}; tags ${(item.tags ?? []).join(", ")}`),
+    "",
+    "### Events",
+    ...events.map((item) => `- ${item.title} — ${item.venue}; ${item.category}; price ${item.price ?? "varies"}`),
+    "",
+    "### Deals",
+    ...deals.map((item) => `- ${item.title} — ${item.placeName}; ${item.discountText}; price ${item.dealPrice ?? "varies"}`),
+    "",
+    "### Activities",
+    ...activities.map((item) => `- ${item.name} — ${item.address}; ${item.durationMinutes ?? 60} min; price ${item.price ?? 0}; tags ${(item.tags ?? []).join(", ")}`),
+    "",
+    "### Transit",
+    ...transitLines.map((item) => `- ${item.name} (${item.shortName ?? item.type}) — ${item.from} to ${item.to}; ${item.frequency ?? "frequency varies"}`),
+  ].join("\n");
+}
+
+async function buildMumbaiFallbackAnswer(message: string) {
+  const normalized = message.toLowerCase();
+  const wantsBudget = normalized.includes("1000") || normalized.includes("budget") || normalized.includes("cheap");
+  const wantsRainSafe = normalized.includes("rain") || normalized.includes("monsoon") || normalized.includes("indoor");
+  const wantsBandra = normalized.includes("bandra");
+  const wantsDate = normalized.includes("date");
+
+  const [places, events, deals, activities] = await Promise.all([
+    db.select().from(placesTable).where(eq(placesTable.city, "Mumbai")).limit(20),
+    db.select().from(eventsTable).where(eq(eventsTable.city, "Mumbai")).limit(8),
+    db.select().from(dealsTable).where(eq(dealsTable.city, "Mumbai")).limit(8),
+    db.select().from(activitiesTable).where(eq(activitiesTable.city, "Mumbai")).limit(8),
+  ]);
+
+  const bandraPlaces = places.filter((item) =>
+    `${item.name} ${item.address} ${(item.tags ?? []).join(" ")}`.toLowerCase().includes("bandra"),
+  );
+  const indoorPlaces = places.filter((item) =>
+    `${item.category} ${(item.tags ?? []).join(" ")}`.toLowerCase().match(/cafe|mall|museum|cinema|shopping|food|bar/),
+  );
+  const budgetDeals = deals.filter((item) => item.dealPrice == null || item.dealPrice <= 1000);
+
+  const picks = [
+    ...(wantsBandra ? bandraPlaces : []),
+    ...(wantsRainSafe ? indoorPlaces : []),
+    ...(wantsBudget ? budgetDeals : deals),
+    ...activities,
+    ...events,
+    ...places,
+  ].slice(0, 4);
+
+  const pickLines = picks.map((item, index) => {
+    const title = "name" in item ? item.name : item.title;
+    const place = "address" in item ? item.address : "venue" in item ? item.venue : "placeName" in item ? item.placeName : "Mumbai";
+    const price =
+      "dealPrice" in item && item.dealPrice != null
+        ? `Rs ${item.dealPrice}`
+        : "price" in item && item.price != null
+          ? `Rs ${item.price}`
+          : "Free or varies";
+    return `${index + 1}. ${title} - ${place}. ${price}.`;
+  });
+
+  const opening =
+    "I am using inMyCity's local Mumbai data right now. OpenAI is configured, but the current API key/project has no usable quota, so here is a grounded local plan:";
+
+  const planType = wantsDate
+    ? "For a date night, keep the plan compact and avoid long cross-city hops."
+    : wantsRainSafe
+      ? "For rain-safe Mumbai plans, prefer indoor food, mall, cinema, cafe, and short station-linked hops."
+      : "For an easy Mumbai evening, keep travel friction low and build around one neighborhood.";
+
+  return [
+    opening,
+    "",
+    planType,
+    "",
+    pickLines.join("\n") || "1. Start with Bandra or Lower Parel, then narrow by budget, rain, and how far you want to travel.",
+    "",
+    "Suggested flow: pick one anchor spot, add one nearby food stop, keep a rain-safe backup, then route by local train/metro or cab depending on the area.",
+  ].join("\n");
+}
+
 router.post("/ai/chat", async (req, res) => {
-  if (!process.env.OPENAI_API_KEY) {
-    res.status(503).json({ error: "OPENAI_API_KEY is not configured" });
+  if (!openai) {
+    res.status(503).json({ error: "OpenAI is not configured" });
     return;
   }
 
@@ -96,7 +205,10 @@ router.post("/ai/chat", async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
 
   try {
-    const systemPrompt = buildSystemPrompt(city);
+    const systemPrompt = [
+      buildSystemPrompt(city),
+      isLaunchCity(city) ? await getMumbaiAppContext() : "",
+    ].filter(Boolean).join("\n\n");
 
     const chatMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
       { role: "system", content: systemPrompt },
@@ -125,12 +237,12 @@ router.post("/ai/chat", async (req, res) => {
     res.end();
   } catch (err) {
     logger.error({ err }, "AI chat error");
-    if (!res.headersSent) {
-      res.status(500).json({ error: "AI service unavailable" });
-    } else {
-      res.write(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`);
-      res.end();
-    }
+    const fallback = isLaunchCity(city)
+      ? await buildMumbaiFallbackAnswer(message)
+      : "OpenAI is temporarily unavailable. Try again after checking the API key quota or billing.";
+    res.write(`data: ${JSON.stringify({ content: fallback })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
   }
 });
 

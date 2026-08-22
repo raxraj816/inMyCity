@@ -1,110 +1,14 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  DEFAULT_CITY_ID,
+  SUPPORTED_CITIES,
+  type CityStatus,
+  type SupportedCity,
+} from "@workspace/city-config";
 
-export type CityStatus = "live" | "soon";
-
-export type SupportedCity = {
-  id: string;
-  name: string;
-  displayName: string;
-  country: string;
-  state: string;
-  lat: number;
-  lng: number;
-  status: CityStatus;
-  tagline: string;
-};
-
-export const SUPPORTED_CITIES: SupportedCity[] = [
-  {
-    id: "mumbai",
-    name: "Mumbai",
-    displayName: "Mumbai, Maharashtra",
-    country: "India",
-    state: "Maharashtra",
-    lat: 19.076,
-    lng: 72.8777,
-    status: "live",
-    tagline: "The City of Dreams",
-  },
-  {
-    id: "bangalore",
-    name: "Bangalore",
-    displayName: "Bangalore, Karnataka",
-    country: "India",
-    state: "Karnataka",
-    lat: 12.9716,
-    lng: 77.5946,
-    status: "live",
-    tagline: "Silicon Valley of India",
-  },
-  {
-    id: "new-york",
-    name: "New York",
-    displayName: "New York, USA",
-    country: "USA",
-    state: "New York",
-    lat: 40.7128,
-    lng: -74.006,
-    status: "live",
-    tagline: "The City That Never Sleeps",
-  },
-  {
-    id: "san-francisco",
-    name: "San Francisco",
-    displayName: "San Francisco, USA",
-    country: "USA",
-    state: "California",
-    lat: 37.7749,
-    lng: -122.4194,
-    status: "live",
-    tagline: "By the Golden Gate",
-  },
-  {
-    id: "delhi",
-    name: "Delhi",
-    displayName: "Delhi, India",
-    country: "India",
-    state: "Delhi",
-    lat: 28.7041,
-    lng: 77.1025,
-    status: "soon",
-    tagline: "Heart of India",
-  },
-  {
-    id: "hyderabad",
-    name: "Hyderabad",
-    displayName: "Hyderabad, Telangana",
-    country: "India",
-    state: "Telangana",
-    lat: 17.385,
-    lng: 78.4867,
-    status: "soon",
-    tagline: "City of Pearls",
-  },
-  {
-    id: "pune",
-    name: "Pune",
-    displayName: "Pune, Maharashtra",
-    country: "India",
-    state: "Maharashtra",
-    lat: 18.5204,
-    lng: 73.8567,
-    status: "soon",
-    tagline: "Oxford of the East",
-  },
-  {
-    id: "chennai",
-    name: "Chennai",
-    displayName: "Chennai, Tamil Nadu",
-    country: "India",
-    state: "Tamil Nadu",
-    lat: 13.0827,
-    lng: 80.2707,
-    status: "soon",
-    tagline: "Gateway to South India",
-  },
-];
+export { SUPPORTED_CITIES };
+export type { CityStatus, SupportedCity };
 
 const STORAGE_KEY = "@inmycity/selected_city";
 const DETECT_RADIUS_KM = 80;
@@ -160,7 +64,7 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
           return;
         }
       }
-      const fallback = SUPPORTED_CITIES.find((c) => c.id === "mumbai") ?? null;
+      const fallback = SUPPORTED_CITIES.find((c) => c.id === DEFAULT_CITY_ID) ?? null;
       setSelectedCityState(fallback);
       setIsAutoDetected(true);
     });

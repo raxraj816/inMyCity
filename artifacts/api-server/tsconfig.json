@@ -15,6 +15,9 @@
       "path": "../../lib/api-zod"
     },
     {
+      "path": "../../lib/city-config"
+    },
+    {
       "path": "../../lib/integrations-openai-ai-server"
     }
   ]

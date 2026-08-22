@@ -1,52 +1,10 @@
 import { Router } from "express";
 import { db, placesTable } from "@workspace/db";
 import { eq, and, gte, sql, ilike, or } from "drizzle-orm";
+import { resolveIsOpen } from "../lib/openingHours";
+import { haversineKm } from "../lib/geo";
 
 const router = Router();
-
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-function isPlaceOpen(openingHours: string | null): boolean | null {
-  if (!openingHours) return null;
-  try {
-    const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
-    const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-    const dayName = days[day];
-    const lowerHours = openingHours.toLowerCase();
-    if (lowerHours.includes("24/7") || lowerHours.includes("always open")) return true;
-    if (lowerHours.includes("closed")) return false;
-    if (lowerHours.includes(dayName) || lowerHours.includes("daily") || lowerHours.includes("mon-sun")) {
-      const match = lowerHours.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?\s*[-–]\s*(\d{1,2}):?(\d{2})?\s*(am|pm)?/);
-      if (match) {
-        let open = parseInt(match[1]);
-        const openPeriod = match[3];
-        let close = parseInt(match[4]);
-        const closePeriod = match[6];
-        if (openPeriod === "pm" && open !== 12) open += 12;
-        if (closePeriod === "pm" && close !== 12) close += 12;
-        if (closePeriod === "am" && close === 12) close = 0;
-        return hour >= open && hour < close;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 router.get("/places", async (req, res) => {
   try {
@@ -75,7 +33,7 @@ router.get("/places", async (req, res) => {
     const result = places
       .map((p) => {
         const distanceKm = lat !== null && lng !== null ? haversineKm(lat, lng, p.lat, p.lng) : null;
-        const isOpen = isPlaceOpen(p.openingHours);
+        const isOpen = resolveIsOpen(p);
         return { ...p, distanceKm, isOpen };
       })
       .filter((p) => {
@@ -116,7 +74,7 @@ router.get("/places/:id", async (req, res) => {
       res.status(404).json({ error: "Place not found" });
       return;
     }
-    res.json({ ...place, distanceKm: null, isOpen: isPlaceOpen(place.openingHours) });
+    res.json({ ...place, distanceKm: null, isOpen: resolveIsOpen(place) });
   } catch (err) {
     req.log.error({ err }, "Failed to get place");
     res.status(500).json({ error: "Internal server error" });

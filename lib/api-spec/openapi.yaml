@@ -261,6 +261,10 @@ paths:
           in: query
           schema:
             type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
         - name: date
           in: query
           schema:
@@ -654,6 +658,18 @@ paths:
           in: query
           schema:
             type: string
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
         - name: category
           in: query
           schema:
@@ -711,10 +727,26 @@ paths:
           in: query
           schema:
             type: string
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
         - name: category
           in: query
           schema:
             type: string
+        - name: openNow
+          in: query
+          schema:
+            type: boolean
         - name: limit
           in: query
           schema:
@@ -1133,6 +1165,8 @@ components:
           type: ["string", "null"]
         bookingUrl:
           type: ["string", "null"]
+        distanceKm:
+          type: ["number", "null"]
         tags:
           type: array
           items:
@@ -1469,6 +1503,8 @@ components:
           type: ["string", "null"]
         description:
           type: ["string", "null"]
+        distanceKm:
+          type: ["number", "null"]
         tags:
           type: array
           items:
@@ -1632,6 +1668,10 @@ components:
           type: ["integer", "null"]
         openingHours:
           type: ["string", "null"]
+        distanceKm:
+          type: ["number", "null"]
+        isOpen:
+          type: ["boolean", "null"]
         bookingUrl:
           type: ["string", "null"]
         phone:

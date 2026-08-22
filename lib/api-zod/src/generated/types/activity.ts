@@ -33,6 +33,10 @@ export interface Activity {
   /** @nullable */
   openingHours?: string | null;
   /** @nullable */
+  distanceKm?: number | null;
+  /** @nullable */
+  isOpen?: boolean | null;
+  /** @nullable */
   bookingUrl?: string | null;
   /** @nullable */
   phone?: string | null;

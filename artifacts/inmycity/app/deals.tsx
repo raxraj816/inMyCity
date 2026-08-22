@@ -13,6 +13,8 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
+import { NearbyFilters } from "@/components/NearbyFilters";
+import { useNearby } from "@/hooks/useNearby";
 
 const CATEGORIES = ["food", "attraction", "retail", "wellness", "nightlife", "fitness"];
 const ACCENT = "#10b981";
@@ -23,6 +25,8 @@ export default function DealsScreen() {
   const { selectedCity } = useCity();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  const nearby = useNearby();
+
   const {
     data: deals,
     isLoading,
@@ -31,6 +35,7 @@ export default function DealsScreen() {
   } = useGetDeals({
     city: selectedCity?.name,
     category: selectedCategory || undefined,
+    ...nearby.queryParams,
   });
 
   const topPadding = Math.max(insets.top, 20);
@@ -68,6 +73,8 @@ export default function DealsScreen() {
         selectedCategory={selectedCategory}
         onSelect={setSelectedCategory}
       />
+
+      <NearbyFilters controls={nearby} accent={ACCENT} showOpenNow={false} />
 
       {isLoading && !deals ? (
         <>

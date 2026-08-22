@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, real, integer, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, real, integer, doublePrecision, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,6 +19,8 @@ export const activitiesTable = pgTable("activities", {
   rating: real("rating"),
   reviewCount: integer("review_count"),
   openingHours: text("opening_hours"),
+  /** Structured weekly hours; see the matching field on `places`. */
+  openingHoursJson: jsonb("opening_hours_json").$type<{ start: number; end: number }[][]>(),
   bookingUrl: text("booking_url"),
   phone: text("phone"),
   tags: text("tags").array().notNull().default([]),

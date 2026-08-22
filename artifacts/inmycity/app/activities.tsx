@@ -15,6 +15,8 @@ import { ErrorFallback } from "@/components/ErrorFallback";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
+import { NearbyFilters } from "@/components/NearbyFilters";
+import { useNearby } from "@/hooks/useNearby";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -87,12 +89,15 @@ export default function ActivitiesScreen() {
   const isLocal       = cityName === "Mumbai" || cityName === "Bangalore";
   const currSymbol    = isLocal ? "₹" : "$";
 
+  const nearby = useNearby();
+
   // ── Data ────────────────────────────────────────────────────────────────
   const {
     data: activities = [], isLoading: actLoading, error: actError, refetch: refetchAct,
   } = useGetActivities({
     city: cityName,
     category: activityFilter !== "all" ? activityFilter : undefined,
+    ...nearby.queryParams,
   });
 
   // Unfiltered activities for the trending strip
@@ -102,7 +107,7 @@ export default function ActivitiesScreen() {
 
   const {
     data: nightlifePlaces = [], isLoading: nightLoading, error: nightError, refetch: refetchNight,
-  } = useGetPlaces({ city: cityName, category: "nightlife" });
+  } = useGetPlaces({ city: cityName, category: "nightlife", ...nearby.queryParams });
 
   const filteredNightlife = nightlifeFilter === "all"
     ? nightlifePlaces
@@ -335,6 +340,12 @@ export default function ActivitiesScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <NearbyFilters
+        controls={nearby}
+        accent={mainTab === "activities" ? ACT_COLOR : NIGHT_COLOR}
+        showOpenNow={mainTab === "activities"}
+      />
 
       {/* Sub-filters */}
       {mainTab === "activities" && (

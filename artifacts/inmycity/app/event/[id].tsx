@@ -7,6 +7,8 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetEventById, getGetEventByIdQueryKey } from "@workspace/api-client-react";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { VenueActions } from "@/components/VenueActions";
+import { MapPreview } from "@/components/MapPreview";
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -99,6 +101,10 @@ export default function EventDetailScreen() {
               </View>
             </View>
           </View>
+
+          <VenueActions name={event.venue} lat={event.lat} lng={event.lng} />
+
+          <MapPreview name={event.venue} lat={event.lat} lng={event.lng} />
 
           {event.description && (
             <View style={styles.section}>

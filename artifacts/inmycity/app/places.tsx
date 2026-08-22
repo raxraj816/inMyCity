@@ -14,6 +14,8 @@ import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { ErrorFallback } from "@/components/ErrorFallback";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { NearbyFilters } from "@/components/NearbyFilters";
+import { useNearby } from "@/hooks/useNearby";
 
 const FILTERS = [
   { id: "all",        label: "All",         category: undefined      },
@@ -35,10 +37,12 @@ export default function PlacesScreen() {
   );
 
   const activeCategory = FILTERS.find(f => f.id === activeFilter)?.category;
+  const nearby = useNearby();
 
   const { data: places = [], isLoading, error, refetch } = useGetPlaces({
     city: selectedCity?.name,
     category: activeCategory,
+    ...nearby.queryParams,
   });
 
   if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
@@ -71,6 +75,8 @@ export default function PlacesScreen() {
         })}
       </ScrollView>
 
+      <NearbyFilters controls={nearby} accent={ACCENT} />
+
       {/* Content */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -83,9 +89,11 @@ export default function PlacesScreen() {
           </View>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No places found</Text>
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            {activeFilter !== "all"
-              ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
-              : `No places in ${selectedCity?.name ?? "this city"} yet.`}
+            {nearby.nearbyEnabled || nearby.openNowEnabled
+              ? "Nothing matches those filters right now. Try turning one off."
+              : activeFilter !== "all"
+                ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
+                : `No places in ${selectedCity?.name ?? "this city"} yet.`}
           </Text>
         </View>
       ) : (

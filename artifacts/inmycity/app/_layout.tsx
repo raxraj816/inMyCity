@@ -108,13 +108,15 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <CityProvider>
-              <LocationProvider>
+            {/* Location wraps City so the city can be auto-detected from coordinates once
+                the user has opted into sharing them. */}
+            <LocationProvider>
+              <CityProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   {withKeyboard}
                 </GestureHandlerRootView>
-              </LocationProvider>
-            </CityProvider>
+              </CityProvider>
+            </LocationProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>

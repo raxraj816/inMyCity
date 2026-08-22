@@ -8,7 +8,11 @@
 
 export type GetActivitiesParams = {
   city?: string;
+  lat?: number;
+  lng?: number;
+  radius?: number;
   category?: string;
+  openNow?: boolean;
   limit?: number;
   offset?: number;
 };

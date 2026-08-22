@@ -7,6 +7,8 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetActivityById, getGetActivityByIdQueryKey } from "@workspace/api-client-react";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { VenueActions } from "@/components/VenueActions";
+import { MapPreview } from "@/components/MapPreview";
 
 const CATEGORY_COLORS: Record<string, string> = {
   adventure: "#ef4444",
@@ -80,6 +82,11 @@ export default function ActivityDetailScreen() {
             <Feather name="map-pin" size={14} color={colors.mutedForeground} />
             <Text style={[styles.locationText, { color: colors.mutedForeground }]}>{activity.address}</Text>
           </View>
+
+          {/* Phone is surfaced in the contact row further down. */}
+          <VenueActions name={activity.name} lat={activity.lat} lng={activity.lng} />
+
+          <MapPreview name={activity.name} lat={activity.lat} lng={activity.lng} />
 
           {/* Stats */}
           <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>

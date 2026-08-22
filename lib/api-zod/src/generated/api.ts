@@ -187,6 +187,7 @@ export const GetEventsQueryParams = zod.object({
   city: zod.coerce.string().optional(),
   lat: zod.coerce.number().optional(),
   lng: zod.coerce.number().optional(),
+  radius: zod.coerce.number().optional(),
   date: zod.coerce.string().optional(),
   category: zod.coerce.string().optional(),
   limit: zod.coerce.number().optional(),
@@ -209,6 +210,7 @@ export const GetEventsResponseItem = zod.object({
   isFree: zod.boolean(),
   imageUrl: zod.string().nullish(),
   bookingUrl: zod.string().nullish(),
+  distanceKm: zod.number().nullish(),
   tags: zod.array(zod.string()),
   createdAt: zod.string(),
 });
@@ -237,6 +239,7 @@ export const GetEventByIdResponse = zod.object({
   isFree: zod.boolean(),
   imageUrl: zod.string().nullish(),
   bookingUrl: zod.string().nullish(),
+  distanceKm: zod.number().nullish(),
   tags: zod.array(zod.string()),
   createdAt: zod.string(),
 });
@@ -696,6 +699,9 @@ export const GetMovieByIdResponse = zod.object({
  */
 export const GetHotelsQueryParams = zod.object({
   city: zod.coerce.string().optional(),
+  lat: zod.coerce.number().optional(),
+  lng: zod.coerce.number().optional(),
+  radius: zod.coerce.number().optional(),
   category: zod.coerce.string().optional(),
   maxPrice: zod.coerce.number().optional(),
   limit: zod.coerce.number().optional(),
@@ -722,6 +728,7 @@ export const GetHotelsResponseItem = zod.object({
   checkIn: zod.string().nullish(),
   checkOut: zod.string().nullish(),
   description: zod.string().nullish(),
+  distanceKm: zod.number().nullish(),
   tags: zod.array(zod.string()),
   createdAt: zod.string(),
 });
@@ -754,6 +761,7 @@ export const GetHotelByIdResponse = zod.object({
   checkIn: zod.string().nullish(),
   checkOut: zod.string().nullish(),
   description: zod.string().nullish(),
+  distanceKm: zod.number().nullish(),
   tags: zod.array(zod.string()),
   createdAt: zod.string(),
 });
@@ -763,7 +771,11 @@ export const GetHotelByIdResponse = zod.object({
  */
 export const GetActivitiesQueryParams = zod.object({
   city: zod.coerce.string().optional(),
+  lat: zod.coerce.number().optional(),
+  lng: zod.coerce.number().optional(),
+  radius: zod.coerce.number().optional(),
   category: zod.coerce.string().optional(),
+  openNow: zod.coerce.boolean().optional(),
   limit: zod.coerce.number().optional(),
   offset: zod.coerce.number().optional(),
 });
@@ -785,6 +797,8 @@ export const GetActivitiesResponseItem = zod.object({
   rating: zod.number().nullish(),
   reviewCount: zod.number().nullish(),
   openingHours: zod.string().nullish(),
+  distanceKm: zod.number().nullish(),
+  isOpen: zod.boolean().nullish(),
   bookingUrl: zod.string().nullish(),
   phone: zod.string().nullish(),
   tags: zod.array(zod.string()),
@@ -816,6 +830,8 @@ export const GetActivityByIdResponse = zod.object({
   rating: zod.number().nullish(),
   reviewCount: zod.number().nullish(),
   openingHours: zod.string().nullish(),
+  distanceKm: zod.number().nullish(),
+  isOpen: zod.boolean().nullish(),
   bookingUrl: zod.string().nullish(),
   phone: zod.string().nullish(),
   tags: zod.array(zod.string()),

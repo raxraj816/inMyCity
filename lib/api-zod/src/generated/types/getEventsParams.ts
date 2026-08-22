@@ -10,6 +10,7 @@ export type GetEventsParams = {
   city?: string;
   lat?: number;
   lng?: number;
+  radius?: number;
   date?: string;
   category?: string;
   limit?: number;

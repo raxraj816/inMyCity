@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -18,6 +18,11 @@ import {
 } from "@workspace/api-client-react";
 import { RatingStars } from "@/components/RatingStars";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { VenueActions } from "@/components/VenueActions";
+import { CopyableAddress } from "@/components/CopyableAddress";
+import { MapPreview } from "@/components/MapPreview";
+import { shareEntity } from "@/lib/placeActions";
+import { buildShareUrl } from "@/lib/links";
 
 export default function PlaceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,15 +57,13 @@ export default function PlaceDetailScreen() {
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
     if (!place) return;
-    try {
-      await Share.share({
-        message: `Check out ${place.name} on inMyCity!`,
-      });
-    } catch (error) {
-      console.error(error);
-    }
+    void shareEntity({
+      title: place.name,
+      url: buildShareUrl("place", place.id),
+      note: `${place.name} — ${place.address}`,
+    });
   };
 
   if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
@@ -163,7 +166,20 @@ export default function PlaceDetailScreen() {
             )}
           </View>
 
-          <Text style={[styles.address, { color: colors.foreground }]}>{place.address}</Text>
+          <CopyableAddress
+            address={place.address}
+            textStyle={[styles.address, { color: colors.foreground, marginBottom: 0 }]}
+          />
+
+          <MapPreview name={place.name} lat={place.lat} lng={place.lng} />
+
+          <VenueActions
+            name={place.name}
+            lat={place.lat}
+            lng={place.lng}
+            phone={place.phone}
+            website={place.website}
+          />
 
           {place.description && (
             <View style={styles.section}>

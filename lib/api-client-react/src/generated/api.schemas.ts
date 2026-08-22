@@ -144,6 +144,8 @@ export interface Event {
   imageUrl?: string | null;
   /** @nullable */
   bookingUrl?: string | null;
+  /** @nullable */
+  distanceKm?: number | null;
   tags: string[];
   createdAt: string;
 }
@@ -330,6 +332,8 @@ export interface Hotel {
   checkOut?: string | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  distanceKm?: number | null;
   tags: string[];
   createdAt: string;
 }
@@ -409,6 +413,10 @@ export interface Activity {
   /** @nullable */
   openingHours?: string | null;
   /** @nullable */
+  distanceKm?: number | null;
+  /** @nullable */
+  isOpen?: boolean | null;
+  /** @nullable */
   bookingUrl?: string | null;
   /** @nullable */
   phone?: string | null;
@@ -449,6 +457,7 @@ export type GetEventsParams = {
   city?: string;
   lat?: number;
   lng?: number;
+  radius?: number;
   date?: string;
   category?: string;
   limit?: number;
@@ -488,6 +497,9 @@ export const GetMoviesStatus = {
 
 export type GetHotelsParams = {
   city?: string;
+  lat?: number;
+  lng?: number;
+  radius?: number;
   category?: string;
   maxPrice?: number;
   limit?: number;
@@ -496,7 +508,11 @@ export type GetHotelsParams = {
 
 export type GetActivitiesParams = {
   city?: string;
+  lat?: number;
+  lng?: number;
+  radius?: number;
   category?: string;
+  openNow?: boolean;
   limit?: number;
   offset?: number;
 };

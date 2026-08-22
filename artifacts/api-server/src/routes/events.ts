@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, eventsTable } from "@workspace/db";
 import { eq, and, gte, ilike } from "drizzle-orm";
+import { applyProximity, parseOrigin } from "../lib/geo";
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.get("/events", async (req, res) => {
     const category = req.query.category as string | undefined;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+    const origin = parseOrigin(req.query as Record<string, unknown>);
 
     const conditions = [];
     if (city) conditions.push(ilike(eventsTable.city, `%${city}%`));
@@ -27,10 +29,17 @@ router.get("/events", async (req, res) => {
       .from(eventsTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(eventsTable.startDate)
-      .limit(limit)
-      .offset(offset);
+      // Proximity filtering happens after the query, so fetch a wider slice first and
+      // paginate below. Keeps soonest-first ordering when no origin was supplied.
+      .limit(origin ? 500 : limit)
+      .offset(origin ? 0 : offset);
 
-    res.json(events.map(e => ({
+    const nearby = applyProximity(events, origin).slice(
+      origin ? offset : 0,
+      origin ? offset + limit : undefined,
+    );
+
+    res.json(nearby.map(e => ({
       ...e,
       startDate: e.startDate.toISOString(),
       endDate: e.endDate?.toISOString() ?? null,

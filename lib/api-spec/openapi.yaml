@@ -987,6 +987,69 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExploreSummary"
 
+  /neighborhoods:
+    get:
+      operationId: listNeighborhoods
+      tags: [recommendations]
+      summary: List the launch neighbourhood zones for a city
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Neighbourhood zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LaunchZone"
+
+  /recommendations:
+    get:
+      operationId: getRecommendations
+      tags: [recommendations]
+      summary: Get ranked plan recommendations for a city
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: mood
+          in: query
+          description: Free-text intent, e.g. `chill`, `date night`.
+          schema:
+            type: string
+        - name: neighborhood
+          in: query
+          description: Launch zone id, e.g. `bandra`.
+          schema:
+            type: string
+        - name: budget
+          in: query
+          description: Upper price bound, in the city's own currency.
+          schema:
+            type: number
+        - name: weatherMode
+          in: query
+          schema:
+            type: string
+            enum: [rain-safe]
+        - name: transitAccess
+          in: query
+          description: Any non-empty value boosts transit-friendly results.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ranked recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationsResponse"
+
 components:
   parameters:
     AuthorizationSessionHeader:
@@ -1413,6 +1476,147 @@ components:
           type: integer
       required:
         - placeId
+
+    RecommendationsResponse:
+      type: object
+      properties:
+        city:
+          type: string
+        title:
+          type: string
+        filters:
+          $ref: "#/components/schemas/RecommendationFilters"
+        prompts:
+          type: array
+          items:
+            $ref: "#/components/schemas/LaunchPrompt"
+        neighborhoods:
+          type: array
+          items:
+            $ref: "#/components/schemas/LaunchZone"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Recommendation"
+      required:
+        - city
+        - title
+        - filters
+        - prompts
+        - neighborhoods
+        - items
+
+    RecommendationFilters:
+      type: object
+      properties:
+        mood:
+          type: ["string", "null"]
+        neighborhood:
+          type: ["string", "null"]
+        budget:
+          type: ["number", "null"]
+        weatherMode:
+          type: ["string", "null"]
+        transitAccess:
+          type: ["string", "null"]
+      required:
+        - mood
+        - neighborhood
+        - budget
+        - weatherMode
+        - transitAccess
+
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: string
+        entityType:
+          type: string
+          enum: [place, activity, deal, event, transit]
+        entityId:
+          type: integer
+        title:
+          type: string
+        neighborhood:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        reason:
+          type: string
+        actionLabel:
+          type: string
+        route:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        scoreText:
+          type: string
+      required:
+        - id
+        - entityType
+        - entityId
+        - title
+        - neighborhood
+        - imageUrl
+        - reason
+        - actionLabel
+        - route
+        - tags
+        - scoreText
+
+    LaunchZone:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        vibe:
+          type: string
+        bestFor:
+          type: array
+          items:
+            type: string
+        transitAccess:
+          type: string
+        priceBand:
+          type: string
+        bestTime:
+          type: string
+        monsoonNote:
+          type: string
+        safetyContext:
+          type: string
+      required:
+        - id
+        - name
+        - vibe
+        - bestFor
+        - transitAccess
+        - priceBand
+        - bestTime
+        - monsoonNote
+        - safetyContext
+
+    LaunchPrompt:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        prompt:
+          type: string
+        icon:
+          type: string
+      required:
+        - id
+        - label
+        - prompt
+        - icon
 
     ExploreSummary:
       type: object

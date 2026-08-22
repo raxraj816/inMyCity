@@ -13,6 +13,7 @@ import { useGetMovies } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { formatPriceForCity } from "@workspace/city-config";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -144,7 +145,7 @@ export default function MoviesScreen() {
                 </View>
                 {item.price && (
                   <Text style={[styles.priceText, { color: ACCENT }]}>
-                    {item.city === "New York City" || item.city === "San Francisco" ? "$" : "₹"}{item.price}
+                    {formatPriceForCity(item.price, item.city)}
                   </Text>
                 )}
               </View>

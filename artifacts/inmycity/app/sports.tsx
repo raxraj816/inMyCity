@@ -19,6 +19,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { EventCard } from "@/components/EventCard";
 import { ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
+import { formatPriceForCity } from "@workspace/city-config";
 
 type SportsTab = "fitness" | "courts" | "outdoor" | "live";
 
@@ -67,8 +68,6 @@ export default function SportsScreen() {
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
   const cityName   = selectedCity?.name;
-  const isLocal    = cityName === "Mumbai" || cityName === "Bangalore";
-  const currSymbol = isLocal ? "₹" : "$";
 
   const {
     data: fitnessData = [], isLoading: fitnessLoading, isRefetching: fitnessRefetching,
@@ -147,7 +146,9 @@ export default function SportsScreen() {
             <View style={styles.metaChip}>
               <Feather name="tag" size={11} color={colors.mutedForeground} />
               <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                {item.price === 0 ? "Free" : `${currSymbol}${item.price}`}
+                {item.price === 0
+                  ? "Free"
+                  : formatPriceForCity(item.price, item.city, item.currency)}
               </Text>
             </View>
           )}

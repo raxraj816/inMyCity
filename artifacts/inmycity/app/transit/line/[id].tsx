@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetTransitLineById, getGetTransitLineByIdQueryKey } from "@workspace/api-client-react";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { formatPriceForCity } from "@workspace/city-config";
 
 const TYPE_ICONS: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
   metro: "zap",
@@ -29,8 +30,6 @@ export default function TransitLineDetailScreen() {
   if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
   if (isLoading || !line) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
 
-  const isLocal = line.city === "Mumbai" || line.city === "Bangalore";
-  const currencySymbol = isLocal ? "₹" : "$";
   const icon = TYPE_ICONS[line.type] ?? "share-2";
   const typeLabel = line.type.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase());
 
@@ -80,7 +79,7 @@ export default function TransitLineDetailScreen() {
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
                   <Feather name="credit-card" size={18} color={line.color} />
-                  <Text style={[styles.statValue, { color: colors.foreground }]}>{currencySymbol}{line.fare}+</Text>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>{formatPriceForCity(line.fare, line.city)}+</Text>
                   <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Fare</Text>
                 </View>
               </>
@@ -192,7 +191,7 @@ export default function TransitLineDetailScreen() {
         <View>
           <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Fare from</Text>
           <Text style={[styles.priceValue, { color: colors.foreground }]}>
-            {line.fare != null ? `${currencySymbol}${line.fare}` : "Varies"}
+            {line.fare != null ? formatPriceForCity(line.fare, line.city) : "Varies"}
           </Text>
         </View>
         <TouchableOpacity

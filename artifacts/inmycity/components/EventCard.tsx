@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
 import type { Event } from "@workspace/api-client-react";
+import { formatPriceForCity } from "@workspace/city-config";
 
 type Props = {
   event: Event;
@@ -84,7 +85,11 @@ function EventCardComponent({ event }: Props) {
                 styles.priceText, 
                 { color: event.isFree ? colors.success : colors.amber }
               ]}>
-                {event.isFree ? "Free" : (event.price ? `$${event.price}` : "Tickets")}
+                {event.isFree
+                  ? "Free"
+                  : event.price
+                    ? formatPriceForCity(event.price, event.city)
+                    : "Tickets"}
               </Text>
             </View>
           </View>

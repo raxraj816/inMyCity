@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetTransitRouteById, getGetTransitRouteByIdQueryKey } from "@workspace/api-client-react";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { formatPriceForCity } from "@workspace/city-config";
 
 const TYPE_ICONS: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
   metro: "zap",
@@ -29,8 +30,6 @@ export default function TransitRouteDetailScreen() {
   if (error) return <ErrorFallback error={error as Error} resetError={refetch} />;
   if (isLoading || !route) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
 
-  const isLocal = route.city === "Mumbai" || route.city === "Bangalore";
-  const currencySymbol = isLocal ? "₹" : "$";
   const icon = TYPE_ICONS[route.lineType] ?? "share-2";
 
   return (
@@ -94,7 +93,7 @@ export default function TransitRouteDetailScreen() {
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
                   <Feather name="credit-card" size={18} color={route.lineColor} />
-                  <Text style={[styles.statValue, { color: colors.foreground }]}>{currencySymbol}{route.fare}</Text>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>{formatPriceForCity(route.fare, route.city)}</Text>
                   <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Fare</Text>
                 </View>
               </>
@@ -174,7 +173,7 @@ export default function TransitRouteDetailScreen() {
         <View>
           <Text style={[styles.fareLabel, { color: colors.mutedForeground }]}>Total fare</Text>
           <Text style={[styles.fareValue, { color: colors.foreground }]}>
-            {route.fare != null ? `${currencySymbol}${route.fare}` : "Check at station"}
+            {route.fare != null ? formatPriceForCity(route.fare, route.city) : "Check at station"}
           </Text>
         </View>
         <TouchableOpacity

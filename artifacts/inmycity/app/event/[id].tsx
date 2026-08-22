@@ -9,6 +9,7 @@ import { useGetEventById, getGetEventByIdQueryKey } from "@workspace/api-client-
 import { ErrorState } from "@/components/ListStates";
 import { VenueActions } from "@/components/VenueActions";
 import { MapPreview } from "@/components/MapPreview";
+import { formatPriceForCity } from "@workspace/city-config";
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -147,7 +148,7 @@ export default function EventDetailScreen() {
         <View style={styles.priceContainer}>
           <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Price</Text>
           <Text style={[styles.priceValue, { color: event.isFree ? colors.success : colors.foreground }]}>
-            {event.isFree ? "Free" : (event.price ? `$${event.price}` : "TBD")}
+            {event.isFree ? "Free" : event.price ? formatPriceForCity(event.price, event.city) : "TBD"}
           </Text>
         </View>
         <TouchableOpacity 

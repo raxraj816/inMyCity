@@ -11,6 +11,7 @@ import { useColors } from "@/hooks/useColors";
 import { useGetHotels } from "@workspace/api-client-react";
 import { useCity } from "@/context/CityContext";
 import { EmptyState, ErrorState, LIST_PERFORMANCE_PROPS, useListRefreshControl } from "@/components/ListStates";
+import { formatPriceForCity } from "@workspace/city-config";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { NearbyFilters } from "@/components/NearbyFilters";
 import { useNearby } from "@/hooks/useNearby";
@@ -49,9 +50,6 @@ export default function HotelsScreen() {
   });
 
   const refreshControl = useListRefreshControl(isRefetching, refetch, ACCENT);
-
-  const isLocal = selectedCity?.name === "Mumbai" || selectedCity?.name === "Bangalore";
-  const currencySymbol = isLocal ? "₹" : "$";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -120,7 +118,7 @@ export default function HotelsScreen() {
                   item.category,
                   item.rating != null ? `rated ${item.rating.toFixed(1)} out of 5` : null,
                   item.pricePerNight
-                    ? `from ${currencySymbol}${Math.round(item.pricePerNight)} per night`
+                    ? `from ${formatPriceForCity(Math.round(item.pricePerNight), item.city, item.currency)} per night`
                     : null,
                   item.address,
                 ]
@@ -177,7 +175,9 @@ export default function HotelsScreen() {
                     <View>
                       <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Per night from</Text>
                       <Text style={[styles.priceValue, { color: ACCENT }]}>
-                        {item.pricePerNight ? `${currencySymbol}${Math.round(item.pricePerNight).toLocaleString()}` : "—"}
+                        {item.pricePerNight
+                          ? formatPriceForCity(Math.round(item.pricePerNight), item.city, item.currency)
+                          : "—"}
                       </Text>
                     </View>
                     <View style={[styles.viewBtn, { backgroundColor: ACCENT }]}>

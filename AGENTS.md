@@ -124,6 +124,11 @@ which is how relevance separates an exact name match from a mention in a descrip
 and San Francisco; add a city through `lib/city-config` and seed data, not by branching
 on city names in screens.
 
+That includes money: never write a currency symbol into a screen. `currencyFor` and
+`formatPrice` in `lib/city-config` resolve it from the row's own `currency` column where the
+table has one, and from the city otherwise. A price rendered any other way will be wrong for
+some city, which is how Mumbai deals came to be priced in dollars.
+
 ## Conventions
 
 - TypeScript throughout; Prettier defaults for formatting.

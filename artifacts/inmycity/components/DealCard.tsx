@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
+import { currencyFor, formatPrice } from "@workspace/city-config";
 import type { Deal } from "@workspace/api-client-react";
 
 type Props = {
@@ -14,6 +15,9 @@ type Props = {
 function DealCardComponent({ deal }: Props) {
   const colors = useColors();
   const router = useRouter();
+
+  // A deal carries the city it belongs to; the prices are in that city's money, not dollars.
+  const currency = currencyFor(deal.city);
 
   // Calculate days left
   let daysLeft = 0;
@@ -73,14 +77,14 @@ function DealCardComponent({ deal }: Props) {
 
           <View style={styles.footer}>
             <View style={styles.priceContainer}>
-              {deal.originalPrice !== null && (
+              {deal.originalPrice != null && (
                 <Text style={[styles.originalPrice, { color: colors.mutedForeground }]}>
-                  ${deal.originalPrice}
+                  {formatPrice(deal.originalPrice, currency)}
                 </Text>
               )}
-              {deal.dealPrice !== null && (
+              {deal.dealPrice != null && (
                 <Text style={[styles.dealPrice, { color: colors.amber }]}>
-                  ${deal.dealPrice}
+                  {formatPrice(deal.dealPrice, currency)}
                 </Text>
               )}
             </View>

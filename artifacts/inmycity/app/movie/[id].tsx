@@ -7,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetMovieById, getGetMovieByIdQueryKey } from "@workspace/api-client-react";
 import { ErrorState } from "@/components/ListStates";
+import { formatPriceForCity } from "@workspace/city-config";
 
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -38,8 +39,6 @@ export default function MovieDetailScreen() {
   }
   if (isLoading || !movie) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
 
-  const isLocal = movie.city === "Mumbai" || movie.city === "Bangalore";
-  const currencySymbol = isLocal ? "₹" : "$";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -179,7 +178,7 @@ export default function MovieDetailScreen() {
         <View>
           <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Tickets from</Text>
           <Text style={[styles.priceValue, { color: colors.foreground }]}>
-            {movie.price ? `${currencySymbol}${movie.price}` : "Check theatre"}
+            {movie.price ? formatPriceForCity(movie.price, movie.city) : "Check theatre"}
           </Text>
         </View>
         <TouchableOpacity

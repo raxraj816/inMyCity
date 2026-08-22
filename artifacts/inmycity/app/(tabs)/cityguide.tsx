@@ -33,7 +33,7 @@ import {
   type Hotel,
   type Activity,
 } from "@workspace/api-client-react";
-import { MUMBAI_LAUNCH_ZONES } from "@workspace/city-config";
+import { MUMBAI_LAUNCH_ZONES, formatPriceForCity } from "@workspace/city-config";
 
 const CITY_META: Record<string, { tagline: string; tips: { icon: string; label: string; value: string }[] }> = {
   Mumbai: {
@@ -833,9 +833,9 @@ const HOTEL_CAT_COLORS: Record<string, string> = {
 
 function HotelGuideCard({ hotel, colors, onPress }: { hotel: Hotel; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
   const catColor = HOTEL_CAT_COLORS[hotel.category] ?? colors.mutedForeground;
-  const isINR = hotel.currency === "INR";
+
   const priceStr = hotel.pricePerNight != null
-    ? `${isINR ? "₹" : "$"}${hotel.pricePerNight.toLocaleString()}/night`
+    ? `${formatPriceForCity(hotel.pricePerNight, hotel.city, hotel.currency)}/night`
     : null;
   return (
     <TouchableOpacity activeOpacity={0.85} style={[styles.hotelCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress}>
@@ -890,9 +890,11 @@ function CompactStat({ icon, label, value, colors }: { icon: string; label: stri
 
 function ActivityCard({ activity, colors, sort }: { activity: Activity; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; sort?: string; }) {
   const router = useRouter();
-  const isINR = activity.currency === "INR";
+
   const isFree = !activity.price || activity.price === 0;
-  const priceStr = isFree ? "Free" : `${isINR ? "₹" : "$"}${activity.price!.toLocaleString()}`;
+  const priceStr = isFree
+    ? "Free"
+    : formatPriceForCity(activity.price!, activity.city, activity.currency);
   const durationStr = activity.durationMinutes != null
     ? activity.durationMinutes >= 60
       ? `${Math.floor(activity.durationMinutes / 60)}h${activity.durationMinutes % 60 > 0 ? ` ${activity.durationMinutes % 60}m` : ""}`

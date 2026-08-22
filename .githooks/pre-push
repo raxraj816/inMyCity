@@ -1,0 +1,17 @@
+#!/bin/sh
+# Block direct pushes to protected branches. Merges into develop/master must
+# arrive via pull request.
+# stdin: <local ref> <local sha> <remote ref> <remote sha>
+status=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/master|refs/heads/main|refs/heads/develop)
+      # Deleting a protected branch is also blocked.
+      echo "blocked: direct push to '${remote_ref#refs/heads/}' is not allowed." >&2
+      echo "push a feature branch and open a pull request into develop." >&2
+      echo "(override for a genuine exception: git push --no-verify)" >&2
+      status=1
+      ;;
+  esac
+done
+exit $status

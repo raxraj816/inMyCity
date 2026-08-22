@@ -24,7 +24,7 @@ The repo ships git hooks that refuse commits and pushes on `master`/`develop`.
 Enable them once per clone:
 
 ```
-git config core.hooksPath .githooks
+sh scripts/install-hooks.sh
 ```
 
 Both hooks can be bypassed with `--no-verify` for genuine exceptions, so they are

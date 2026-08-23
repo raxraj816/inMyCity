@@ -117,14 +117,14 @@ describe("Pulse digest", { skip: databaseAvailable ? false : "no database reacha
     assert.equal(response.status, 400);
   });
 
-  it("separates the featured post from the rest of the desk", async () => {
+  it("leads the city desk with the featured post", async () => {
+    // There is no separate featured section — one editorial hero at the top of a four-section
+    // page was a section header for a single card. It leads the desk instead.
     const { sections } = await digest();
-    const featured = sections.find((section) => section.id === "featured")!;
     const desk = sections.find((section) => section.id === "pulse")!;
 
-    assert.equal(featured.entries.length, 1);
-    assert.equal(featured.entries[0].body, "The featured post readers should see first.");
-    assert.ok(desk.entries.every((post) => post.body !== "The featured post readers should see first."));
+    assert.equal(desk.entries[0].body, "The featured post readers should see first.");
+    assert.equal(desk.entries.length, 2, "the unpublished post must not be here");
   });
 
   it("never includes content that has not been published", async () => {

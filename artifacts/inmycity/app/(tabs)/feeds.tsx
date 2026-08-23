@@ -79,6 +79,18 @@ function endsLabel(iso: string | null | undefined) {
   return null;
 }
 
+/**
+ * Whether the subtitle says anything the title has not.
+ *
+ * A deal is titled "Bade Miyan — Buy 2 Kebab Plates, Get 1 Free" and its subtitle is the shop
+ * it is at, which the title has already named. Drawing both puts the same words on the card
+ * twice and pushes what is actually new further down.
+ */
+function addsSomething(title: string, subtitle: string | null | undefined): boolean {
+  if (!subtitle) return false;
+  return !title.toLowerCase().includes(subtitle.toLowerCase());
+}
+
 function formatCount(n: number) {
   if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
   return n.toString();
@@ -93,7 +105,17 @@ function metaFor(kind: DigestSection["kind"], entry: DigestEntry, city: string):
       return [when, price].filter(Boolean).join(" · ") || null;
     }
     case "deal":
-      return [entry.discountText, endsLabel(entry.startDate)].filter(Boolean).join(" · ") || null;
+      // Deal titles already carry the discount ("Bade Miyan — Buy 2 Kebab Plates, Get 1 Free"),
+      // so repeating it here is a stutter. How long is left is the fact the title lacks; the
+      // price is the fallback when the offer is not close enough to be urgent.
+      return (
+        endsLabel(entry.startDate) ??
+        (entry.price
+          ? formatPriceForCity(entry.price, city)
+          : addsSomething(entry.title, entry.discountText)
+            ? entry.discountText ?? null
+            : null)
+      );
     default:
       return null;
   }
@@ -332,7 +354,7 @@ function Tile({
             {meta}
           </Text>
         ) : null}
-        {entry.subtitle ? (
+        {addsSomething(entry.title, entry.subtitle) ? (
           <Text style={[styles.tileSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
             {entry.subtitle}
           </Text>

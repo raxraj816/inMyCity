@@ -1,5 +1,3 @@
-import { and, count, eq } from "drizzle-orm";
-
 import { parseOpeningHours } from "./lib/openingHours";
 import { withSearchText } from "./lib/search/searchFields";
 import {
@@ -27,8 +25,6 @@ import {
   insiderTipsTable,
   newsSourcesTable,
   pulsePostsTable,
-  qaAnswersTable,
-  qaQuestionsTable,
 } from "@workspace/db";
 
 /**
@@ -756,64 +752,7 @@ async function seed() {
     ], (row) => [row.city, row.authorHandle, row.caption.slice(0, 60)]),
   );
 
-  // ─── Q&A (editorial launch content) ─────────────────────────────────────────
-  const qaQuestions = (await upsertSeedRows(
-    qaQuestionsTable,
-    qaQuestionsTable.externalId,
-    withExternalId("qa-question", [
-      { city: "Mumbai", question: "What is the fastest way from the airport to South Mumbai at 6pm?", body: "Landing at T2 on a weekday evening and staying near Colaba.", authorName: "inMyCity Editorial", tags: ["Transit", "Airport", "Traffic"], status: "published", publishedAt },
-      { city: "Mumbai", question: "Is the local train safe and sensible for a first-time visitor?", body: null, authorName: "inMyCity Editorial", tags: ["Transit", "Local Train", "First Visit"], status: "published", publishedAt },
-      { city: "Mumbai", question: "Where should I actually eat vada pav?", body: null, authorName: "inMyCity Editorial", tags: ["Food", "Street Food", "Vada Pav"], status: "published", publishedAt },
-      { city: "Mumbai", question: "What is worth doing when it is pouring?", body: null, authorName: "inMyCity Editorial", tags: ["Monsoon", "Rain", "Plans"], status: "published", publishedAt },
-      { city: "Mumbai", question: "Do I need cash, or is UPI enough?", body: null, authorName: "inMyCity Editorial", tags: ["Payments", "UPI", "Practical"], status: "published", publishedAt },
-    ], (row) => [row.city, row.question]),
-  )) as unknown as { id: number; question: string }[];
-
-  const questionIdByText = Object.fromEntries(qaQuestions.map((row) => [row.question, row.id]));
-
-  await upsertSeedRows(
-    qaAnswersTable,
-    qaAnswersTable.externalId,
-    withExternalId("qa-answer", [
-      {
-        questionId: questionIdByText["What is the fastest way from the airport to South Mumbai at 6pm?"],
-        body: "Avoid the Western Express Highway if you can. Metro Line 3 (the Aqua Line) runs underground from the airport terminals down through BKC and Worli toward Cuffe Parade — check which stretch is running on the day, because it opened in phases. By road at 6pm, budget 90 minutes or more to Colaba; the Atal Setu and the Coastal Road help only if your driver is already on them.",
-        authorName: "inMyCity Transit Desk", isAccepted: true, status: "published", publishedAt,
-      },
-      {
-        questionId: questionIdByText["Is the local train safe and sensible for a first-time visitor?"],
-        body: "Yes, outside peak hours. Between roughly 8–10am and 6–8:30pm the crowding is genuinely extreme and not worth attempting with luggage. Off-peak it is the fastest thing in the city. Buy a ticket before boarding — travelling without one is a fine — and note that the ladies' compartments are mid-train and enforced.",
-        authorName: "inMyCity Transit Desk", isAccepted: true, status: "published", publishedAt,
-      },
-      {
-        questionId: questionIdByText["Where should I actually eat vada pav?"],
-        body: "Ashok Vada Pav by Kirti College in Dadar is the one most people agree on, with dry garlic chutney and a fried chilli. Aaram opposite CSMT has been doing it since 1939 if you are in Fort, and Anand Stall in Vile Parle is the northern suburbs' version. All three are in this app with their hours.",
-        authorName: "inMyCity Food Desk", isAccepted: true, status: "published", publishedAt,
-      },
-      {
-        questionId: questionIdByText["What is worth doing when it is pouring?"],
-        body: "Lower Parel is the most reliable rain-proof evening in the city because nearly all of it is indoors. Fort and Colaba work too — the arcades, the museums and the Irani cafes were built for this weather. What does not work is anything sea-facing at high tide, or a plan that depends on a specific road being passable.",
-        authorName: "inMyCity Editorial", isAccepted: true, status: "published", publishedAt,
-      },
-      {
-        questionId: questionIdByText["Do I need cash, or is UPI enough?"],
-        body: "UPI is accepted almost everywhere, including most street stalls. Carry a few hundred rupees anyway: a handful of the oldest institutions are proudly cash-only, and Britannia & Co. is the famous example.",
-        authorName: "inMyCity Editorial", isAccepted: true, status: "published", publishedAt,
-      },
-    ], (row) => [row.questionId, row.body.slice(0, 60)]),
-  );
-
-  // `answerCount` is maintained by the moderation route when an answer is published; the
-  // seeded answers go straight to `published`, so set the count to match what is there.
-  for (const question of qaQuestions) {
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(qaAnswersTable)
-      .where(and(eq(qaAnswersTable.questionId, question.id), eq(qaAnswersTable.status, "published")));
-    await db.update(qaQuestionsTable).set({ answerCount: total }).where(eq(qaQuestionsTable.id, question.id));
-  }
-
-  console.log("Seeded Pulse, Q&A, city facts and insider tips");
+  console.log("Seeded Pulse, city facts and insider tips");
 
   console.log("Database seeded successfully!");
 }

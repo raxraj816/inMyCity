@@ -42,18 +42,21 @@ function timeAgo(iso: string) {
 export function NewsShorts({
   items,
   bottomInset = 0,
+  initialIndex = 0,
   onReport,
 }: {
   items: NewsItem[];
-  /** Height of the tab bar the list scrolls underneath, so the footer is not hidden by it. */
+  /** Height of anything the list scrolls underneath, so the footer is not hidden by it. */
   bottomInset?: number;
+  /** Which story to open on, so tapping the third headline starts at the third story. */
+  initialIndex?: number;
   onReport: (item: NewsItem) => void;
 }) {
   const colors = useColors();
   // Each card is exactly the height of the space this list was given, which is what makes the
   // swipe land on one story rather than somewhere between two.
   const [height, setHeight] = useState(() => Dimensions.get("window").height);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(initialIndex);
 
   const cardHeight = Math.max(240, height - bottomInset);
 
@@ -80,6 +83,7 @@ export function NewsShorts({
         decelerationRate="fast"
         showsVerticalScrollIndicator={false}
         getItemLayout={(_, position) => ({ length: cardHeight, offset: cardHeight * position, index: position })}
+        initialScrollIndex={initialIndex > 0 && initialIndex < items.length ? initialIndex : undefined}
         // Wheel scrolling never produces a momentum end event, so the counter is driven by the
         // scroll position itself and simply updates more often than it strictly needs to.
         scrollEventThrottle={64}

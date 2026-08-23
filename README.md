@@ -9,7 +9,7 @@ The product vision is captured in [docs/vision.md](/Users/rajkumar/Documents/wor
 inMyCity is designed as a personal city operating system:
 
 - **Explore**: browse dining, activities, events, shops, sports, hotels, transit, deals, nightlife, movies, and itineraries.
-- **Pulse**: see local updates, trusted news-style alerts, creator/community signal, and Q&A.
+- **Pulse**: what's happening in the city now — local news, offers running out, events coming up, and the city desk.
 - **City Guide**: understand a city through neighborhoods, highlights, transit, visitor tips, and curated activities.
 - **CityPilot**: ask an AI assistant for city-specific help, recommendations, and planning.
 
@@ -141,7 +141,7 @@ Content operations settings — see [.env.example](.env.example) for the full li
 # Who may use /api/admin. Unset means the admin routes answer 503 for everyone.
 ADMIN_EMAILS=
 
-# Opens Pulse and Q&A to reader submissions. Leave unset until moderation is staffed.
+# Opens Pulse to reader submissions. Leave unset until moderation is staffed.
 COMMUNITY_SUBMISSIONS_ENABLED=
 
 # The grievance officer the IT Rules require, published through /api/community-policy.
@@ -152,7 +152,7 @@ GRIEVANCE_OFFICER_EMAIL=
 The app can run without `OPENAI_API_KEY`; only the CityPilot chat endpoint will return an unavailable response until the key is configured.
 
 It also runs with `ADMIN_EMAILS` and `COMMUNITY_SUBMISSIONS_ENABLED` unset, which is the intended
-launch posture: Pulse and Q&A show editorial content, the compose affordances are hidden, and the
+launch posture: Pulse shows editorial and reviewed content, the compose affordances are hidden, and the
 admin surface is closed.
 
 ## Workspace Commands
@@ -263,7 +263,7 @@ Important routes include:
 - `GET /api/transit/lines`
 - `GET /api/transit/routes`
 - `GET /api/pulse/digest` — the ranked Pulse front page
-- `GET /api/pulse`, `GET /api/news`, `GET /api/qa/questions`
+- `GET /api/pulse`, `GET /api/news`
 - `GET /api/city-guide` — the editable City Guide header, facts and insider tips
 - `GET /api/community-policy`, `POST /api/reports` — the published takedown path
 - `POST /api/ai/chat`

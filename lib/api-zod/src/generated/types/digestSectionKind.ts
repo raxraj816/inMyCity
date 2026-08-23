@@ -11,10 +11,7 @@ export type DigestSectionKind =
 
 export const DigestSectionKind = {
   pulse: "pulse",
+  news: "news",
   event: "event",
-  place: "place",
   deal: "deal",
-  activity: "activity",
-  movie: "movie",
-  question: "question",
 } as const;

@@ -93,8 +93,8 @@ generating a React Query hook and a Zod schema per endpoint would be dead code, 
 in [docs/admin-api.md](docs/admin-api.md) instead; keep that file in step when you change a route
 there. Everything the app consumes still goes through the spec.
 
-**Moderated content has one way in.** `pulse_posts`, `news_items`, `qa_questions` and
-`qa_answers` carry a `status`, and it may only move through `/api/admin/moderation/...`,
+**Moderated content has one way in.** `pulse_posts` and `news_items` carry a `status`, and it
+may only move through `/api/admin/moderation/...`,
 which records who changed it and why. Never expose `status` as an editable field on a moderated
 collection in `lib/adminCollections.ts`, and never let a route publish a row as a side effect of
 creating it — a submission that skips review is a takedown obligation nobody can meet.

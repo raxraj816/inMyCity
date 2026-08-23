@@ -18,7 +18,6 @@ import recommendationsRouter from "./recommendations";
 import searchRouter from "./search";
 import pulseRouter from "./pulse";
 import newsRouter from "./news";
-import qaRouter from "./qa";
 import reportsRouter from "./reports";
 import cityGuideRouter from "./cityGuide";
 import adminRouter from "./admin";
@@ -43,7 +42,6 @@ router.use(transitRouter);
 router.use(searchRouter);
 router.use(pulseRouter);
 router.use(newsRouter);
-router.use(qaRouter);
 router.use(reportsRouter);
 router.use(cityGuideRouter);
 // The moderation router owns the `/admin/moderation`, `/admin/reports` and

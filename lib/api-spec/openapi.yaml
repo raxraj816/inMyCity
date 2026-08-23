@@ -43,8 +43,6 @@ tags:
     description: Pulse feed — editorial and reader-submitted posts
   - name: news
     description: Ingested, editorially reviewed local news
-  - name: qa
-    description: Local questions and answers
   - name: moderation
     description: Reporting and the published grievance path
   - name: cityGuide
@@ -1133,9 +1131,9 @@ paths:
       tags: [pulse]
       summary: The ranked Pulse front page for a city
       description: >-
-        A mixed digest drawn from Pulse, events, places, deals, activities, movies and
-        answered questions. Each section states what it holds and how it is ordered; a
-        section with nothing in it is omitted rather than returned empty.
+        What is happening in this city now: local news, offers that are running out, events
+        that have not happened yet, and the city desk. Each section states what it holds and
+        how it is ordered; a section with nothing in it is omitted rather than returned empty.
       parameters:
         - $ref: '#/components/parameters/DeviceIdHeader'
         - name: city
@@ -1234,145 +1232,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/NewsItem"
-
-  /qa/questions:
-    get:
-      operationId: getQaQuestions
-      tags: [qa]
-      summary: List published questions for a city
-      parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
-        - name: city
-          in: query
-          schema:
-            type: string
-        - name: sort
-          in: query
-          schema:
-            type: string
-            enum: [recent, top]
-        - name: limit
-          in: query
-          schema:
-            type: integer
-        - name: offset
-          in: query
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Published questions
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/QaQuestion"
-    post:
-      operationId: submitQaQuestion
-      tags: [qa]
-      summary: Ask a question, for moderation
-      parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SubmitQaQuestionInput"
-      responses:
-        "202":
-          description: Accepted for review
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SubmissionAccepted"
-        "400":
-          description: Invalid submission
-        "503":
-          description: Submissions are not open yet
-
-  /qa/questions/{id}:
-    get:
-      operationId: getQaQuestionById
-      tags: [qa]
-      summary: Get one question with its published answers
-      parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: The question and its answers
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/QaQuestionDetail"
-        "404":
-          description: Not found
-
-  /qa/questions/{id}/answers:
-    post:
-      operationId: submitQaAnswer
-      tags: [qa]
-      summary: Answer a question, for moderation
-      parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SubmitQaAnswerInput"
-      responses:
-        "202":
-          description: Accepted for review
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SubmissionAccepted"
-        "400":
-          description: Invalid submission
-        "404":
-          description: Question not found
-        "503":
-          description: Submissions are not open yet
-
-  /qa/{targetType}/{id}/upvote:
-    post:
-      operationId: toggleQaUpvote
-      tags: [qa]
-      summary: Toggle an upvote on a question or an answer
-      parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
-        - name: targetType
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [questions, answers]
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: The new vote state
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/QaUpvoteState"
-        "404":
-          description: Not found
 
   /reports:
     post:
@@ -2517,7 +2376,7 @@ components:
           type: string
         kind:
           type: string
-          enum: [pulse, event, place, deal, activity, movie, question]
+          enum: [pulse, news, event, deal]
         entries:
           type: array
           items:
@@ -2620,14 +2479,6 @@ components:
         kind:
           type: string
           enum: [like, save]
-    SubmitQaAnswerInput:
-      type: object
-      required: [body]
-      properties:
-        body:
-          type: string
-          minLength: 10
-          maxLength: 2000
     PulseReactionState:
       type: object
       required: [postId, kind, active, likeCount, saveCount]
@@ -2681,108 +2532,13 @@ components:
           type: [string, 'null']
         publishedAt:
           type: string
-    QaQuestion:
-      type: object
-      required:
-        [id, city, question, authorName, authorInitials, tags, upvoteCount, answerCount,
-         publishedAt, viewerHasUpvoted]
-      properties:
-        id:
-          type: integer
-        city:
-          type: string
-        question:
-          type: string
-        body:
-          type: [string, 'null']
-        authorName:
-          type: string
-        authorInitials:
-          type: string
-        neighborhoodId:
-          type: [string, 'null']
-        tags:
-          type: array
-          items:
-            type: string
-        upvoteCount:
-          type: integer
-        answerCount:
-          type: integer
-        publishedAt:
-          type: string
-        viewerHasUpvoted:
-          type: boolean
-    QaAnswer:
-      type: object
-      required: [id, questionId, body, authorName, authorInitials, isAccepted, upvoteCount, publishedAt, viewerHasUpvoted]
-      properties:
-        id:
-          type: integer
-        questionId:
-          type: integer
-        body:
-          type: string
-        authorName:
-          type: string
-        authorInitials:
-          type: string
-        isAccepted:
-          type: boolean
-        upvoteCount:
-          type: integer
-        publishedAt:
-          type: string
-        viewerHasUpvoted:
-          type: boolean
-    QaQuestionDetail:
-      allOf:
-        - $ref: "#/components/schemas/QaQuestion"
-        - type: object
-          required: [answers]
-          properties:
-            answers:
-              type: array
-              items:
-                $ref: "#/components/schemas/QaAnswer"
-    SubmitQaQuestionInput:
-      type: object
-      required: [city, question]
-      properties:
-        city:
-          type: string
-        question:
-          type: string
-          minLength: 10
-          maxLength: 300
-        body:
-          type: [string, 'null']
-        neighborhoodId:
-          type: [string, 'null']
-        tags:
-          type: array
-          items:
-            type: string
-    QaUpvoteState:
-      type: object
-      required: [id, targetType, upvoteCount, active]
-      properties:
-        id:
-          type: integer
-        targetType:
-          type: string
-          enum: [question, answer]
-        upvoteCount:
-          type: integer
-        active:
-          type: boolean
     SubmitContentReportInput:
       type: object
       required: [targetType, targetId, reason]
       properties:
         targetType:
           type: string
-          enum: [pulse_post, news_item, qa_question, qa_answer]
+          enum: [pulse_post, news_item]
         targetId:
           type: integer
         reason:

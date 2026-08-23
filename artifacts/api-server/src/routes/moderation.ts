@@ -6,8 +6,6 @@ import {
   db,
   newsItemsTable,
   pulsePostsTable,
-  qaAnswersTable,
-  qaQuestionsTable,
   REPORTABLE_TYPES,
   type ReportableType,
 } from "@workspace/db";
@@ -38,28 +36,7 @@ type ModeratedTarget = {
   publishedAtColumn?: AnyPgColumn;
   createdAtColumn: AnyPgColumn;
   cityColumn?: AnyPgColumn;
-  /** Kept in step when an answer is published or removed. */
-  onStatusChange?: (id: number) => Promise<void>;
 };
-
-/** Publishing an answer is the only place an aggregate on another row has to move with it. */
-async function syncAnswerCount(answerId: number): Promise<void> {
-  const [answer] = await db
-    .select({ questionId: qaAnswersTable.questionId })
-    .from(qaAnswersTable)
-    .where(eq(qaAnswersTable.id, answerId));
-  if (!answer) return;
-
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(qaAnswersTable)
-    .where(and(eq(qaAnswersTable.questionId, answer.questionId), eq(qaAnswersTable.status, "published")));
-
-  await db
-    .update(qaQuestionsTable)
-    .set({ answerCount: total })
-    .where(eq(qaQuestionsTable.id, answer.questionId));
-}
 
 const MODERATED: Record<string, ModeratedTarget> = {
   pulse_post: {
@@ -79,24 +56,6 @@ const MODERATED: Record<string, ModeratedTarget> = {
     publishedAtColumn: newsItemsTable.publishedAt,
     createdAtColumn: newsItemsTable.createdAt,
     cityColumn: newsItemsTable.city,
-  },
-  qa_question: {
-    table: qaQuestionsTable,
-    idColumn: qaQuestionsTable.id,
-    statusColumn: qaQuestionsTable.status,
-    titleColumn: qaQuestionsTable.question,
-    publishedAtColumn: qaQuestionsTable.publishedAt,
-    createdAtColumn: qaQuestionsTable.createdAt,
-    cityColumn: qaQuestionsTable.city,
-  },
-  qa_answer: {
-    table: qaAnswersTable,
-    idColumn: qaAnswersTable.id,
-    statusColumn: qaAnswersTable.status,
-    titleColumn: qaAnswersTable.body,
-    publishedAtColumn: qaAnswersTable.publishedAt,
-    createdAtColumn: qaAnswersTable.createdAt,
-    onStatusChange: syncAnswerCount,
   },
 };
 
@@ -221,8 +180,6 @@ router.post("/admin/moderation/:type/:id/:action", async (req, res) => {
       res.status(404).json({ error: "Not found" });
       return;
     }
-
-    await target.onStatusChange?.(id);
 
     await recordModerationAction({
       targetType: type,

@@ -1265,7 +1265,7 @@ export const SubmitPulsePostBody = zod.object({
 });
 
 /**
- * A mixed digest drawn from Pulse, events, places, deals, activities, movies and answered questions. Each section states what it holds and how it is ordered; a section with nothing in it is omitted rather than returned empty.
+ * What is happening in this city now: local news, offers that are running out, events that have not happened yet, and the city desk. Each section states what it holds and how it is ordered; a section with nothing in it is omitted rather than returned empty.
  * @summary The ranked Pulse front page for a city
  */
 export const GetPulseDigestQueryParams = zod.object({
@@ -1287,15 +1287,7 @@ export const GetPulseDigestResponse = zod.object({
     zod.object({
       id: zod.string(),
       label: zod.string(),
-      kind: zod.enum([
-        "pulse",
-        "event",
-        "place",
-        "deal",
-        "activity",
-        "movie",
-        "question",
-      ]),
+      kind: zod.enum(["pulse", "news", "event", "deal"]),
       entries: zod.array(
         zod
           .object({
@@ -1437,166 +1429,6 @@ export const GetNewsItemsResponseItem = zod.object({
 export const GetNewsItemsResponse = zod.array(GetNewsItemsResponseItem);
 
 /**
- * @summary List published questions for a city
- */
-export const GetQaQuestionsQueryParams = zod.object({
-  city: zod.coerce.string().optional(),
-  sort: zod.enum(["recent", "top"]).optional(),
-  limit: zod.coerce.number().optional(),
-  offset: zod.coerce.number().optional(),
-});
-
-export const GetQaQuestionsHeader = zod.object({
-  "X-Device-Id": zod
-    .string()
-    .optional()
-    .describe(
-      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
-    ),
-});
-
-export const GetQaQuestionsResponseItem = zod.object({
-  id: zod.number(),
-  city: zod.string(),
-  question: zod.string(),
-  body: zod.string().nullish(),
-  authorName: zod.string(),
-  authorInitials: zod.string(),
-  neighborhoodId: zod.string().nullish(),
-  tags: zod.array(zod.string()),
-  upvoteCount: zod.number(),
-  answerCount: zod.number(),
-  publishedAt: zod.string(),
-  viewerHasUpvoted: zod.boolean(),
-});
-export const GetQaQuestionsResponse = zod.array(GetQaQuestionsResponseItem);
-
-/**
- * @summary Ask a question, for moderation
- */
-export const SubmitQaQuestionHeader = zod.object({
-  "X-Device-Id": zod
-    .string()
-    .optional()
-    .describe(
-      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
-    ),
-});
-
-export const submitQaQuestionBodyQuestionMin = 10;
-export const submitQaQuestionBodyQuestionMax = 300;
-
-export const SubmitQaQuestionBody = zod.object({
-  city: zod.string(),
-  question: zod
-    .string()
-    .min(submitQaQuestionBodyQuestionMin)
-    .max(submitQaQuestionBodyQuestionMax),
-  body: zod.string().nullish(),
-  neighborhoodId: zod.string().nullish(),
-  tags: zod.array(zod.string()).optional(),
-});
-
-/**
- * @summary Get one question with its published answers
- */
-export const GetQaQuestionByIdParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const GetQaQuestionByIdHeader = zod.object({
-  "X-Device-Id": zod
-    .string()
-    .optional()
-    .describe(
-      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
-    ),
-});
-
-export const GetQaQuestionByIdResponse = zod
-  .object({
-    id: zod.number(),
-    city: zod.string(),
-    question: zod.string(),
-    body: zod.string().nullish(),
-    authorName: zod.string(),
-    authorInitials: zod.string(),
-    neighborhoodId: zod.string().nullish(),
-    tags: zod.array(zod.string()),
-    upvoteCount: zod.number(),
-    answerCount: zod.number(),
-    publishedAt: zod.string(),
-    viewerHasUpvoted: zod.boolean(),
-  })
-  .and(
-    zod.object({
-      answers: zod.array(
-        zod.object({
-          id: zod.number(),
-          questionId: zod.number(),
-          body: zod.string(),
-          authorName: zod.string(),
-          authorInitials: zod.string(),
-          isAccepted: zod.boolean(),
-          upvoteCount: zod.number(),
-          publishedAt: zod.string(),
-          viewerHasUpvoted: zod.boolean(),
-        }),
-      ),
-    }),
-  );
-
-/**
- * @summary Answer a question, for moderation
- */
-export const SubmitQaAnswerParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const SubmitQaAnswerHeader = zod.object({
-  "X-Device-Id": zod
-    .string()
-    .optional()
-    .describe(
-      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
-    ),
-});
-
-export const submitQaAnswerBodyBodyMin = 10;
-export const submitQaAnswerBodyBodyMax = 2000;
-
-export const SubmitQaAnswerBody = zod.object({
-  body: zod
-    .string()
-    .min(submitQaAnswerBodyBodyMin)
-    .max(submitQaAnswerBodyBodyMax),
-});
-
-/**
- * @summary Toggle an upvote on a question or an answer
- */
-export const ToggleQaUpvoteParams = zod.object({
-  targetType: zod.enum(["questions", "answers"]),
-  id: zod.coerce.number(),
-});
-
-export const ToggleQaUpvoteHeader = zod.object({
-  "X-Device-Id": zod
-    .string()
-    .optional()
-    .describe(
-      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
-    ),
-});
-
-export const ToggleQaUpvoteResponse = zod.object({
-  id: zod.number(),
-  targetType: zod.enum(["question", "answer"]),
-  upvoteCount: zod.number(),
-  active: zod.boolean(),
-});
-
-/**
  * Open to signed-out readers. The response carries the window inside which the report will be answered, which is what the app shows back to the reporter.
  * @summary Report a piece of content
  */
@@ -1610,7 +1442,7 @@ export const SubmitContentReportHeader = zod.object({
 });
 
 export const SubmitContentReportBody = zod.object({
-  targetType: zod.enum(["pulse_post", "news_item", "qa_question", "qa_answer"]),
+  targetType: zod.enum(["pulse_post", "news_item"]),
   targetId: zod.number(),
   reason: zod.enum([
     "inaccurate",

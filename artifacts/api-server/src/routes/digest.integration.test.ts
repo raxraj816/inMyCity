@@ -1,7 +1,7 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { db, eventsTable, placesTable, pool, pulsePostsTable, qaAnswersTable, qaQuestionsTable } from "@workspace/db";
+import { db, dealsTable, eventsTable, pool, pulsePostsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 
 import app from "../app";
@@ -84,35 +84,20 @@ before(async () => {
     { externalId: "test:digest:past", title: "Past event", category: "music", venue: "D", address: "D", city: TEST_CITY, startDate: day(-3) },
   ]);
 
-  await db.insert(placesTable).values([
-    { externalId: "test:digest:best", name: "Higher rated", category: "food", address: "A", city: TEST_CITY, lat: 19, lng: 72, rating: 4.9, reviewCount: 100 },
-    { externalId: "test:digest:worse", name: "Lower rated", category: "food", address: "B", city: TEST_CITY, lat: 19, lng: 72, rating: 3.1, reviewCount: 100 },
+  await db.insert(dealsTable).values([
+    { externalId: "test:digest:soonest", title: "Ending soonest", placeName: "A", category: "food", discountText: "20% off", city: TEST_CITY, expiresAt: day(2) },
+    { externalId: "test:digest:latest", title: "Ending later", placeName: "B", category: "food", discountText: "10% off", city: TEST_CITY, expiresAt: day(20) },
+    // Already over, so the list route hides it and the digest must too.
+    { externalId: "test:digest:expired", title: "Already expired", placeName: "C", category: "food", discountText: "50% off", city: TEST_CITY, expiresAt: day(-2) },
   ]);
 
-  const [answered] = await db
-    .insert(qaQuestionsTable)
-    .values([
-      { externalId: "test:digest:answered", city: TEST_CITY, question: "A question with an answer?", authorName: "Editorial", status: "published", publishedAt: new Date(), answerCount: 1 },
-      { externalId: "test:digest:unanswered", city: TEST_CITY, question: "A question nobody answered?", authorName: "Editorial", status: "published", publishedAt: new Date() },
-    ])
-    .returning();
-
-  await db.insert(qaAnswersTable).values({
-    externalId: "test:digest:answer",
-    questionId: answered.id,
-    body: "The answer.",
-    authorName: "Editorial",
-    status: "published",
-    publishedAt: new Date(),
-  });
 });
 
 after(async () => {
   if (databaseAvailable) {
     await db.delete(pulsePostsTable).where(eq(pulsePostsTable.city, TEST_CITY));
     await db.delete(eventsTable).where(eq(eventsTable.city, TEST_CITY));
-    await db.delete(placesTable).where(eq(placesTable.city, TEST_CITY));
-    await db.delete(qaQuestionsTable).where(eq(qaQuestionsTable.city, TEST_CITY));
+    await db.delete(dealsTable).where(eq(dealsTable.city, TEST_CITY));
   }
   server?.close();
   await pool.end().catch(() => {});
@@ -158,24 +143,26 @@ describe("Pulse digest", { skip: databaseAvailable ? false : "no database reacha
     assert.deepEqual(titles, ["Sooner event", "Later event"]);
   });
 
-  it("orders places by rating", async () => {
+  it("shows unexpired deals, the ones running out first", async () => {
     const { sections } = await digest();
-    const titles = sections.find((section) => section.id === "eat")!.entries.map((entry) => entry.title);
+    const titles = sections.find((section) => section.id === "deals")!.entries.map((entry) => entry.title);
 
-    assert.deepEqual(titles, ["Higher rated", "Lower rated"]);
+    assert.deepEqual(titles, ["Ending soonest", "Ending later"]);
   });
 
-  it("only asks a question that has an answer to read", async () => {
+  it("holds only what is current — no catalogue browsing", async () => {
+    // Pulse answers "what is happening now". Top-rated restaurants and films are the category
+    // grid's job, and duplicating them here made the front page longer, not more useful.
     const { sections } = await digest();
-    const asked = sections.find((section) => section.id === "asked")!;
-
-    assert.deepEqual(asked.entries.map((entry) => entry.title), ["A question with an answer?"]);
+    for (const id of ["eat", "do", "watch", "asked"]) {
+      assert.equal(sections.some((section) => section.id === id), false, `${id} should not exist`);
+    }
   });
 
   it("leaves a section out when it has nothing in it", async () => {
     const { sections } = await digest();
-    // This city has no deals, activities or films seeded.
-    for (const id of ["deals", "do", "watch"]) {
+    // This city has no published news seeded.
+    for (const id of ["news"]) {
       assert.equal(sections.some((section) => section.id === id), false, `${id} should be omitted`);
     }
     assert.ok(sections.every((section) => section.entries.length > 0));

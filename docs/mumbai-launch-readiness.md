@@ -667,13 +667,17 @@ Four things changed shape in the process, and all four are the same decision:
 - **Seeded Pulse posts carry no image.** Every image in the catalogue is still stock, and 2.3 is
   explicit that a stock photo on a real named place destroys trust faster than no photo does.
   The cards render text-first until commissioned photography exists.
-- **Pulse is a digest, not a feed.** It shipped as one content type behind a row of filter
-  chips, which meant the busiest tab could only show the least of what the app knows. It is a
-  front page now — `GET /pulse/digest` ranks a mix of the featured post, events inside a
-  fortnight, the city desk, top-rated food, expiring deals, activities, films now showing and
-  answered questions, each section with a stated ordering rather than a score. The chips are
-  gone: a filter over five posts filters nothing. Q&A lost its tab and kept its content, as a
-  section that opens the existing answer screen.
+- **Pulse is one page that answers one question.** It shipped as a feed of one content type
+  behind a row of filter chips, which meant the busiest tab could only show the least of what
+  the app knows. It is a front page now — `GET /pulse/digest` returns local news, offers that
+  are running out, events that have not happened yet, and the city desk, each section with a
+  stated ordering rather than a score. No tabs and no chips: a filter over five posts filters
+  nothing, and top-rated restaurants and films turned out to belong to the category grid, not
+  here. Pulse holds what changes; the catalogue is browsed elsewhere.
+- **Q&A is removed.** It was built and it worked — real questions with checked answers — but it
+  is not part of what Pulse is for, and a surface nobody enters is a surface nobody maintains.
+  Tables, routes, screens and spec entries are all gone rather than left dark. Git history has
+  the schema and the seeded answers if it comes back.
 - **News reads like short news.** One story to a screen: image, headline, roughly sixty words,
   source, and the full article one tap away at the publisher. It is the format that survives
   being read one-handed on a train, which is where it will be read.

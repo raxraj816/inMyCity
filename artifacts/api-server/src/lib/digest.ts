@@ -1,14 +1,5 @@
 import { and, asc, desc, eq, gte, isNull, or, sql } from "drizzle-orm";
-import {
-  activitiesTable,
-  db,
-  dealsTable,
-  eventsTable,
-  moviesTable,
-  placesTable,
-  pulsePostsTable,
-  qaQuestionsTable,
-} from "@workspace/db";
+import { db, dealsTable, eventsTable, newsItemsTable, pulsePostsTable } from "@workspace/db";
 
 import { cityMatches } from "./sqlFilters";
 
@@ -21,18 +12,20 @@ import { cityMatches } from "./sqlFilters";
  * screen, and a ranking nobody could audit; Phase 1 moved the list endpoints away from exactly
  * that pattern and this follows it.
  *
+ * Pulse answers one question — what is happening in this city right now — so it holds only
+ * things that change: news, offers that are running out, events that have not happened yet, and
+ * what the city desk has written. Top-rated restaurants and films are not that question; the
+ * category grid and Explore already browse the catalogue, and duplicating them here made the
+ * front page longer without making it more useful.
+ *
  * "Top" is a stated rule per section rather than a score:
  *
- * | Section   | What it holds        | Ordered by                         |
- * | --------- | -------------------- | ---------------------------------- |
- * | featured  | one editorial post   | most recently published            |
- * | now       | events within 14 days| soonest first                      |
- * | pulse     | the rest of the desk | most recently published            |
- * | eat       | food places          | rating, then review count          |
- * | deals     | unexpired deals      | expiring soonest                   |
- * | do        | activities           | rating, then review count          |
- * | watch     | films now showing    | rating                             |
- * | asked     | answered questions   | upvotes, then most recent          |
+ * | Section  | What it holds         | Ordered by                |
+ * | -------- | --------------------- | ------------------------- |
+ * | news     | published local news  | most recently published   |
+ * | deals    | unexpired deals       | expiring soonest          |
+ * | now      | events within 14 days | soonest first             |
+ * | pulse    | the city desk         | featured first, then newest |
  *
  * A section with nothing in it is left out rather than rendered empty, so a city with a thin
  * catalogue gets a shorter page instead of a page full of apologies.
@@ -73,7 +66,7 @@ export type DigestSection = {
   id: string;
   label: string;
   /** What the entries are, so the app knows which card to draw and where a tap goes. */
-  kind: "pulse" | "event" | "place" | "deal" | "activity" | "movie" | "question";
+  kind: "pulse" | "news" | "event" | "deal";
   entries: DigestEntry[];
 };
 
@@ -112,19 +105,25 @@ export async function buildDigest(
   const horizon = new Date(Date.now() + HORIZON_DAYS * 24 * 60 * 60 * 1000);
   const publishedAt = sql`coalesce(${pulsePostsTable.publishedAt}, ${pulsePostsTable.createdAt})`;
 
-  const [featured, events, desk, food, deals, activities, movies, questions] = await Promise.all([
+  const [news, deals, events, posts] = await Promise.all([
     db
       .select()
-      .from(pulsePostsTable)
+      .from(newsItemsTable)
+      .where(and(cityMatches(newsItemsTable.city, city), eq(newsItemsTable.status, "published")))
+      .orderBy(desc(sql`coalesce(${newsItemsTable.publishedAt}, ${newsItemsTable.createdAt})`))
+      .limit(8),
+
+    db
+      .select()
+      .from(dealsTable)
       .where(
         and(
-          cityMatches(pulsePostsTable.city, city),
-          eq(pulsePostsTable.status, "published"),
-          eq(pulsePostsTable.isFeatured, true),
+          cityMatches(dealsTable.city, city),
+          or(isNull(dealsTable.expiresAt), gte(dealsTable.expiresAt, new Date())),
         ),
       )
-      .orderBy(desc(publishedAt))
-      .limit(1),
+      .orderBy(sql`${dealsTable.expiresAt} asc nulls last`)
+      .limit(6),
 
     db
       .select()
@@ -137,69 +136,18 @@ export async function buildDigest(
         ),
       )
       .orderBy(asc(eventsTable.startDate))
-      .limit(4),
+      .limit(6),
 
+    // Featured first so an editorial hero leads the desk, newest after.
     db
       .select()
       .from(pulsePostsTable)
-      .where(
-        and(
-          cityMatches(pulsePostsTable.city, city),
-          eq(pulsePostsTable.status, "published"),
-          eq(pulsePostsTable.isFeatured, false),
-        ),
-      )
-      .orderBy(desc(publishedAt))
-      .limit(5),
-
-    db
-      .select()
-      .from(placesTable)
-      .where(and(cityMatches(placesTable.city, city), eq(placesTable.category, "food")))
-      .orderBy(desc(placesTable.rating), desc(placesTable.reviewCount))
-      .limit(4),
-
-    db
-      .select()
-      .from(dealsTable)
-      .where(
-        and(
-          cityMatches(dealsTable.city, city),
-          or(isNull(dealsTable.expiresAt), gte(dealsTable.expiresAt, new Date())),
-        ),
-      )
-      .orderBy(sql`${dealsTable.expiresAt} asc nulls last`)
-      .limit(3),
-
-    db
-      .select()
-      .from(activitiesTable)
-      .where(cityMatches(activitiesTable.city, city))
-      .orderBy(desc(activitiesTable.rating), desc(activitiesTable.reviewCount))
-      .limit(4),
-
-    db
-      .select()
-      .from(moviesTable)
-      .where(and(cityMatches(moviesTable.city, city), eq(moviesTable.status, "now_showing")))
-      .orderBy(desc(moviesTable.rating))
-      .limit(4),
-
-    db
-      .select()
-      .from(qaQuestionsTable)
-      .where(
-        and(
-          cityMatches(qaQuestionsTable.city, city),
-          eq(qaQuestionsTable.status, "published"),
-          sql`${qaQuestionsTable.answerCount} > 0`,
-        ),
-      )
-      .orderBy(desc(qaQuestionsTable.upvoteCount), desc(qaQuestionsTable.createdAt))
-      .limit(3),
+      .where(and(cityMatches(pulsePostsTable.city, city), eq(pulsePostsTable.status, "published")))
+      .orderBy(desc(pulsePostsTable.isFeatured), desc(publishedAt))
+      .limit(6),
   ]);
 
-  const pulseEntry = (post: (typeof featured)[number]) => {
+  const pulseEntry = (post: (typeof posts)[number]) => {
     const state = viewer.get(post.id) ?? { liked: false, saved: false };
     return entry({
       id: post.id,
@@ -222,14 +170,43 @@ export async function buildDigest(
 
   const sections: DigestSection[] = [
     {
-      id: "featured",
-      label: "Featured",
-      kind: "pulse",
-      entries: featured.map(pulseEntry),
+      id: "news",
+      label: "Local news",
+      kind: "news",
+      entries: news.map((item) =>
+        entry({
+          id: item.id,
+          title: item.headline,
+          subtitle: item.sourceName,
+          body: item.summary,
+          imageUrl: item.imageUrl,
+          source: item.sourceName,
+          trustLabel: item.trustLabel,
+          confidence: item.confidence,
+          publishedAt: (item.publishedAt ?? item.createdAt).toISOString(),
+        }),
+      ),
+    },
+    {
+      id: "deals",
+      label: "Offers running now",
+      kind: "deal",
+      entries: deals.map((deal) =>
+        entry({
+          id: deal.id,
+          title: deal.title,
+          subtitle: deal.placeName,
+          imageUrl: deal.imageUrl,
+          price: deal.dealPrice,
+          discountText: deal.discountText,
+          // The card says how long is left, which is the whole reason this section exists.
+          startDate: deal.expiresAt?.toISOString() ?? null,
+        }),
+      ),
     },
     {
       id: "now",
-      label: "Happening soon",
+      label: "On in the city",
       kind: "event",
       entries: events.map((event) =>
         entry({
@@ -247,82 +224,7 @@ export async function buildDigest(
       id: "pulse",
       label: "From the city desk",
       kind: "pulse",
-      entries: desk.map(pulseEntry),
-    },
-    {
-      id: "eat",
-      label: "Where to eat",
-      kind: "place",
-      entries: food.map((place) =>
-        entry({
-          id: place.id,
-          title: place.name,
-          subtitle: place.address,
-          imageUrl: place.imageUrl,
-          rating: place.rating,
-        }),
-      ),
-    },
-    {
-      id: "deals",
-      label: "Ending soon",
-      kind: "deal",
-      entries: deals.map((deal) =>
-        entry({
-          id: deal.id,
-          title: deal.title,
-          subtitle: deal.placeName,
-          imageUrl: deal.imageUrl,
-          price: deal.dealPrice,
-          discountText: deal.discountText,
-        }),
-      ),
-    },
-    {
-      id: "do",
-      label: "Things to do",
-      kind: "activity",
-      entries: activities.map((activity) =>
-        entry({
-          id: activity.id,
-          title: activity.name,
-          subtitle: activity.address,
-          imageUrl: activity.imageUrl,
-          price: activity.price,
-          currency: activity.currency,
-          rating: activity.rating,
-        }),
-      ),
-    },
-    {
-      id: "watch",
-      label: "In cinemas",
-      kind: "movie",
-      entries: movies.map((movie) =>
-        entry({
-          id: movie.id,
-          title: movie.title,
-          subtitle: [movie.genre, movie.language].filter(Boolean).join(" · ") || null,
-          imageUrl: movie.posterUrl,
-          price: movie.price,
-          rating: movie.rating,
-        }),
-      ),
-    },
-    {
-      id: "asked",
-      label: "Mumbai asks",
-      kind: "question",
-      entries: questions.map((question) =>
-        entry({
-          id: question.id,
-          title: question.question,
-          subtitle: question.authorName,
-          answerCount: question.answerCount,
-          upvoteCount: question.upvoteCount,
-          publishedAt: (question.publishedAt ?? question.createdAt).toISOString(),
-        }),
-      ),
+      entries: posts.map(pulseEntry),
     },
   ];
 

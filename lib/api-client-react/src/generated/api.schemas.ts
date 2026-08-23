@@ -630,12 +630,9 @@ export type DigestSectionKind =
 
 export const DigestSectionKind = {
   pulse: "pulse",
+  news: "news",
   event: "event",
-  place: "place",
   deal: "deal",
-  activity: "activity",
-  movie: "movie",
-  question: "question",
 } as const;
 
 export interface DigestSection {
@@ -745,14 +742,6 @@ export interface PulseReactionInput {
   kind: PulseReactionInputKind;
 }
 
-export interface SubmitQaAnswerInput {
-  /**
-   * @minLength 10
-   * @maxLength 2000
-   */
-  body: string;
-}
-
 export type PulseReactionStateKind =
   (typeof PulseReactionStateKind)[keyof typeof PulseReactionStateKind];
 
@@ -795,76 +784,12 @@ export interface NewsItem {
   publishedAt: string;
 }
 
-export interface QaQuestion {
-  id: number;
-  city: string;
-  question: string;
-  /** @nullable */
-  body?: string | null;
-  authorName: string;
-  authorInitials: string;
-  /** @nullable */
-  neighborhoodId?: string | null;
-  tags: string[];
-  upvoteCount: number;
-  answerCount: number;
-  publishedAt: string;
-  viewerHasUpvoted: boolean;
-}
-
-export interface QaAnswer {
-  id: number;
-  questionId: number;
-  body: string;
-  authorName: string;
-  authorInitials: string;
-  isAccepted: boolean;
-  upvoteCount: number;
-  publishedAt: string;
-  viewerHasUpvoted: boolean;
-}
-
-export type QaQuestionDetail = QaQuestion & {
-  answers: QaAnswer[];
-};
-
-export interface SubmitQaQuestionInput {
-  city: string;
-  /**
-   * @minLength 10
-   * @maxLength 300
-   */
-  question: string;
-  /** @nullable */
-  body?: string | null;
-  /** @nullable */
-  neighborhoodId?: string | null;
-  tags?: string[];
-}
-
-export type QaUpvoteStateTargetType =
-  (typeof QaUpvoteStateTargetType)[keyof typeof QaUpvoteStateTargetType];
-
-export const QaUpvoteStateTargetType = {
-  question: "question",
-  answer: "answer",
-} as const;
-
-export interface QaUpvoteState {
-  id: number;
-  targetType: QaUpvoteStateTargetType;
-  upvoteCount: number;
-  active: boolean;
-}
-
 export type SubmitContentReportInputTargetType =
   (typeof SubmitContentReportInputTargetType)[keyof typeof SubmitContentReportInputTargetType];
 
 export const SubmitContentReportInputTargetType = {
   pulse_post: "pulse_post",
   news_item: "news_item",
-  qa_question: "qa_question",
-  qa_answer: "qa_answer",
 } as const;
 
 export type SubmitContentReportInputReason =
@@ -1156,21 +1081,6 @@ export type GetNewsItemsParams = {
   limit?: number;
   offset?: number;
 };
-
-export type GetQaQuestionsParams = {
-  city?: string;
-  sort?: GetQaQuestionsSort;
-  limit?: number;
-  offset?: number;
-};
-
-export type GetQaQuestionsSort =
-  (typeof GetQaQuestionsSort)[keyof typeof GetQaQuestionsSort];
-
-export const GetQaQuestionsSort = {
-  recent: "recent",
-  top: "top",
-} as const;
 
 export type GetCityGuideParams = {
   city: string;

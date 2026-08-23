@@ -27,7 +27,6 @@ const SEARCHABLE_TABLES = [
 const CITY_SCOPED_TABLES = [
   "pulse_posts",
   "news_items",
-  "qa_questions",
   "insider_tips",
   "city_facts",
 ] as const;

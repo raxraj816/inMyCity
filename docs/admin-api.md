@@ -39,8 +39,7 @@ POST   /api/admin/:collection/:id/verify # stamps lastVerifiedAt
 ```
 
 Collections: `places`, `events`, `deals`, `movies`, `hotels`, `activities`, `pulse_posts`,
-`news_items`, `news_sources`, `qa_questions`, `qa_answers`, `city_guides`,
-`city_facts`, `insider_tips`.
+`news_items`, `news_sources`, `city_guides`, `city_facts`, `insider_tips`.
 
 Four properties are worth knowing because they are enforced rather than conventional:
 
@@ -70,7 +69,7 @@ GET  /api/admin/reports                             # ?status=open|actioned|dism
 POST /api/admin/reports/:id/resolve                 # body: { outcome, note } — both required
 ```
 
-`:type` is one of `pulse_post`, `news_item`, `qa_question`, `qa_answer`.
+`:type` is one of `pulse_post` or `news_item`.
 
 Reports are ordered by `dueAt` — closest to breaching first, not oldest first. The window is
 stamped when the report is filed, from the reason: 24 hours for the sexual-content, impersonation,

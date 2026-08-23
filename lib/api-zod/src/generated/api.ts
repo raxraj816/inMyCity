@@ -1182,10 +1182,6 @@ export const GetRecommendationsResponse = zod.object({
  */
 export const GetPulsePostsQueryParams = zod.object({
   city: zod.coerce.string().optional(),
-  filter: zod.coerce
-    .string()
-    .optional()
-    .describe("One of the feed's filter tags, or `all`."),
   neighborhood: zod.coerce
     .string()
     .optional()
@@ -1266,6 +1262,73 @@ export const SubmitPulsePostBody = zod.object({
   neighborhoodId: zod.string().nullish(),
   location: zod.string().nullish(),
   filterTags: zod.array(zod.string()).optional(),
+});
+
+/**
+ * A mixed digest drawn from Pulse, events, places, deals, activities, movies and answered questions. Each section states what it holds and how it is ordered; a section with nothing in it is omitted rather than returned empty.
+ * @summary The ranked Pulse front page for a city
+ */
+export const GetPulseDigestQueryParams = zod.object({
+  city: zod.coerce.string(),
+});
+
+export const GetPulseDigestHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetPulseDigestResponse = zod.object({
+  city: zod.string(),
+  sections: zod.array(
+    zod.object({
+      id: zod.string(),
+      label: zod.string(),
+      kind: zod.enum([
+        "pulse",
+        "event",
+        "place",
+        "deal",
+        "activity",
+        "movie",
+        "question",
+      ]),
+      entries: zod.array(
+        zod
+          .object({
+            id: zod.number(),
+            title: zod.string(),
+            subtitle: zod.string().nullish(),
+            body: zod.string().nullish(),
+            imageUrl: zod.string().nullish(),
+            price: zod.number().nullish(),
+            currency: zod.string().nullish(),
+            isFree: zod.boolean().nullish(),
+            rating: zod.number().nullish(),
+            startDate: zod.string().nullish(),
+            discountText: zod.string().nullish(),
+            source: zod.string().nullish(),
+            trustLabel: zod.string().nullish(),
+            confidence: zod.string().nullish(),
+            authorName: zod.string().nullish(),
+            authorHandle: zod.string().nullish(),
+            likeCount: zod.number().nullish(),
+            saveCount: zod.number().nullish(),
+            viewerHasLiked: zod.boolean().nullish(),
+            viewerHasSaved: zod.boolean().nullish(),
+            answerCount: zod.number().nullish(),
+            upvoteCount: zod.number().nullish(),
+            publishedAt: zod.string().nullish(),
+          })
+          .describe(
+            "One card in the digest. Every field beyond `id` and `title` is nullable — a section fills in only what its own kind carries. Prices are bare numbers; the client formats them through the city's own currency.",
+          ),
+      ),
+    }),
+  ),
 });
 
 /**

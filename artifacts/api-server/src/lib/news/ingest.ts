@@ -4,6 +4,7 @@ import { db, newsItemsTable, newsSourcesTable, type NewsSource } from "@workspac
 import { logger } from "../logger";
 import { feedUrlOverride, isAllowedFeedUrl } from "./allowlist";
 import { parseFeed, type FeedEntry } from "./feed";
+import { mentionsCity } from "./relevance";
 
 /**
  * Scheduled news ingestion.
@@ -66,6 +67,8 @@ async function fetchFeed(url: string): Promise<string> {
 export type SourceIngestResult = {
   slug: string;
   fetched: number;
+  /** Dropped because the story is not about this city. Never written, so never reviewed. */
+  offTopic: number;
   inserted: number;
   updated: number;
   skipped: number;
@@ -75,12 +78,18 @@ export type SourceIngestResult = {
 async function upsertEntries(
   source: NewsSource,
   entries: FeedEntry[],
-): Promise<Pick<SourceIngestResult, "inserted" | "updated" | "skipped">> {
+): Promise<Pick<SourceIngestResult, "inserted" | "updated" | "skipped" | "offTopic">> {
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
+  let offTopic = 0;
 
   for (const entry of entries.slice(0, MAX_ITEMS_PER_SOURCE)) {
+    if (!mentionsCity(source.city, entry.headline, entry.summary)) {
+      offTopic += 1;
+      continue;
+    }
+
     const values = {
       externalId: entry.externalId,
       sourceId: source.id,
@@ -131,7 +140,7 @@ async function upsertEntries(
     }
   }
 
-  return { inserted, updated, skipped };
+  return { inserted, updated, skipped, offTopic };
 }
 
 export async function ingestSource(source: NewsSource): Promise<SourceIngestResult> {
@@ -140,6 +149,7 @@ export async function ingestSource(source: NewsSource): Promise<SourceIngestResu
     return {
       slug: source.slug,
       fetched: 0,
+      offTopic: 0,
       inserted: 0,
       updated: 0,
       skipped: 0,
@@ -163,7 +173,7 @@ export async function ingestSource(source: NewsSource): Promise<SourceIngestResu
       .update(newsSourcesTable)
       .set({ lastFetchedAt: new Date(), lastFetchError: message })
       .where(eq(newsSourcesTable.id, source.id));
-    return { slug: source.slug, fetched: 0, inserted: 0, updated: 0, skipped: 0, error: message };
+    return { slug: source.slug, fetched: 0, offTopic: 0, inserted: 0, updated: 0, skipped: 0, error: message };
   }
 }
 

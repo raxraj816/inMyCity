@@ -9,10 +9,6 @@
 export type GetPulsePostsParams = {
   city?: string;
   /**
-   * One of the feed's filter tags, or `all`.
-   */
-  filter?: string;
-  /**
    * Launch zone id, e.g. `bandra`.
    */
   neighborhood?: string;

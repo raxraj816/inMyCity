@@ -575,6 +575,81 @@ export interface Activity {
   createdAt: string;
 }
 
+/**
+ * One card in the digest. Every field beyond `id` and `title` is nullable — a section fills in only what its own kind carries. Prices are bare numbers; the client formats them through the city's own currency.
+ */
+export interface DigestEntry {
+  id: number;
+  title: string;
+  /** @nullable */
+  subtitle?: string | null;
+  /** @nullable */
+  body?: string | null;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  price?: number | null;
+  /** @nullable */
+  currency?: string | null;
+  /** @nullable */
+  isFree?: boolean | null;
+  /** @nullable */
+  rating?: number | null;
+  /** @nullable */
+  startDate?: string | null;
+  /** @nullable */
+  discountText?: string | null;
+  /** @nullable */
+  source?: string | null;
+  /** @nullable */
+  trustLabel?: string | null;
+  /** @nullable */
+  confidence?: string | null;
+  /** @nullable */
+  authorName?: string | null;
+  /** @nullable */
+  authorHandle?: string | null;
+  /** @nullable */
+  likeCount?: number | null;
+  /** @nullable */
+  saveCount?: number | null;
+  /** @nullable */
+  viewerHasLiked?: boolean | null;
+  /** @nullable */
+  viewerHasSaved?: boolean | null;
+  /** @nullable */
+  answerCount?: number | null;
+  /** @nullable */
+  upvoteCount?: number | null;
+  /** @nullable */
+  publishedAt?: string | null;
+}
+
+export type DigestSectionKind =
+  (typeof DigestSectionKind)[keyof typeof DigestSectionKind];
+
+export const DigestSectionKind = {
+  pulse: "pulse",
+  event: "event",
+  place: "place",
+  deal: "deal",
+  activity: "activity",
+  movie: "movie",
+  question: "question",
+} as const;
+
+export interface DigestSection {
+  id: string;
+  label: string;
+  kind: DigestSectionKind;
+  entries: DigestEntry[];
+}
+
+export interface PulseDigest {
+  city: string;
+  sections: DigestSection[];
+}
+
 export type PulsePostTier = (typeof PulsePostTier)[keyof typeof PulsePostTier];
 
 export const PulsePostTier = {
@@ -1064,15 +1139,15 @@ export const GetRecommendationsWeatherMode = {
 export type GetPulsePostsParams = {
   city?: string;
   /**
-   * One of the feed's filter tags, or `all`.
-   */
-  filter?: string;
-  /**
    * Launch zone id, e.g. `bandra`.
    */
   neighborhood?: string;
   limit?: number;
   offset?: number;
+};
+
+export type GetPulseDigestParams = {
+  city: string;
 };
 
 export type GetNewsItemsParams = {

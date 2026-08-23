@@ -667,6 +667,20 @@ Four things changed shape in the process, and all four are the same decision:
 - **Seeded Pulse posts carry no image.** Every image in the catalogue is still stock, and 2.3 is
   explicit that a stock photo on a real named place destroys trust faster than no photo does.
   The cards render text-first until commissioned photography exists.
+- **Pulse is a digest, not a feed.** It shipped as one content type behind a row of filter
+  chips, which meant the busiest tab could only show the least of what the app knows. It is a
+  front page now — `GET /pulse/digest` ranks a mix of the featured post, events inside a
+  fortnight, the city desk, top-rated food, expiring deals, activities, films now showing and
+  answered questions, each section with a stated ordering rather than a score. The chips are
+  gone: a filter over five posts filters nothing. Q&A lost its tab and kept its content, as a
+  section that opens the existing answer screen.
+- **News reads like short news.** One story to a screen: image, headline, roughly sixty words,
+  source, and the full article one tap away at the publisher. It is the format that survives
+  being read one-handed on a train, which is where it will be read.
+- **Ingestion is live and filtered.** The Free Press Journal feed is verified and switched on;
+  the other nine sources stay off until someone checks them the same way. A fetch returns 58
+  items, of which about 35 are national or another city's — those are dropped on the place-name
+  vocabulary before anything is written, leaving a queue an editor can actually work through.
 - **Communities are gone, tables and all.** The section above lists them, and they were built:
   a directory, real membership keyed to the reader, a moderation path. But a community you can
   join has to have something inside it, and nothing here posts to one — no community-scoped

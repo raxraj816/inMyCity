@@ -26,7 +26,7 @@ async function main() {
       logger.error({ source: result.slug, error: result.error }, "Source ingestion failed");
     } else {
       logger.info(
-        { source: result.slug, fetched: result.fetched, inserted: result.inserted, updated: result.updated, skipped: result.skipped },
+        { source: result.slug, fetched: result.fetched, offTopic: result.offTopic, inserted: result.inserted, updated: result.updated, skipped: result.skipped },
         "Source ingested",
       );
     }

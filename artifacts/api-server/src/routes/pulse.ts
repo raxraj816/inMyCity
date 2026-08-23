@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db, pulsePostsTable, pulseReactionsTable, type PulsePost } from "@workspace/db";
 
 import { actorDisplayName, actorKeyFrom } from "../lib/actor";
+import { buildDigest } from "../lib/digest";
+import { viewerReactions } from "../lib/pulseReactions";
 import { submissionsEnabled } from "../lib/features";
 import { parseLimit, parseOffset } from "../lib/pagination";
 import { cityMatches } from "../lib/sqlFilters";
@@ -53,34 +55,9 @@ function toResponse(
   };
 }
 
-/** The caller's like/save state across a page of posts, in one query rather than N. */
-async function viewerReactions(
-  actorKey: string | null,
-  postIds: number[],
-): Promise<Map<number, { liked: boolean; saved: boolean }>> {
-  const state = new Map<number, { liked: boolean; saved: boolean }>();
-  if (!actorKey || postIds.length === 0) return state;
-
-  const rows = await db
-    .select({ postId: pulseReactionsTable.postId, kind: pulseReactionsTable.kind })
-    .from(pulseReactionsTable)
-    .where(
-      and(eq(pulseReactionsTable.actorKey, actorKey), inArray(pulseReactionsTable.postId, postIds)),
-    );
-
-  for (const row of rows) {
-    const current = state.get(row.postId) ?? { liked: false, saved: false };
-    if (row.kind === "like") current.liked = true;
-    if (row.kind === "save") current.saved = true;
-    state.set(row.postId, current);
-  }
-  return state;
-}
-
 router.get("/pulse", async (req, res) => {
   try {
     const city = req.query.city as string | undefined;
-    const filter = req.query.filter as string | undefined;
     const neighborhood = req.query.neighborhood as string | undefined;
     const limit = parseLimit(req.query.limit);
     const offset = parseOffset(req.query.offset);
@@ -89,10 +66,6 @@ router.get("/pulse", async (req, res) => {
       eq(pulsePostsTable.status, "published"),
       city ? cityMatches(pulsePostsTable.city, city) : undefined,
       neighborhood ? eq(pulsePostsTable.neighborhoodId, neighborhood) : undefined,
-      // `all` is the UI's no-op filter; every other value must be present in the row's tags.
-      filter && filter !== "all"
-        ? sql`${filter} = ANY(${pulsePostsTable.filterTags})`
-        : undefined,
     ].filter((condition) => condition !== undefined);
 
     const posts = await db
@@ -108,6 +81,36 @@ router.get("/pulse", async (req, res) => {
     res.json(posts.map((post) => toResponse(post, viewer.get(post.id) ?? { liked: false, saved: false })));
   } catch (err) {
     req.log.error({ err }, "Failed to list pulse posts");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * The Pulse front page: a ranked mix of everything the app holds for this city.
+ *
+ * Registered before `/pulse/:id` so Express does not read "digest" as a post id.
+ */
+router.get("/pulse/digest", async (req, res) => {
+  try {
+    const city = req.query.city as string | undefined;
+    if (!city) {
+      res.status(400).json({ error: "city is required" });
+      return;
+    }
+
+    // The reader's own likes and saves are resolved in one pass over the posts the digest
+    // chose, so the featured card paints the right state on first render.
+    const actorKey = actorKeyFrom(req);
+    const postIds = await db
+      .select({ id: pulsePostsTable.id })
+      .from(pulsePostsTable)
+      .where(and(cityMatches(pulsePostsTable.city, city), eq(pulsePostsTable.status, "published")));
+
+    const viewer = await viewerReactions(actorKey, postIds.map((row) => row.id));
+
+    res.json({ city, sections: await buildDigest(city, viewer) });
+  } catch (err) {
+    req.log.error({ err }, "Failed to build the Pulse digest");
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -218,14 +218,27 @@ async function seed() {
   const placeByName = Object.fromEntries(places.map((p) => [p.name, p]));
 
   const now = new Date();
-  const d1 = new Date(now.getTime() + 1 * 86400000);
-  const d3 = new Date(now.getTime() + 3 * 86400000);
-  const d7 = new Date(now.getTime() + 7 * 86400000);
-  const d10 = new Date(now.getTime() + 10 * 86400000);
-  const d14 = new Date(now.getTime() + 14 * 86400000);
-  const d21 = new Date(now.getTime() + 21 * 86400000);
-  const d30 = new Date(now.getTime() + 30 * 86400000);
+  // Anchored to 7pm rather than to whenever the seed happened to run, so a card reads
+  // "Tomorrow 7:00 pm" instead of "Tomorrow 10:32". End dates stay `start + N hours`.
+  const evening = (days: number) => {
+    const day = new Date(now.getTime() + days * 86400000);
+    day.setHours(19, 0, 0, 0);
+    return day;
+  };
+  const d1 = evening(1);
+  const d3 = evening(3);
+  const d7 = evening(7);
+  const d10 = evening(10);
+  const d14 = evening(14);
+  const d21 = evening(21);
+  const d30 = evening(30);
   const h = (base: Date, hours: number) => new Date(base.getTime() + hours * 3600000);
+  /** Same day, at a given hour. For the events that are not evening ones. */
+  const morningOf = (base: Date, hour: number) => {
+    const day = new Date(base);
+    day.setHours(hour, 0, 0, 0);
+    return day;
+  };
   // Deals were seeded with fixed 2025 dates, so a fresh install had almost no live inventory —
   // the list endpoints correctly hide an expired deal, and every one of them was expired.
   // Relative dates keep the seed producing a usable catalogue whenever it is run.
@@ -233,33 +246,33 @@ async function seed() {
 
   const events = await upsertSeedRows(eventsTable, eventsTable.externalId, withExternalId("event", withSearchText("events", [
     // ─── MUMBAI EVENTS ────────────────────────────────────────────────────────
-    { title: "Kala Ghoda Arts Festival", category: "art", venue: "Rampart Row, Kala Ghoda", address: "Kala Ghoda, Fort", city: "Mumbai", lat: 18.9285, lng: 72.8321, startDate: d7, endDate: h(d7, 9 * 24), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1561839561-b13bcfe95249?w=800", tags: ["art", "cultural festival", "free", "annual"] },
+    { title: "Kala Ghoda Arts Festival", category: "art", venue: "Rampart Row, Kala Ghoda", address: "Kala Ghoda, Fort", city: "Mumbai", lat: 18.9285, lng: 72.8321, startDate: morningOf(d7, 11), endDate: h(morningOf(d7, 11), 9 * 24), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1561839561-b13bcfe95249?w=800", tags: ["art", "cultural festival", "free", "annual"] },
     { title: "Bollywood Night at NSCI", category: "music", venue: "NSCI Dome", address: "Worli Sports Complex, Worli", city: "Mumbai", lat: 18.9985, lng: 72.8186, startDate: d3, endDate: h(d3, 4), price: 1500, isFree: false, imageUrl: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800", tags: ["bollywood", "music", "dance", "party"] },
-    { title: "Mumbai Street Food Tour — Colaba", category: "food", venue: "Colaba Causeway", address: "Colaba Causeway, Colaba", city: "Mumbai", lat: 18.9195, lng: 72.8318, startDate: d1, endDate: h(d1, 3), price: 800, isFree: false, imageUrl: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800", tags: ["food tour", "street food", "guided", "colaba"] },
+    { title: "Mumbai Street Food Tour — Colaba", category: "food", venue: "Colaba Causeway", address: "Colaba Causeway, Colaba", city: "Mumbai", lat: 18.9195, lng: 72.8318, startDate: morningOf(d1, 17), endDate: h(morningOf(d1, 17), 3), price: 800, isFree: false, imageUrl: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800", tags: ["food tour", "street food", "guided", "colaba"] },
     { title: "Comedy Night at Canvas Laugh Club", category: "comedy", venue: "Canvas Laugh Club", address: "Palladium Mall, Lower Parel", city: "Mumbai", lat: 18.9965, lng: 72.8262, startDate: d7, endDate: h(d7, 2), price: 499, isFree: false, imageUrl: "https://images.unsplash.com/photo-1527224538127-2104bb71c51b?w=800", tags: ["comedy", "stand-up", "english", "weekend"] },
-    { title: "Sunrise Yoga at Marine Drive", category: "wellness", venue: "Marine Drive Promenade", address: "Marine Drive, Nariman Point", city: "Mumbai", lat: 18.9442, lng: 72.8239, startDate: d3, endDate: h(d3, 1.5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800", tags: ["yoga", "wellness", "sunrise", "free", "marine drive"] },
-    { title: "Elephanta Music & Dance Festival", category: "art", venue: "Elephanta Caves Amphitheatre", address: "Elephanta Island", city: "Mumbai", lat: 18.9633, lng: 72.9314, startDate: d14, endDate: h(d14, 5 * 24), price: 1200, isFree: false, imageUrl: "https://images.unsplash.com/photo-1580819775951-0a803e11aaff?w=800", bookingUrl: "https://mtdc.com", tags: ["classical music", "dance", "heritage", "island"] },
-    { title: "Dharavi Slum Art Walk", category: "art", venue: "Dharavi", address: "90 Feet Road, Dharavi", city: "Mumbai", lat: 19.0432, lng: 72.8547, startDate: d10, endDate: h(d10, 3), price: 600, isFree: false, imageUrl: "https://images.unsplash.com/photo-1561839561-b13bcfe95249?w=800", tags: ["art", "graffiti", "culture", "walking tour"] },
-    { title: "Bandra Farmers Market", category: "food", venue: "Pali Hill", address: "St. Andrews Church Grounds, Bandra", city: "Mumbai", lat: 19.0547, lng: 72.8245, startDate: d7, endDate: h(d7, 5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800", tags: ["market", "organic", "farmers", "bandra", "free"] },
+    { title: "Sunrise Yoga at Marine Drive", category: "wellness", venue: "Marine Drive Promenade", address: "Marine Drive, Nariman Point", city: "Mumbai", lat: 18.9442, lng: 72.8239, startDate: morningOf(d3, 6), endDate: h(morningOf(d3, 6), 1.5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800", tags: ["yoga", "wellness", "sunrise", "free", "marine drive"] },
+    { title: "Elephanta Music & Dance Festival", category: "art", venue: "Elephanta Caves Amphitheatre", address: "Elephanta Island", city: "Mumbai", lat: 18.9633, lng: 72.9314, startDate: morningOf(d14, 17), endDate: h(morningOf(d14, 17), 5 * 24), price: 1200, isFree: false, imageUrl: "https://images.unsplash.com/photo-1580819775951-0a803e11aaff?w=800", bookingUrl: "https://mtdc.com", tags: ["classical music", "dance", "heritage", "island"] },
+    { title: "Dharavi Slum Art Walk", category: "art", venue: "Dharavi", address: "90 Feet Road, Dharavi", city: "Mumbai", lat: 19.0432, lng: 72.8547, startDate: morningOf(d10, 10), endDate: h(morningOf(d10, 10), 3), price: 600, isFree: false, imageUrl: "https://images.unsplash.com/photo-1561839561-b13bcfe95249?w=800", tags: ["art", "graffiti", "culture", "walking tour"] },
+    { title: "Bandra Farmers Market", category: "food", venue: "Pali Hill", address: "St. Andrews Church Grounds, Bandra", city: "Mumbai", lat: 19.0547, lng: 72.8245, startDate: morningOf(d7, 8), endDate: h(morningOf(d7, 8), 5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800", tags: ["market", "organic", "farmers", "bandra", "free"] },
 
     // ─── BANGALORE EVENTS ─────────────────────────────────────────────────────
-    { title: "Bengaluru International Film Festival", category: "film", venue: "PVR Orion", address: "Orion Mall, Rajajinagar", city: "Bangalore", lat: 13.0117, lng: 77.5540, startDate: d14, endDate: h(d14, 7 * 24), price: 200, isFree: false, imageUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800", bookingUrl: "https://biffes.org", tags: ["film", "festival", "cinema", "indie"] },
-    { title: "Cubbon Park Sunday Walk", category: "wellness", venue: "Cubbon Park", address: "Kasturba Road, Ambedkar Veedhi", city: "Bangalore", lat: 12.9763, lng: 77.5929, startDate: d7, endDate: h(d7, 2), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800", tags: ["walking", "wellness", "nature", "free", "sunday"] },
+    { title: "Bengaluru International Film Festival", category: "film", venue: "PVR Orion", address: "Orion Mall, Rajajinagar", city: "Bangalore", lat: 13.0117, lng: 77.5540, startDate: morningOf(d14, 11), endDate: h(morningOf(d14, 11), 7 * 24), price: 200, isFree: false, imageUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800", bookingUrl: "https://biffes.org", tags: ["film", "festival", "cinema", "indie"] },
+    { title: "Cubbon Park Sunday Walk", category: "wellness", venue: "Cubbon Park", address: "Kasturba Road, Ambedkar Veedhi", city: "Bangalore", lat: 12.9763, lng: 77.5929, startDate: morningOf(d7, 7), endDate: h(morningOf(d7, 7), 2), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800", tags: ["walking", "wellness", "nature", "free", "sunday"] },
     { title: "Bangalore Craft Beer Festival", category: "food", venue: "Palace Grounds", address: "Jayamahal Road, Palace Grounds", city: "Bangalore", lat: 13.0020, lng: 77.5920, startDate: d10, endDate: h(d10, 2 * 24), price: 799, isFree: false, imageUrl: "https://images.unsplash.com/photo-1481833761820-0509d3217039?w=800", tags: ["craft beer", "festival", "food", "weekend"] },
-    { title: "Lalbagh Flower Show", category: "art", venue: "Lalbagh Glass House", address: "Lalbagh Botanical Garden", city: "Bangalore", lat: 12.9510, lng: 77.5848, startDate: d21, endDate: h(d21, 10 * 24), price: 50, isFree: false, imageUrl: "https://images.unsplash.com/photo-1580341289255-5b47c98a59dd?w=800", tags: ["flowers", "garden", "show", "annual"] },
+    { title: "Lalbagh Flower Show", category: "art", venue: "Lalbagh Glass House", address: "Lalbagh Botanical Garden", city: "Bangalore", lat: 12.9510, lng: 77.5848, startDate: morningOf(d21, 9), endDate: h(morningOf(d21, 9), 10 * 24), price: 50, isFree: false, imageUrl: "https://images.unsplash.com/photo-1580341289255-5b47c98a59dd?w=800", tags: ["flowers", "garden", "show", "annual"] },
     { title: "Indie Night at The Humming Tree", category: "music", venue: "The Humming Tree", address: "100 Feet Road, Indiranagar", city: "Bangalore", lat: 12.9709, lng: 77.6301, startDate: d7, endDate: h(d7, 4), price: 300, isFree: false, imageUrl: "https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=800", tags: ["indie", "live music", "indiranagar", "local bands"] },
     { title: "Bangalore Comedy Festival", category: "comedy", venue: "Chowdiah Memorial Hall", address: "Vyalikaval, Sadashivanagar", city: "Bangalore", lat: 13.0059, lng: 77.5757, startDate: d14, endDate: h(d14, 3), price: 599, isFree: false, imageUrl: "https://images.unsplash.com/photo-1527224538127-2104bb71c51b?w=800", tags: ["comedy", "stand-up", "annual", "weekend"] },
-    { title: "Morning Yoga at Cubbon Park", category: "wellness", venue: "Cubbon Park", address: "Kasturba Road", city: "Bangalore", lat: 12.9763, lng: 77.5929, startDate: d1, endDate: h(d1, 1.5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800", tags: ["yoga", "wellness", "morning", "free", "park"] },
-    { title: "Startup Weekend Bangalore", category: "networking", venue: "WeWork Galaxy", address: "43 Residency Road", city: "Bangalore", lat: 12.9711, lng: 77.6069, startDate: d21, endDate: h(d21, 3 * 24), price: 1500, isFree: false, imageUrl: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800", tags: ["startup", "networking", "tech", "entrepreneurship"] },
+    { title: "Morning Yoga at Cubbon Park", category: "wellness", venue: "Cubbon Park", address: "Kasturba Road", city: "Bangalore", lat: 12.9763, lng: 77.5929, startDate: morningOf(d1, 7), endDate: h(morningOf(d1, 7), 1.5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800", tags: ["yoga", "wellness", "morning", "free", "park"] },
+    { title: "Startup Weekend Bangalore", category: "networking", venue: "WeWork Galaxy", address: "43 Residency Road", city: "Bangalore", lat: 12.9711, lng: 77.6069, startDate: morningOf(d21, 9), endDate: h(morningOf(d21, 9), 3 * 24), price: 1500, isFree: false, imageUrl: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800", tags: ["startup", "networking", "tech", "entrepreneurship"] },
 
     // ─── NEW YORK EVENTS ──────────────────────────────────────────────────────
     { title: "Jazz Night at Village Vanguard", category: "music", venue: "Village Vanguard", address: "178 7th Ave S, Greenwich Village", city: "New York", lat: 40.7330, lng: -74.0010, startDate: d1, endDate: h(d1, 2), price: 35, isFree: false, imageUrl: "https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=800", bookingUrl: "https://villagevanguard.com", tags: ["jazz", "live music", "intimate"] },
-    { title: "Brooklyn Night Market", category: "food", venue: "WNYC Transmitter Park", address: "50 Greenpoint Ave, Brooklyn", city: "New York", lat: 40.7272, lng: -73.9611, startDate: d7, endDate: h(d7, 5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800", tags: ["market", "food", "outdoor", "free"] },
+    { title: "Brooklyn Night Market", category: "food", venue: "WNYC Transmitter Park", address: "50 Greenpoint Ave, Brooklyn", city: "New York", lat: 40.7272, lng: -73.9611, startDate: morningOf(d7, 17), endDate: h(morningOf(d7, 17), 5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800", tags: ["market", "food", "outdoor", "free"] },
     { title: "Central Park Summer Concert", category: "music", venue: "SummerStage at Central Park", address: "Rumsey Playfield, Central Park", city: "New York", lat: 40.7739, lng: -73.9693, startDate: d7, endDate: h(d7, 3), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800", tags: ["concert", "outdoor", "free", "summer"] },
     { title: "Comedy Night at Comedy Cellar", category: "comedy", venue: "Comedy Cellar", address: "117 MacDougal St, Greenwich Village", city: "New York", lat: 40.7295, lng: -74.0003, startDate: d3, endDate: h(d3, 2), price: 20, isFree: false, imageUrl: "https://images.unsplash.com/photo-1527224538127-2104bb71c51b?w=800", tags: ["comedy", "stand-up", "intimate", "famous"] },
 
     // ─── SAN FRANCISCO EVENTS ─────────────────────────────────────────────────
-    { title: "Ferry Building Farmers Market", category: "food", venue: "Ferry Building Marketplace", address: "One Ferry Building, Embarcadero", city: "San Francisco", lat: 37.7955, lng: -122.3937, startDate: d1, endDate: h(d1, 5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800", tags: ["market", "food", "local", "organic", "free"] },
+    { title: "Ferry Building Farmers Market", category: "food", venue: "Ferry Building Marketplace", address: "One Ferry Building, Embarcadero", city: "San Francisco", lat: 37.7955, lng: -122.3937, startDate: morningOf(d1, 8), endDate: h(morningOf(d1, 8), 5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800", tags: ["market", "food", "local", "organic", "free"] },
     { title: "Dolores Park Movie Night", category: "film", venue: "Dolores Park", address: "Dolores St & 18th St, Mission", city: "San Francisco", lat: 37.7596, lng: -122.4269, startDate: d7, endDate: h(d7, 3), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800", tags: ["film", "outdoor", "free", "park"] },
   ]), (row) => [row.city, row.title]));
 
@@ -650,13 +663,17 @@ async function seed() {
       trustLabel: source.trustLabel,
       defaultConfidence: source.defaultConfidence,
       defaultCategory: source.defaultCategory,
-      // Inactive until someone verifies the publisher's feed URL. The column defaults to
-      // `true`, so leaving this out would silently enable ten unconfigured sources.
-      isActive: false,
+      feedUrl: source.verifiedFeedUrl ?? null,
+      // Only a source whose endpoint someone has actually fetched is switched on. The column
+      // defaults to `true`, so being explicit here is what keeps the unchecked nine off.
+      isActive: Boolean(source.verifiedFeedUrl),
     })),
   );
 
-  console.log(`Seeded ${MUMBAI_NEWS_SOURCES.length} news sources (inactive until a feed URL is verified)`);
+  const activeSources = MUMBAI_NEWS_SOURCES.filter((source) => source.verifiedFeedUrl).length;
+  console.log(
+    `Seeded ${MUMBAI_NEWS_SOURCES.length} news sources — ${activeSources} active, ${MUMBAI_NEWS_SOURCES.length - activeSources} awaiting a verified feed URL`,
+  );
 
   // ─── CITY GUIDE HEADER ──────────────────────────────────────────────────────
   // Currency is deliberately absent: `currencyFor` in @workspace/city-config resolves it, and

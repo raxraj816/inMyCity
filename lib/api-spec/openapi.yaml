@@ -1078,11 +1078,6 @@ paths:
           in: query
           schema:
             type: string
-        - name: filter
-          in: query
-          description: One of the feed's filter tags, or `all`.
-          schema:
-            type: string
         - name: neighborhood
           in: query
           description: Launch zone id, e.g. `bandra`.
@@ -1131,6 +1126,32 @@ paths:
           description: Invalid submission
         "503":
           description: Submissions are not open yet
+
+  /pulse/digest:
+    get:
+      operationId: getPulseDigest
+      tags: [pulse]
+      summary: The ranked Pulse front page for a city
+      description: >-
+        A mixed digest drawn from Pulse, events, places, deals, activities, movies and
+        answered questions. Each section states what it holds and how it is ordered; a
+        section with nothing in it is omitted rather than returned empty.
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The digest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PulseDigest"
+        "400":
+          description: city is required
 
   /pulse/{id}:
     get:
@@ -2432,6 +2453,85 @@ components:
         - images
         - tags
         - createdAt
+    DigestEntry:
+      type: object
+      required: [id, title]
+      description: >-
+        One card in the digest. Every field beyond `id` and `title` is nullable — a section
+        fills in only what its own kind carries. Prices are bare numbers; the client formats
+        them through the city's own currency.
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subtitle:
+          type: [string, 'null']
+        body:
+          type: [string, 'null']
+        imageUrl:
+          type: [string, 'null']
+        price:
+          type: [number, 'null']
+        currency:
+          type: [string, 'null']
+        isFree:
+          type: [boolean, 'null']
+        rating:
+          type: [number, 'null']
+        startDate:
+          type: [string, 'null']
+        discountText:
+          type: [string, 'null']
+        source:
+          type: [string, 'null']
+        trustLabel:
+          type: [string, 'null']
+        confidence:
+          type: [string, 'null']
+        authorName:
+          type: [string, 'null']
+        authorHandle:
+          type: [string, 'null']
+        likeCount:
+          type: [integer, 'null']
+        saveCount:
+          type: [integer, 'null']
+        viewerHasLiked:
+          type: [boolean, 'null']
+        viewerHasSaved:
+          type: [boolean, 'null']
+        answerCount:
+          type: [integer, 'null']
+        upvoteCount:
+          type: [integer, 'null']
+        publishedAt:
+          type: [string, 'null']
+    DigestSection:
+      type: object
+      required: [id, label, kind, entries]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        kind:
+          type: string
+          enum: [pulse, event, place, deal, activity, movie, question]
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/DigestEntry"
+    PulseDigest:
+      type: object
+      required: [city, sections]
+      properties:
+        city:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/DigestSection"
     PulsePost:
       type: object
       required:

@@ -79,6 +79,17 @@ export function stripHtml(value: string | null, maxLength = 400): string | null 
   return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
 }
 
+/** Short-news length. Long enough to carry a story, short enough to read at a glance. */
+export const SUMMARY_WORDS = 60;
+
+/** Trims to a whole number of words rather than mid-word, and only marks a real truncation. */
+export function firstWords(value: string | null, limit: number): string | null {
+  if (!value) return null;
+  const words = value.split(/\s+/).filter(Boolean);
+  if (words.length <= limit) return value;
+  return `${words.slice(0, limit).join(" ").replace(/[,;:]$/, "")}…`;
+}
+
 function imageOf(item: Record<string, unknown>): string | null {
   const enclosure = asArray(item["enclosure"]).find((entry) => {
     const record = entry as Record<string, unknown>;
@@ -154,8 +165,19 @@ export function parseFeed(slug: string, xml: string): FeedEntry[] {
     entries.push({
       externalId,
       headline,
-      summary: stripHtml(
-        textOf(item["description"]) ?? textOf(item["summary"]) ?? textOf(item["content"]),
+      // `description` is often empty on Indian feeds while the text sits in `content:encoded`,
+      // so the fallback chain has to reach the article body. Sixty words is the short-news
+      // convention the News tab is built around, and it is the publisher's own opening
+      // sentences — attributed, and linked back to the full piece.
+      summary: firstWords(
+        stripHtml(
+          textOf(item["description"]) ??
+            textOf(item["summary"]) ??
+            textOf(item["content:encoded"]) ??
+            textOf(item["content"]),
+          2000,
+        ),
+        SUMMARY_WORDS,
       ),
       link,
       imageUrl: imageOf(item),

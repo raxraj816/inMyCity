@@ -5,12 +5,12 @@
  * from a host listed here. Everything it produces lands as a `pending` item that an editor has
  * to publish, so a compromised or hijacked feed cannot put text in front of a reader on its own.
  *
- * `feedUrl` is deliberately left unset on every row and every source ships `isActive: false`.
- * A feed URL is an operational fact that has to be checked against the publisher — quite a few
- * Indian outlets moved or retired their RSS endpoints — and guessing one and shipping it
- * enabled is how an ingestion pipeline starts quietly importing the wrong city. Fill each one
- * in through the admin surface, or set `NEWS_FEED_<SLUG>_URL` in the environment, then flip
- * `isActive`. `CANDIDATE_FEED_URLS` below records the endpoints to check first.
+ * A source is only seeded with a `feedUrl`, and only seeded active, once someone has fetched
+ * the endpoint and seen what comes back — quite a few Indian outlets have moved or retired
+ * their RSS feeds, and guessing one and shipping it enabled is how an ingestion pipeline starts
+ * quietly importing the wrong city. Sources without a `verifiedFeedUrl` here stay off; enable
+ * them through the admin surface or `NEWS_FEED_<SLUG>_URL` after checking them the same way.
+ * `CANDIDATE_FEED_URLS` records the endpoints to try first.
  */
 
 export type NewsSourceSeed = {
@@ -24,6 +24,11 @@ export type NewsSourceSeed = {
   trustLabel: "verified" | "editorial";
   defaultConfidence: "high" | "medium";
   defaultCategory: "local" | "traffic" | "weather" | "civic" | "sports" | "business" | "transit";
+  /**
+   * Set once someone has actually fetched the endpoint and confirmed what it returns. A source
+   * with this filled in is seeded active; the rest stay off until they get the same treatment.
+   */
+  verifiedFeedUrl?: string;
 };
 
 export const MUMBAI_NEWS_SOURCES: NewsSourceSeed[] = [
@@ -136,6 +141,11 @@ export const MUMBAI_NEWS_SOURCES: NewsSourceSeed[] = [
     trustLabel: "editorial",
     defaultConfidence: "medium",
     defaultCategory: "local",
+    // Checked 2026-08-23: returns a full, current item list. It is the publisher's general
+    // feed rather than a Mumbai one, so it carries national, business and sport alongside
+    // city news — which is what the review step is for. Nothing it produces is published
+    // without an editor choosing it.
+    verifiedFeedUrl: "https://www.freepressjournal.in/stories.rss",
   },
 ];
 

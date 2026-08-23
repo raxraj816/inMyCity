@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { parseFeed, stripHtml } from "./feed";
+import { firstWords, parseFeed, stripHtml } from "./feed";
 
 /**
  * The Mumbai civic feeds this has to swallow are inconsistent in every way a feed can be:
@@ -99,6 +99,48 @@ describe("parseFeed", () => {
     assert.deepEqual(parseFeed("bmc", "<html><body>404</body></html>"), []);
     assert.deepEqual(parseFeed("bmc", "not xml at all"), []);
     assert.deepEqual(parseFeed("bmc", ""), []);
+  });
+});
+
+describe("content:encoded fallback", () => {
+  it("reads the article body when the feed leaves description empty", () => {
+    // The Free Press Journal feed does exactly this: an empty <description> and the text in
+    // <content:encoded>. Without the fallback every card ships with a blank summary.
+    const feed = `<rss version="2.0"><channel><item>
+      <title>GRP records a second statement</title>
+      <guid>fpj-1</guid>
+      <description></description>
+      <content:encoded><![CDATA[ <p><strong>Mumbai:</strong> The Government Railway Police recorded a statement on Saturday.</p> ]]></content:encoded>
+    </item></channel></rss>`;
+
+    const [entry] = parseFeed("free-press-journal", feed);
+    assert.equal(entry.summary, "Mumbai: The Government Railway Police recorded a statement on Saturday.");
+  });
+
+  it("caps a full article at short-news length", () => {
+    const body = Array.from({ length: 200 }, (_, index) => `word${index}`).join(" ");
+    const feed = `<rss version="2.0"><channel><item>
+      <title>A long one</title><guid>fpj-2</guid>
+      <content:encoded><![CDATA[ <p>${body}</p> ]]></content:encoded>
+    </item></channel></rss>`;
+
+    const [entry] = parseFeed("free-press-journal", feed);
+    assert.equal(entry.summary!.split(/\s+/).length, 60);
+    assert.ok(entry.summary!.endsWith("…"));
+  });
+});
+
+describe("firstWords", () => {
+  it("leaves anything already short enough alone, with no ellipsis", () => {
+    assert.equal(firstWords("three little words", 60), "three little words");
+  });
+
+  it("cuts on a word boundary rather than mid-word", () => {
+    assert.equal(firstWords("one two three four", 2), "one two…");
+  });
+
+  it("does not strand a comma against the ellipsis", () => {
+    assert.equal(firstWords("Mumbai, Pune and Nashik", 1), "Mumbai…");
   });
 });
 

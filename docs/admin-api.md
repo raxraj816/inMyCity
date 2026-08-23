@@ -100,9 +100,17 @@ pnpm run news:ingest [city]
 Fetches every **active** source for a city and files what it finds as `pending`. Nothing reaches a
 reader until an editor publishes it.
 
+Items that are not about the city are dropped before they are written, matched on the place
+names in `MUMBAI_PLACE_NAMES`. This matters more than it sounds: Indian publishers mostly run one
+general feed, so a fetch of 58 items yields around 5 city stories and 35 pieces of national copy.
+Filed unfiltered, that is a review queue nobody opens. The dropped count is reported as
+`offTopic` and nothing is created, so there is nothing to review or take down.
+
 Sources are rows in `news_sources`, seeded from
-[`lib/news/allowlist.ts`](../artifacts/api-server/src/lib/news/allowlist.ts) and shipped
-**inactive and without a feed URL**. Enabling one is a two-step editorial job:
+[`lib/news/allowlist.ts`](../artifacts/api-server/src/lib/news/allowlist.ts). A source is only
+seeded with a feed URL, and only seeded active, once it has a `verifiedFeedUrl` — meaning
+somebody fetched the endpoint and looked at what came back. One source is enabled today; the
+other nine are off. Enabling one is a two-step editorial job:
 
 1. Verify the publisher's feed endpoint actually returns the right city's items. Candidates worth
    checking first are listed in `CANDIDATE_FEED_URLS`; they are candidates, not facts.

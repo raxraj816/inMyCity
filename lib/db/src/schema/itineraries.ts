@@ -1,10 +1,12 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { placesTable } from "./places";
 
 export const itinerariesTable = pgTable("itineraries", {
   id: serial("id").primaryKey(),
+  /** Stable key from the content source. Idempotent seeding and admin imports match on it. */
+  externalId: text("external_id"),
   title: text("title").notNull(),
   city: text("city").notNull(),
   durationDays: integer("duration_days").notNull(),
@@ -13,8 +15,12 @@ export const itinerariesTable = pgTable("itineraries", {
   tips: text("tips").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [uniqueIndex("itineraries_external_id_idx").on(table.externalId)]);
 
+/**
+ * A stop is identified by its position in the itinerary, not by a key of its own — that is
+ * what lets a re-run of the seed rewrite day 2 stop 3 in place instead of appending a copy.
+ */
 export const itineraryStopsTable = pgTable("itinerary_stops", {
   id: serial("id").primaryKey(),
   itineraryId: integer("itinerary_id").notNull().references(() => itinerariesTable.id, { onDelete: "cascade" }),
@@ -26,7 +32,7 @@ export const itineraryStopsTable = pgTable("itinerary_stops", {
   estimatedCost: text("estimated_cost"),
   durationMinutes: integer("duration_minutes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [uniqueIndex("itinerary_stops_position_idx").on(table.itineraryId, table.day, table.order)]);
 
 export const insertItinerarySchema = createInsertSchema(itinerariesTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertItinerary = z.infer<typeof insertItinerarySchema>;

@@ -22,8 +22,11 @@ import type {
   AiChatRequest,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
+  CityGuideContent,
   CitySearchResponse,
   Collection,
+  CommunityPolicy,
+  ContentReportReceipt,
   CreateCollectionInput,
   CreateFavoriteInput,
   Deal,
@@ -32,13 +35,17 @@ import type {
   ExploreSummary,
   Favorite,
   GetActivitiesParams,
+  GetCityGuideParams,
   GetDealsParams,
   GetEventsParams,
   GetExploreSummaryParams,
   GetHotelsParams,
   GetItinerariesParams,
   GetMoviesParams,
+  GetNewsItemsParams,
   GetPlacesParams,
+  GetPulseDigestParams,
+  GetPulsePostsParams,
   GetRecommendationsParams,
   GetTransitLinesParams,
   HandleBrowserLoginCallbackParams,
@@ -51,10 +58,18 @@ import type {
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
   Movie,
+  NewsItem,
   Place,
+  PulseDigest,
+  PulsePost,
+  PulseReactionInput,
+  PulseReactionState,
   RecommendationsResponse,
   SearchParams,
   SearchTransitRoutesParams,
+  SubmissionAccepted,
+  SubmitContentReportInput,
+  SubmitPulsePostInput,
   SuccessResponse,
   SupportedCity,
   TransitLine,
@@ -3581,6 +3596,807 @@ export function useGetRecommendations<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetRecommendationsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List published Pulse posts for a city
+ */
+export const getGetPulsePostsUrl = (params?: GetPulsePostsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/pulse?${stringifiedParams}`
+    : `/api/pulse`;
+};
+
+export const getPulsePosts = async (
+  params?: GetPulsePostsParams,
+  options?: RequestInit,
+): Promise<PulsePost[]> => {
+  return customFetch<PulsePost[]>(getGetPulsePostsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPulsePostsQueryKey = (params?: GetPulsePostsParams) => {
+  return [`/api/pulse`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetPulsePostsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPulsePosts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetPulsePostsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPulsePosts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPulsePostsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPulsePosts>>> = ({
+    signal,
+  }) => getPulsePosts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPulsePosts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPulsePostsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPulsePosts>>
+>;
+export type GetPulsePostsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List published Pulse posts for a city
+ */
+
+export function useGetPulsePosts<
+  TData = Awaited<ReturnType<typeof getPulsePosts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetPulsePostsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPulsePosts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPulsePostsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Answers 503 while submissions are closed. Nothing submitted here is ever published directly; it lands in the moderation queue as a pending row.
+ * @summary Submit a Pulse post for moderation
+ */
+export const getSubmitPulsePostUrl = () => {
+  return `/api/pulse`;
+};
+
+export const submitPulsePost = async (
+  submitPulsePostInput: SubmitPulsePostInput,
+  options?: RequestInit,
+): Promise<SubmissionAccepted> => {
+  return customFetch<SubmissionAccepted>(getSubmitPulsePostUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitPulsePostInput),
+  });
+};
+
+export const getSubmitPulsePostMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitPulsePost>>,
+    TError,
+    { data: BodyType<SubmitPulsePostInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitPulsePost>>,
+  TError,
+  { data: BodyType<SubmitPulsePostInput> },
+  TContext
+> => {
+  const mutationKey = ["submitPulsePost"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitPulsePost>>,
+    { data: BodyType<SubmitPulsePostInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitPulsePost(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitPulsePostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitPulsePost>>
+>;
+export type SubmitPulsePostMutationBody = BodyType<SubmitPulsePostInput>;
+export type SubmitPulsePostMutationError = ErrorType<void>;
+
+/**
+ * @summary Submit a Pulse post for moderation
+ */
+export const useSubmitPulsePost = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitPulsePost>>,
+    TError,
+    { data: BodyType<SubmitPulsePostInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitPulsePost>>,
+  TError,
+  { data: BodyType<SubmitPulsePostInput> },
+  TContext
+> => {
+  return useMutation(getSubmitPulsePostMutationOptions(options));
+};
+
+/**
+ * What is happening in this city now: local news, offers that are running out, events that have not happened yet, and the city desk. Each section states what it holds and how it is ordered; a section with nothing in it is omitted rather than returned empty.
+ * @summary The ranked Pulse front page for a city
+ */
+export const getGetPulseDigestUrl = (params: GetPulseDigestParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/pulse/digest?${stringifiedParams}`
+    : `/api/pulse/digest`;
+};
+
+export const getPulseDigest = async (
+  params: GetPulseDigestParams,
+  options?: RequestInit,
+): Promise<PulseDigest> => {
+  return customFetch<PulseDigest>(getGetPulseDigestUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPulseDigestQueryKey = (params?: GetPulseDigestParams) => {
+  return [`/api/pulse/digest`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetPulseDigestQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPulseDigest>>,
+  TError = ErrorType<void>,
+>(
+  params: GetPulseDigestParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPulseDigest>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPulseDigestQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPulseDigest>>> = ({
+    signal,
+  }) => getPulseDigest(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPulseDigest>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPulseDigestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPulseDigest>>
+>;
+export type GetPulseDigestQueryError = ErrorType<void>;
+
+/**
+ * @summary The ranked Pulse front page for a city
+ */
+
+export function useGetPulseDigest<
+  TData = Awaited<ReturnType<typeof getPulseDigest>>,
+  TError = ErrorType<void>,
+>(
+  params: GetPulseDigestParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPulseDigest>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPulseDigestQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get one published Pulse post
+ */
+export const getGetPulsePostByIdUrl = (id: number) => {
+  return `/api/pulse/${id}`;
+};
+
+export const getPulsePostById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PulsePost> => {
+  return customFetch<PulsePost>(getGetPulsePostByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPulsePostByIdQueryKey = (id: number) => {
+  return [`/api/pulse/${id}`] as const;
+};
+
+export const getGetPulsePostByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPulsePostById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPulsePostById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPulsePostByIdQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPulsePostById>>
+  > = ({ signal }) => getPulsePostById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPulsePostById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPulsePostByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPulsePostById>>
+>;
+export type GetPulsePostByIdQueryError = ErrorType<void>;
+
+/**
+ * @summary Get one published Pulse post
+ */
+
+export function useGetPulsePostById<
+  TData = Awaited<ReturnType<typeof getPulsePostById>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPulsePostById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPulsePostByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Toggle a like or a save on a post
+ */
+export const getTogglePulseReactionUrl = (id: number) => {
+  return `/api/pulse/${id}/reactions`;
+};
+
+export const togglePulseReaction = async (
+  id: number,
+  pulseReactionInput: PulseReactionInput,
+  options?: RequestInit,
+): Promise<PulseReactionState> => {
+  return customFetch<PulseReactionState>(getTogglePulseReactionUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(pulseReactionInput),
+  });
+};
+
+export const getTogglePulseReactionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof togglePulseReaction>>,
+    TError,
+    { id: number; data: BodyType<PulseReactionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof togglePulseReaction>>,
+  TError,
+  { id: number; data: BodyType<PulseReactionInput> },
+  TContext
+> => {
+  const mutationKey = ["togglePulseReaction"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof togglePulseReaction>>,
+    { id: number; data: BodyType<PulseReactionInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return togglePulseReaction(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TogglePulseReactionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof togglePulseReaction>>
+>;
+export type TogglePulseReactionMutationBody = BodyType<PulseReactionInput>;
+export type TogglePulseReactionMutationError = ErrorType<void>;
+
+/**
+ * @summary Toggle a like or a save on a post
+ */
+export const useTogglePulseReaction = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof togglePulseReaction>>,
+    TError,
+    { id: number; data: BodyType<PulseReactionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof togglePulseReaction>>,
+  TError,
+  { id: number; data: BodyType<PulseReactionInput> },
+  TContext
+> => {
+  return useMutation(getTogglePulseReactionMutationOptions(options));
+};
+
+/**
+ * @summary List published news items for a city
+ */
+export const getGetNewsItemsUrl = (params?: GetNewsItemsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/news?${stringifiedParams}`
+    : `/api/news`;
+};
+
+export const getNewsItems = async (
+  params?: GetNewsItemsParams,
+  options?: RequestInit,
+): Promise<NewsItem[]> => {
+  return customFetch<NewsItem[]>(getGetNewsItemsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetNewsItemsQueryKey = (params?: GetNewsItemsParams) => {
+  return [`/api/news`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetNewsItemsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getNewsItems>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetNewsItemsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getNewsItems>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetNewsItemsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getNewsItems>>> = ({
+    signal,
+  }) => getNewsItems(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getNewsItems>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetNewsItemsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getNewsItems>>
+>;
+export type GetNewsItemsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List published news items for a city
+ */
+
+export function useGetNewsItems<
+  TData = Awaited<ReturnType<typeof getNewsItems>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetNewsItemsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getNewsItems>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetNewsItemsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Open to signed-out readers. The response carries the window inside which the report will be answered, which is what the app shows back to the reporter.
+ * @summary Report a piece of content
+ */
+export const getSubmitContentReportUrl = () => {
+  return `/api/reports`;
+};
+
+export const submitContentReport = async (
+  submitContentReportInput: SubmitContentReportInput,
+  options?: RequestInit,
+): Promise<ContentReportReceipt> => {
+  return customFetch<ContentReportReceipt>(getSubmitContentReportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitContentReportInput),
+  });
+};
+
+export const getSubmitContentReportMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitContentReport>>,
+    TError,
+    { data: BodyType<SubmitContentReportInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitContentReport>>,
+  TError,
+  { data: BodyType<SubmitContentReportInput> },
+  TContext
+> => {
+  const mutationKey = ["submitContentReport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitContentReport>>,
+    { data: BodyType<SubmitContentReportInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitContentReport(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitContentReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitContentReport>>
+>;
+export type SubmitContentReportMutationBody =
+  BodyType<SubmitContentReportInput>;
+export type SubmitContentReportMutationError = ErrorType<void>;
+
+/**
+ * @summary Report a piece of content
+ */
+export const useSubmitContentReport = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitContentReport>>,
+    TError,
+    { data: BodyType<SubmitContentReportInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitContentReport>>,
+  TError,
+  { data: BodyType<SubmitContentReportInput> },
+  TContext
+> => {
+  return useMutation(getSubmitContentReportMutationOptions(options));
+};
+
+/**
+ * @summary The published grievance contact, report reasons and submission state
+ */
+export const getGetCommunityPolicyUrl = () => {
+  return `/api/community-policy`;
+};
+
+export const getCommunityPolicy = async (
+  options?: RequestInit,
+): Promise<CommunityPolicy> => {
+  return customFetch<CommunityPolicy>(getGetCommunityPolicyUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCommunityPolicyQueryKey = () => {
+  return [`/api/community-policy`] as const;
+};
+
+export const getGetCommunityPolicyQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCommunityPolicy>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCommunityPolicy>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCommunityPolicyQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCommunityPolicy>>
+  > = ({ signal }) => getCommunityPolicy({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCommunityPolicy>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCommunityPolicyQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCommunityPolicy>>
+>;
+export type GetCommunityPolicyQueryError = ErrorType<unknown>;
+
+/**
+ * @summary The published grievance contact, report reasons and submission state
+ */
+
+export function useGetCommunityPolicy<
+  TData = Awaited<ReturnType<typeof getCommunityPolicy>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCommunityPolicy>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCommunityPolicyQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Editable City Guide header, facts and insider tips for a city
+ */
+export const getGetCityGuideUrl = (params: GetCityGuideParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/city-guide?${stringifiedParams}`
+    : `/api/city-guide`;
+};
+
+export const getCityGuide = async (
+  params: GetCityGuideParams,
+  options?: RequestInit,
+): Promise<CityGuideContent> => {
+  return customFetch<CityGuideContent>(getGetCityGuideUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCityGuideQueryKey = (params?: GetCityGuideParams) => {
+  return [`/api/city-guide`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetCityGuideQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCityGuide>>,
+  TError = ErrorType<void>,
+>(
+  params: GetCityGuideParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCityGuide>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCityGuideQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCityGuide>>> = ({
+    signal,
+  }) => getCityGuide(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCityGuide>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCityGuideQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCityGuide>>
+>;
+export type GetCityGuideQueryError = ErrorType<void>;
+
+/**
+ * @summary Editable City Guide header, facts and insider tips for a city
+ */
+
+export function useGetCityGuide<
+  TData = Awaited<ReturnType<typeof getCityGuide>>,
+  TError = ErrorType<void>,
+>(
+  params: GetCityGuideParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCityGuide>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCityGuideQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

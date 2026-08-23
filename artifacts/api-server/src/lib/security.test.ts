@@ -1,7 +1,7 @@
-import test from "node:test";
+import test, { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { isOriginAllowed } from "./security";
+import { buildCorsOptions, isOriginAllowed } from "./security";
 
 function withEnv(env: Record<string, string | undefined>, run: () => void) {
   const previous: Record<string, string | undefined> = {};
@@ -65,4 +65,17 @@ test("configured origins still apply in development", () => {
       assert.equal(isOriginAllowed("https://staging.inmycity.app"), true);
     },
   );
+});
+
+describe("buildCorsOptions", () => {
+  it("allows every header the app actually sends", () => {
+    // A custom header is preflighted, so one missing from this list fails every browser
+    // request before it reaches a route — invisibly to anything that calls the API directly.
+    const { allowedHeaders } = buildCorsOptions();
+    const lowercased = (allowedHeaders as string[]).map((header) => header.toLowerCase());
+
+    for (const header of ["content-type", "authorization", "accept", "x-device-id"]) {
+      assert.ok(lowercased.includes(header), `${header} is not allowed through CORS`);
+    }
+  });
 });

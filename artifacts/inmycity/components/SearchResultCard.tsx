@@ -6,6 +6,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 import type { SearchResult } from "@workspace/api-client-react";
+import { currencyFor, formatPrice } from "@workspace/city-config";
 
 /**
  * One row of search results, whatever kind it is.
@@ -61,8 +62,14 @@ function detailFor(result: SearchResult): { text: string; label: string } | null
     return formatted ? { text: formatted, label: `Starts ${formatted}` } : null;
   }
   if (result.price != null && result.price > 0) {
+    // The row's own currency, never a symbol written here: this card renders results from
+    // every city the catalogue holds, and a hardcoded ₹ prices a New York activity in rupees.
+    const currency = currencyFor(result.city, result.currency);
     const amount = Math.round(result.price);
-    return { text: `₹${amount}`, label: `${amount} rupees` };
+    return {
+      text: formatPrice(amount, currency),
+      label: `${amount} ${currency.code}`,
+    };
   }
   return null;
 }

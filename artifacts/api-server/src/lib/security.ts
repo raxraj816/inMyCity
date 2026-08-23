@@ -60,7 +60,10 @@ export function buildCorsOptions(): CorsOptions {
       callback(new CorsError(origin ?? "unknown"));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    // `X-Device-Id` is what lets a save or a like belong to someone before they sign in. It is
+    // a custom header, so the browser preflights it: leaving it out here fails every request
+    // the web build makes, and does so at the preflight rather than anywhere a test would look.
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Device-Id"],
     credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 204,

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -173,21 +173,25 @@ export default function MovieDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Bar */}
+      {/*
+        No booking button. inMyCity has no ticketing agreement, so it cannot sell this seat, and
+        section 2.4 of the launch plan is explicit that the in-between — a Book button that opens
+        a cinema chain's homepage — teaches people the app is a mockup. Until an integration
+        exists this is curated information: what is on, roughly what a ticket costs, and where.
+      */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom || 24, backgroundColor: colors.card, borderTopColor: colors.border }]}>
-        <View>
-          <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Tickets from</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Typical ticket</Text>
           <Text style={[styles.priceValue, { color: colors.foreground }]}>
-            {movie.price ? formatPriceForCity(movie.price, movie.city) : "Check theatre"}
+            {movie.price ? formatPriceForCity(movie.price, movie.city) : "Varies by screen"}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.bookBtn, { backgroundColor: "#7c3aed", opacity: movie.bookingUrl ? 1 : 0.5 }]}
-          onPress={() => movie.bookingUrl && Linking.openURL(movie.bookingUrl)}
-          disabled={!movie.bookingUrl}
-        >
-          <Text style={styles.bookBtnText}>Book Tickets</Text>
-        </TouchableOpacity>
+        <View style={styles.bottomNote}>
+          <Feather name="info" size={13} color={colors.mutedForeground} />
+          <Text style={[styles.bottomNoteText, { color: colors.mutedForeground }]} numberOfLines={2}>
+            {movie.venue ? `Showing at ${movie.venue}. Book with the cinema.` : "Book with the cinema."}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -245,6 +249,6 @@ const styles = StyleSheet.create({
   },
   priceLabel: { fontFamily: "Inter_500Medium", fontSize: 12, marginBottom: 2 },
   priceValue: { fontFamily: "Inter_700Bold", fontSize: 20 },
-  bookBtn: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12 },
-  bookBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 16 },
+  bottomNote: { flex: 1.3, flexDirection: "row", alignItems: "center", gap: 7, justifyContent: "flex-end" },
+  bottomNoteText: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 17, flexShrink: 1 },
 });

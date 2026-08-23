@@ -143,6 +143,14 @@ const CATEGORIES: SearchSynonymGroup[] = [
   { canonical: "nightclub", aliases: ["club", "clubbing", "party", "night out", "नाइटक्लब"] },
   { canonical: "rooftop", aliases: ["roof top", "terrace bar", "sky bar"] },
   { canonical: "gym", aliases: ["fitness", "workout", "gyms", "जिम"] },
+  // "Saloon" is not a typo to correct — it is what a great many people in Mumbai call a salon,
+  // on the shopfront as often as in the search box.
+  { canonical: "salon", aliases: ["saloon", "salons", "parlour", "parlor", "beauty parlour", "beauty salon", "सलून", "सैलून"] },
+  { canonical: "spa", aliases: ["spas", "massage", "body massage", "malish", "maalish", "स्पा", "मालिश"] },
+  { canonical: "haircut", aliases: ["hair cut", "hair cutting", "hair", "trim", "baal katna", "हेअरकट"] },
+  { canonical: "ayurveda", aliases: ["ayurvedic", "panchakarma", "kerala massage", "आयुर्वेद"] },
+  { canonical: "facial", aliases: ["clean up", "cleanup", "skin treatment", "फेशियल"] },
+  { canonical: "waxing", aliases: ["threading", "manicure", "pedicure", "mani pedi"] },
   { canonical: "hotel", aliases: ["hotels", "stay", "rooms", "lodging", "होटल"] },
   { canonical: "hospital", aliases: ["clinic", "emergency", "रुग्णालय"] },
   { canonical: "pharmacy", aliases: ["chemist", "medical store", "मेडिकल"] },
@@ -168,6 +176,64 @@ export const MUMBAI_SEARCH_SYNONYMS: SearchSynonymGroup[] = [
   ...CINEMA,
   ...CATEGORIES,
   ...CITY,
+];
+
+/**
+ * Proper nouns that are unambiguously Mumbai. Stations, landmarks and named venues only.
+ *
+ * Deliberately separate from the search vocabulary above, which is a different job. Search
+ * wants "museum", "market" and "train" to lead somewhere, and it is right to: a reader typing
+ * them is already in the city. Relevance is the opposite question — does this text prove the
+ * story is about Mumbai — and a category word proves nothing. Leaving them in filed a Delhi
+ * store opening as local news because the word "museum" appeared in the headline.
+ */
+const MUMBAI_LANDMARK_NAMES = [
+  "gateway of india",
+  "siddhivinayak",
+  "haji ali",
+  "elephanta",
+  "gharapuri",
+  "sanjay gandhi national park",
+  "kanheri caves",
+  "high street phoenix",
+  "phoenix mills",
+  "crawford market",
+  "chor bazaar",
+  "hanging gardens",
+  "wankhede",
+  "aarey",
+  "dharavi",
+  "chhatrapati shivaji maharaj terminus",
+  "chhatrapati shivaji terminus",
+  "victoria terminus",
+  "csmt",
+  "mumbai central",
+  "lokmanya tilak terminus",
+  "kurla terminus",
+  "mumbai local",
+  "western line",
+  "central line",
+  "harbour line",
+  "mumbai metro",
+  "aqua line",
+  "best bus",
+  "sea link",
+  "atal setu",
+  "coastal road",
+];
+
+/**
+ * The place names that make a piece of text about Mumbai.
+ *
+ * The city's own names, every neighbourhood and its aliases, and the landmarks above. News
+ * ingestion uses this to tell a Mumbai story from the national wire copy that arrives down the
+ * same feed — a general publisher feed runs roughly six parts everything-else to one part city,
+ * and a moderation queue nobody can get through is a moderation queue nobody opens.
+ */
+export const MUMBAI_PLACE_NAMES: string[] = [
+  ...CITY.flatMap((group) => [group.canonical, ...group.aliases]),
+  ...NEIGHBOURHOODS.flatMap((group) => [group.canonical, ...group.aliases]),
+  ...MUMBAI_LANDMARK_NAMES,
 ];
 
 /** Synonym groups for a city id, empty for cities with no curated vocabulary yet. */

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, real, integer, doublePrecision, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, real, integer, doublePrecision, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -27,6 +27,10 @@ export const hotelsTable = pgTable(
     tags: text("tags").array().notNull().default([]),
     /** Flattened searchable text; see the matching field on `places`. */
     searchText: text("search_text"),
+    /** Stable key from the content source. Idempotent seeding and admin imports match on it. */
+    externalId: text("external_id"),
+    /** When someone last confirmed this row's hours, phone, address and price against reality. */
+    lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
@@ -34,6 +38,8 @@ export const hotelsTable = pgTable(
     index("hotels_city_idx").on(table.city),
     index("hotels_category_idx").on(table.category),
     index("hotels_city_category_idx").on(table.city, table.category),
+    uniqueIndex("hotels_external_id_idx").on(table.externalId),
+    index("hotels_last_verified_idx").on(table.lastVerifiedAt),
   ],
 );
 

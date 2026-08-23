@@ -68,3 +68,26 @@ export const aiPerDayRateLimit = rateLimit({
     error: "You've reached today's CityPilot limit. It resets in a few hours.",
   },
 });
+
+/**
+ * User-generated writes: posts, questions, answers and reports.
+ *
+ * Deliberately tight. Submissions land in a human moderation queue, so an abusive client's
+ * real cost is a reviewer's time, and the queue is the scarce resource worth protecting.
+ */
+export const submissionRateLimit = rateLimit({
+  ...shared,
+  windowMs: 60 * 60 * 1000,
+  limit: Number(process.env.SUBMISSION_RATE_LIMIT_PER_HOUR ?? 10),
+  message: {
+    error: "You've submitted a lot in the last hour. Try again a little later.",
+  },
+});
+
+/** Likes, saves, joins and upvotes — cheap, but not free to a moderation-free write path. */
+export const reactionRateLimit = rateLimit({
+  ...shared,
+  windowMs: 60_000,
+  limit: Number(process.env.REACTION_RATE_LIMIT_PER_MINUTE ?? 60),
+  message: { error: "Slow down a moment." },
+});

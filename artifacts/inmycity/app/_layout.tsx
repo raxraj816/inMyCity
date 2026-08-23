@@ -16,11 +16,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OfflineBannerHost } from "@/components/OfflineBanner";
-import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
+import { setBaseUrl, setAuthTokenGetter, setDeviceIdGetter } from "@workspace/api-client-react";
 import { LocationProvider } from "@/context/LocationContext";
 import { CityProvider } from "@/context/CityContext";
 import { NetworkProvider } from "@/context/NetworkContext";
 import { AuthProvider } from "@/lib/auth";
+import { getDeviceId } from "@/lib/deviceId";
 import { persistOptions, queryClient } from "@/lib/queryPersistence";
 
 // Safe token getter — skips SecureStore on web (not needed there)
@@ -35,6 +36,8 @@ function safeGetToken(): Promise<string | null> {
 
 setBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3001");
 setAuthTokenGetter(safeGetToken);
+// Lets likes, saves, joins and upvotes work before sign-in. See `lib/deviceId.ts`.
+setDeviceIdGetter(getDeviceId);
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,9 +51,12 @@ function RootLayoutNav() {
       <Stack.Screen name="deal/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="neighborhood/[id]" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="news" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="pulse/compose" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="dining" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="nightlife" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="sports" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="spa-salons" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="places" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="movies" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="movie/[id]" options={{ headerShown: false, presentation: "card" }} />

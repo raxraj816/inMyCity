@@ -16,18 +16,18 @@ type Category = {
 };
 
 const CATEGORIES: Category[] = [
-  // Row 1 — Going out (What's on today?)
-  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0369a1", active: true, route: "/events"     },
-  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#dc2626", active: true, route: "/activities" },
-  { id: "sports",     label: "Sports &\nFitness", icon: "dumbbell",      color: "#15803d", active: true, route: "/sports"     },
-  // Row 2 — After dark and on screen
-  { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#be185d", active: true, route: "/nightlife"  },
-  { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#4f46e5", active: true, route: "/movies"     },
-  { id: "explore",    label: "Explore",    icon: "map-outline",           color: "#0e7490", active: true, route: "/cityguide"  },
+  // Row 1 — What's on today
+  { id: "events",     label: "Events",     icon: "calendar-star",         color: "#0369a1", active: true, route: "/events"      },
+  { id: "activities", label: "Activities", icon: "lightning-bolt",        color: "#dc2626", active: true, route: "/activities"  },
+  { id: "movies",     label: "Movies",     icon: "movie-open",            color: "#4f46e5", active: true, route: "/movies"      },
+  // Row 2 — Going out, and looking after yourself
+  { id: "nightlife",  label: "Nightlife",  icon: "glass-cocktail",        color: "#be185d", active: true, route: "/nightlife"   },
+  { id: "sports",     label: "Sports &\nFitness", icon: "dumbbell",      color: "#15803d", active: true, route: "/sports"      },
+  { id: "spa",        label: "Spa &\nSalons", icon: "spa",               color: "#0e7490", active: true, route: "/spa-salons"  },
   // Row 3 — Everyday (Spending and eating)
-  { id: "deals",      label: "Deals",      icon: "percent",               color: "#047857", active: true, route: "/deals"      },
-  { id: "shops",      label: "Shops",      icon: "shopping-outline",      color: "#c2410c", active: true, route: "/shops"      },
-  { id: "dining",     label: "Dining",     icon: "silverware-fork-knife", color: "#c2410c", active: true, route: "/dining"     },
+  { id: "deals",      label: "Deals",      icon: "percent",               color: "#047857", active: true, route: "/deals"       },
+  { id: "shops",      label: "Shops",      icon: "shopping-outline",      color: "#c2410c", active: true, route: "/shops"       },
+  { id: "restaurants", label: "Restaurants", icon: "silverware-fork-knife", color: "#c2410c", active: true, route: "/dining"    },
 ];
 
 export function CategoryGrid() {

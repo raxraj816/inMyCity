@@ -271,6 +271,11 @@ export const GetDealsResponseItem = zod.object({
   code: zod.string().nullish(),
   qrData: zod.string().nullish(),
   expiresAt: zod.string().nullish(),
+  isExpired: zod
+    .boolean()
+    .describe(
+      "True only on the detail route, and only for a deal whose expiry has passed. The list route never returns an expired deal, so it is always false there.",
+    ),
   imageUrl: zod.string().nullish(),
   lat: zod.number().nullish(),
   lng: zod.number().nullish(),
@@ -301,6 +306,11 @@ export const GetDealByIdResponse = zod.object({
   code: zod.string().nullish(),
   qrData: zod.string().nullish(),
   expiresAt: zod.string().nullish(),
+  isExpired: zod
+    .boolean()
+    .describe(
+      "True only on the detail route, and only for a deal whose expiry has passed. The list route never returns an expired deal, so it is always false there.",
+    ),
   imageUrl: zod.string().nullish(),
   lat: zod.number().nullish(),
   lng: zod.number().nullish(),
@@ -1163,6 +1173,348 @@ export const GetRecommendationsResponse = zod.object({
       route: zod.string(),
       tags: zod.array(zod.string()),
       scoreText: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary List published Pulse posts for a city
+ */
+export const GetPulsePostsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  neighborhood: zod.coerce
+    .string()
+    .optional()
+    .describe("Launch zone id, e.g. `bandra`."),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetPulsePostsHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetPulsePostsResponseItem = zod.object({
+  id: zod.number(),
+  city: zod.string(),
+  tier: zod.enum([
+    "official",
+    "local_expert",
+    "creator",
+    "business",
+    "resident",
+  ]),
+  authorName: zod.string(),
+  authorHandle: zod.string(),
+  location: zod.string().nullish(),
+  neighborhoodId: zod.string().nullish(),
+  caption: zod.string(),
+  mediaType: zod.enum(["image", "video"]),
+  mediaUrl: zod.string().nullish(),
+  videoDurationSeconds: zod.number().nullish(),
+  filterTags: zod.array(zod.string()),
+  likeCount: zod.number(),
+  saveCount: zod.number(),
+  source: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
+  trustLabel: zod
+    .string()
+    .nullish()
+    .describe("verified | editorial | partner | community | user-submitted"),
+  confidence: zod.string().nullish().describe("high | medium | low"),
+  isSponsored: zod.boolean(),
+  isFeatured: zod.boolean(),
+  publishedAt: zod.string(),
+  viewerHasLiked: zod.boolean(),
+  viewerHasSaved: zod.boolean(),
+});
+export const GetPulsePostsResponse = zod.array(GetPulsePostsResponseItem);
+
+/**
+ * Answers 503 while submissions are closed. Nothing submitted here is ever published directly; it lands in the moderation queue as a pending row.
+ * @summary Submit a Pulse post for moderation
+ */
+export const SubmitPulsePostHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const submitPulsePostBodyCaptionMin = 10;
+export const submitPulsePostBodyCaptionMax = 1000;
+
+export const SubmitPulsePostBody = zod.object({
+  city: zod.string(),
+  caption: zod
+    .string()
+    .min(submitPulsePostBodyCaptionMin)
+    .max(submitPulsePostBodyCaptionMax),
+  mediaUrl: zod.string().nullish(),
+  mediaType: zod.enum(["image", "video"]).optional(),
+  neighborhoodId: zod.string().nullish(),
+  location: zod.string().nullish(),
+  filterTags: zod.array(zod.string()).optional(),
+});
+
+/**
+ * What is happening in this city now: local news, offers that are running out, events that have not happened yet, and the city desk. Each section states what it holds and how it is ordered; a section with nothing in it is omitted rather than returned empty.
+ * @summary The ranked Pulse front page for a city
+ */
+export const GetPulseDigestQueryParams = zod.object({
+  city: zod.coerce.string(),
+});
+
+export const GetPulseDigestHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetPulseDigestResponse = zod.object({
+  city: zod.string(),
+  sections: zod.array(
+    zod.object({
+      id: zod.string(),
+      label: zod.string(),
+      kind: zod.enum(["pulse", "news", "event", "deal"]),
+      entries: zod.array(
+        zod
+          .object({
+            id: zod.number(),
+            title: zod.string(),
+            subtitle: zod.string().nullish(),
+            body: zod.string().nullish(),
+            imageUrl: zod.string().nullish(),
+            price: zod.number().nullish(),
+            currency: zod.string().nullish(),
+            isFree: zod.boolean().nullish(),
+            rating: zod.number().nullish(),
+            startDate: zod.string().nullish(),
+            discountText: zod.string().nullish(),
+            source: zod.string().nullish(),
+            trustLabel: zod.string().nullish(),
+            confidence: zod.string().nullish(),
+            authorName: zod.string().nullish(),
+            authorHandle: zod.string().nullish(),
+            likeCount: zod.number().nullish(),
+            saveCount: zod.number().nullish(),
+            viewerHasLiked: zod.boolean().nullish(),
+            viewerHasSaved: zod.boolean().nullish(),
+            answerCount: zod.number().nullish(),
+            upvoteCount: zod.number().nullish(),
+            publishedAt: zod.string().nullish(),
+          })
+          .describe(
+            "One card in the digest. Every field beyond `id` and `title` is nullable — a section fills in only what its own kind carries. Prices are bare numbers; the client formats them through the city's own currency.",
+          ),
+      ),
+    }),
+  ),
+});
+
+/**
+ * @summary Get one published Pulse post
+ */
+export const GetPulsePostByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPulsePostByIdHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetPulsePostByIdResponse = zod.object({
+  id: zod.number(),
+  city: zod.string(),
+  tier: zod.enum([
+    "official",
+    "local_expert",
+    "creator",
+    "business",
+    "resident",
+  ]),
+  authorName: zod.string(),
+  authorHandle: zod.string(),
+  location: zod.string().nullish(),
+  neighborhoodId: zod.string().nullish(),
+  caption: zod.string(),
+  mediaType: zod.enum(["image", "video"]),
+  mediaUrl: zod.string().nullish(),
+  videoDurationSeconds: zod.number().nullish(),
+  filterTags: zod.array(zod.string()),
+  likeCount: zod.number(),
+  saveCount: zod.number(),
+  source: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
+  trustLabel: zod
+    .string()
+    .nullish()
+    .describe("verified | editorial | partner | community | user-submitted"),
+  confidence: zod.string().nullish().describe("high | medium | low"),
+  isSponsored: zod.boolean(),
+  isFeatured: zod.boolean(),
+  publishedAt: zod.string(),
+  viewerHasLiked: zod.boolean(),
+  viewerHasSaved: zod.boolean(),
+});
+
+/**
+ * @summary Toggle a like or a save on a post
+ */
+export const TogglePulseReactionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const TogglePulseReactionHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const TogglePulseReactionBody = zod.object({
+  kind: zod.enum(["like", "save"]),
+});
+
+export const TogglePulseReactionResponse = zod.object({
+  postId: zod.number(),
+  kind: zod.enum(["like", "save"]),
+  active: zod.boolean(),
+  likeCount: zod.number(),
+  saveCount: zod.number(),
+});
+
+/**
+ * @summary List published news items for a city
+ */
+export const GetNewsItemsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  category: zod.coerce.string().optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetNewsItemsResponseItem = zod.object({
+  id: zod.number(),
+  city: zod.string(),
+  category: zod.string(),
+  headline: zod.string(),
+  summary: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  link: zod.string().nullish(),
+  source: zod.string(),
+  sourceKind: zod.string(),
+  trustLabel: zod.string().nullish(),
+  confidence: zod.string().nullish(),
+  publishedAt: zod.string(),
+});
+export const GetNewsItemsResponse = zod.array(GetNewsItemsResponseItem);
+
+/**
+ * Open to signed-out readers. The response carries the window inside which the report will be answered, which is what the app shows back to the reporter.
+ * @summary Report a piece of content
+ */
+export const SubmitContentReportHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const SubmitContentReportBody = zod.object({
+  targetType: zod.enum(["pulse_post", "news_item"]),
+  targetId: zod.number(),
+  reason: zod.enum([
+    "inaccurate",
+    "spam",
+    "harassment",
+    "hate_speech",
+    "adult_content",
+    "impersonation",
+    "copyright",
+    "privacy",
+    "illegal",
+    "other",
+  ]),
+  details: zod.string().nullish(),
+  reporterEmail: zod.string().nullish(),
+});
+
+/**
+ * @summary The published grievance contact, report reasons and submission state
+ */
+export const GetCommunityPolicyResponse = zod.object({
+  submissionsEnabled: zod.boolean(),
+  reportReasons: zod.array(
+    zod.object({
+      id: zod.string(),
+      responseHours: zod.number(),
+    }),
+  ),
+  grievanceOfficer: zod
+    .union([
+      zod.object({
+        officerName: zod.string(),
+        email: zod.string(),
+        address: zod.string().nullish(),
+        acknowledgementHours: zod.number(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+});
+
+/**
+ * @summary Editable City Guide header, facts and insider tips for a city
+ */
+export const GetCityGuideQueryParams = zod.object({
+  city: zod.coerce.string(),
+});
+
+export const GetCityGuideResponse = zod.object({
+  city: zod.string(),
+  tagline: zod.string().nullish(),
+  knownFor: zod.string().nullish(),
+  tripLength: zod.string().nullish(),
+  timezoneLabel: zod.string().nullish(),
+  lastVerifiedAt: zod.string().nullish(),
+  facts: zod.array(
+    zod.object({
+      id: zod.number(),
+      group: zod.enum(["essential", "extra"]),
+      label: zod.string(),
+      value: zod.string(),
+      icon: zod.string(),
+    }),
+  ),
+  insiderTips: zod.array(
+    zod.object({
+      id: zod.number(),
+      label: zod.string(),
+      tip: zod.string(),
+      icon: zod.string(),
+      color: zod.string(),
+      neighborhoodId: zod.string().nullish(),
     }),
   ),
 });

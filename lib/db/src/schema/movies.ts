@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, real, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, real, integer, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -25,6 +25,10 @@ export const moviesTable = pgTable(
     tags: text("tags").array().notNull().default([]),
     /** Flattened searchable text; see the matching field on `places`. */
     searchText: text("search_text"),
+    /** Stable key from the content source. Idempotent seeding and admin imports match on it. */
+    externalId: text("external_id"),
+    /** When someone last confirmed this row's hours, phone, address and price against reality. */
+    lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
@@ -32,6 +36,8 @@ export const moviesTable = pgTable(
     index("movies_city_idx").on(table.city),
     index("movies_genre_idx").on(table.genre),
     index("movies_city_status_idx").on(table.city, table.status),
+    uniqueIndex("movies_external_id_idx").on(table.externalId),
+    index("movies_last_verified_idx").on(table.lastVerifiedAt),
   ],
 );
 

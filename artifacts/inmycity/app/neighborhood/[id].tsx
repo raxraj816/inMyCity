@@ -14,9 +14,12 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import {
   MUMBAI_LAUNCH_ZONES,
+  formatPriceForCity,
   type MumbaiLaunchZone,
 } from "@workspace/city-config";
 import {
+  getGetCityGuideQueryKey,
+  useGetCityGuide,
   useGetActivities,
   useGetDeals,
   useGetEvents,
@@ -170,6 +173,10 @@ export default function NeighborhoodGuideScreen() {
   const { data: events = [] } = useGetEvents({ city: "Mumbai" });
   const { data: deals = [] } = useGetDeals({ city: "Mumbai" });
   const { data: activities = [] } = useGetActivities({ city: "Mumbai" });
+  const { data: cityGuide } = useGetCityGuide(
+    { city: "Mumbai" },
+    { query: { queryKey: getGetCityGuideQueryKey({ city: "Mumbai" }) } },
+  );
 
   useEffect(() => {
     if (!zone) return;
@@ -204,7 +211,9 @@ export default function NeighborhoodGuideScreen() {
       id: `activity-${activity.id}`,
       type: "activity" as const,
       title: activity.name,
-      meta: activity.price ? `Rs ${activity.price}` : "Free or low-cost",
+      meta: activity.price
+        ? formatPriceForCity(activity.price, activity.city, activity.currency)
+        : "Free or low-cost",
       imageUrl: activity.imageUrl,
       route: `/activity/${activity.id}`,
       color: "#dc2626",
@@ -263,6 +272,7 @@ export default function NeighborhoodGuideScreen() {
   const bottomPadding = Platform.OS === "web" ? 32 : insets.bottom + 32;
   const plan = buildPlan(zone);
   const firstVisitFlow = buildFirstVisitFlow(zone);
+  const zoneTips = (cityGuide?.insiderTips ?? []).filter((tip) => tip.neighborhoodId === zone.id);
 
   const onToggleSave = async () => {
     const result = await toggleSavedPlan(plan);
@@ -313,7 +323,13 @@ export default function NeighborhoodGuideScreen() {
             {[
               { icon: "navigation", label: "Transit", value: zone.transitAccess },
               { icon: "clock", label: "Best time", value: zone.bestTime },
-              { icon: "credit-card", label: "Budget", value: priceLabel(zone.priceBand) },
+              {
+                icon: "credit-card",
+                label: "Typical spend",
+                // Formatted through the city's own currency rather than written into the copy,
+                // so the same zone model stays correct if it is ever reused for another city.
+                value: `${formatPriceForCity(zone.costPerPerson.min, "Mumbai")}–${formatPriceForCity(zone.costPerPerson.max, "Mumbai")} per person · ${priceLabel(zone.priceBand)}`,
+              },
               { icon: "cloud-rain", label: "Weather backup", value: zone.monsoonNote },
             ].map((fact) => (
               <View key={fact.label} style={[styles.factCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -338,6 +354,94 @@ export default function NeighborhoodGuideScreen() {
               <Text style={[styles.secondaryButtonText, { color: colors.foreground }]}>Route</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Feather name="book-open" size={17} color={accent} />
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>What {zone.name} is for</Text>
+            </View>
+            <Text style={[styles.prose, { color: colors.foreground }]}>{zone.summary}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Feather name="navigation" size={17} color={accent} />
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Getting there</Text>
+            </View>
+            <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {zone.gettingThere.map((route, index) => (
+                <View key={route} style={[styles.listRow, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                  <View style={[styles.listBullet, { backgroundColor: accent + "18" }]}>
+                    <Text style={[styles.listBulletText, { color: accent }]}>{index + 1}</Text>
+                  </View>
+                  <Text style={[styles.listText, { color: colors.foreground }]}>{route}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Feather name="credit-card" size={17} color={accent} />
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>What it costs</Text>
+            </View>
+            <View style={[styles.calloutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.calloutHeadline, { color: accent }]}>
+                {formatPriceForCity(zone.costPerPerson.min, "Mumbai")} – {formatPriceForCity(zone.costPerPerson.max, "Mumbai")} per person
+              </Text>
+              <Text style={[styles.prose, { color: colors.mutedForeground }]}>{zone.costNote}</Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Feather name="star" size={17} color={accent} />
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Worth building a plan around</Text>
+            </View>
+            <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {zone.highlights.map((highlight, index) => (
+                <View key={highlight} style={[styles.listRow, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                  <Feather name="map-pin" size={14} color={accent} style={styles.listIcon} />
+                  <Text style={[styles.listText, { color: colors.foreground }]}>{highlight}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Feather name="alert-triangle" size={17} color="#c2410c" />
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>What to avoid</Text>
+            </View>
+            <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: "#c2410c33" }]}>
+              {zone.avoid.map((item, index) => (
+                <View key={item} style={[styles.listRow, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                  <Feather name="x-circle" size={14} color="#c2410c" style={styles.listIcon} />
+                  <Text style={[styles.listText, { color: colors.foreground }]}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {zoneTips.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionTitleRow}>
+                <Feather name="zap" size={17} color={accent} />
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Insider tips</Text>
+              </View>
+              <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {zoneTips.map((tip, index) => (
+                  <View key={tip.id} style={[styles.listRow, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                    <Feather name={tip.icon as keyof typeof Feather.glyphMap} size={14} color={tip.color} style={styles.listIcon} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.listLabel, { color: tip.color }]}>{tip.label}</Text>
+                      <Text style={[styles.listText, { color: colors.foreground }]}>{tip.tip}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
@@ -555,6 +659,60 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     lineHeight: 21,
+  },
+  prose: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  listCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  listRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 11,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  listBullet: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  listBulletText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+  },
+  listIcon: {
+    marginTop: 2,
+  },
+  listLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 3,
+  },
+  listText: {
+    flex: 1,
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  calloutCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 15,
+    gap: 8,
+  },
+  calloutHeadline: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 17,
   },
   flowList: {
     gap: 10,

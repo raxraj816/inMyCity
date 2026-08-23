@@ -1,6 +1,36 @@
+import { and, count, eq } from "drizzle-orm";
+
 import { parseOpeningHours } from "./lib/openingHours";
-import { buildSearchText, type SearchTextPart } from "./lib/search/searchText";
-import { db, placesTable, eventsTable, dealsTable, itinerariesTable, itineraryStopsTable, moviesTable, hotelsTable, activitiesTable, transitLinesTable, transitRoutesTable } from "@workspace/db";
+import { withSearchText } from "./lib/search/searchFields";
+import {
+  assertSeedAllowed,
+  backfillExternalIds,
+  seedExternalId,
+  upsertSeedRows,
+  withExternalId,
+} from "./lib/seedUpsert";
+import { MUMBAI_NEWS_SOURCES } from "./lib/news/allowlist";
+import {
+  db,
+  placesTable,
+  eventsTable,
+  dealsTable,
+  itinerariesTable,
+  itineraryStopsTable,
+  moviesTable,
+  hotelsTable,
+  activitiesTable,
+  transitLinesTable,
+  transitRoutesTable,
+  cityFactsTable,
+  cityGuidesTable,
+  communitiesTable,
+  insiderTipsTable,
+  newsSourcesTable,
+  pulsePostsTable,
+  qaAnswersTable,
+  qaQuestionsTable,
+} from "@workspace/db";
 
 /**
  * Derives the structured weekly schedule from each row's display hours so `opening_hours_json`
@@ -14,52 +44,47 @@ function withStructuredHours<T extends { openingHours?: string | null }>(rows: T
   }));
 }
 
-/**
- * Fields that go into each table's `search_text`, in the order they are written.
- *
- * The name or title always comes first: the search route reads the first field back out to
- * tell "this row is called exactly that" apart from "the words appear somewhere in the blurb",
- * and the two rank very differently.
- */
-const SEARCH_TEXT_FIELDS = {
-  places: ["name", "category", "address", "tags", "description"],
-  events: ["title", "category", "venue", "address", "tags", "description"],
-  deals: ["title", "placeName", "category", "discountText", "description"],
-  hotels: ["name", "category", "address", "amenities", "tags", "description"],
-  activities: ["name", "category", "address", "tags", "description"],
-  movies: ["title", "genre", "language", "director", "cast", "venue", "tags", "synopsis"],
-} as const satisfies Record<string, readonly string[]>;
-
-/** Adds the flattened, normalized text every search matches against. */
-function withSearchText<T extends Record<string, unknown>>(
-  kind: keyof typeof SEARCH_TEXT_FIELDS,
-  rows: T[],
-): (T & { searchText: string })[] {
-  const fields: readonly string[] = SEARCH_TEXT_FIELDS[kind];
-  return rows.map((row) => ({
-    ...row,
-    searchText: buildSearchText(fields.map((field) => row[field] as SearchTextPart)),
-  }));
-}
-
 async function seed() {
-  console.log("Seeding database...");
+  const destructive = process.argv.includes("--reset");
+  assertSeedAllowed({ destructive });
+  console.log(destructive ? "Seeding database (destructive reset)..." : "Seeding database (idempotent upsert)...");
 
-  // Clear existing data (order matters for FK constraints)
-  await db.delete(itineraryStopsTable);
-  await db.delete(itinerariesTable);
-  await db.delete(dealsTable);
-  await db.delete(eventsTable);
-  await db.delete(placesTable);
-  await db.delete(moviesTable);
-  await db.delete(hotelsTable);
-  await db.delete(activitiesTable);
-  await db.delete(transitRoutesTable);
-  await db.delete(transitLinesTable);
+  // `--reset` is the old behaviour, kept for a local rebuild from scratch and nothing else.
+  // It is refused outright under NODE_ENV=production and needs an explicit opt-in anywhere
+  // else, because it deletes rows that users' favorites and collections point at.
+  if (destructive) {
+    await db.delete(itineraryStopsTable);
+    await db.delete(itinerariesTable);
+    await db.delete(dealsTable);
+    await db.delete(eventsTable);
+    await db.delete(placesTable);
+    await db.delete(moviesTable);
+    await db.delete(hotelsTable);
+    await db.delete(activitiesTable);
+    await db.delete(transitRoutesTable);
+    await db.delete(transitLinesTable);
+    console.log("Cleared existing data");
+  }
 
-  console.log("Cleared existing data");
+  // Rows a pre-upsert seed left behind carry no external id, so they would not match anything
+  // below and the catalogue would be inserted a second time. Give them the id they would have
+  // been created with first; after the first run this is a no-op.
+  if (!destructive) {
+    const backfilled =
+      (await backfillExternalIds<{ id: number; city: string; name: string }>(placesTable, placesTable.externalId, "place", (row) => [row.city, row.name])) +
+      (await backfillExternalIds<{ id: number; city: string; title: string }>(eventsTable, eventsTable.externalId, "event", (row) => [row.city, row.title])) +
+      (await backfillExternalIds<{ id: number; city: string | null; title: string }>(dealsTable, dealsTable.externalId, "deal", (row) => [row.city, row.title])) +
+      (await backfillExternalIds<{ id: number; city: string; title: string }>(moviesTable, moviesTable.externalId, "movie", (row) => [row.city, row.title])) +
+      (await backfillExternalIds<{ id: number; city: string; name: string }>(hotelsTable, hotelsTable.externalId, "hotel", (row) => [row.city, row.name])) +
+      (await backfillExternalIds<{ id: number; city: string; name: string }>(activitiesTable, activitiesTable.externalId, "activity", (row) => [row.city, row.name])) +
+      (await backfillExternalIds<{ id: number; city: string; title: string }>(itinerariesTable, itinerariesTable.externalId, "itinerary", (row) => [row.city, row.title])) +
+      (await backfillExternalIds<{ id: number; city: string; name: string; shortName: string | null }>(transitLinesTable, transitLinesTable.externalId, "transit-line", (row) => [row.city, row.shortName ?? row.name])) +
+      (await backfillExternalIds<{ id: number; city: string; lineName: string; from: string; to: string }>(transitRoutesTable, transitRoutesTable.externalId, "transit-route", (row) => [row.city, row.lineName, row.from, row.to]));
 
-  const places = await db.insert(placesTable).values(withSearchText("places", withStructuredHours([
+    if (backfilled > 0) console.log(`Backfilled external ids on ${backfilled} pre-existing rows`);
+  }
+
+  const places = (await upsertSeedRows(placesTable, placesTable.externalId, withExternalId("place", withSearchText("places", withStructuredHours([
     // ─── MUMBAI ───────────────────────────────────────────────────────────────
     // Food
     { name: "Leopold Cafe & Bar", category: "food", description: "An iconic Colaba institution since 1871. Famous for its chilled beer, mixed crowd, and bullet-hole-marked walls from the 2008 attacks.", address: "Colaba Causeway, Colaba", city: "Mumbai", lat: 18.9229, lng: 72.8318, rating: 4.2, reviewCount: 18700, phone: "+91-22-2202-0131", openingHours: "Daily 7:30am-12am", imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800", images: ["https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"], tags: ["historic", "cafe", "beer", "colaba"] },
@@ -171,7 +196,7 @@ async function seed() {
     { name: "Union Square", category: "shopping", description: "San Francisco's premier shopping district. Westfield Mall, Neiman Marcus, Saks Fifth Avenue, and hundreds of boutiques centred around a landscaped urban plaza.", address: "Union Square, San Francisco", city: "San Francisco", lat: 37.7881, lng: -122.4075, rating: 4.3, reviewCount: 39000, openingHours: "Daily 10am-9pm (varies by store)", imageUrl: "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=800", images: ["https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=800"], tags: ["apparel", "luxury", "beauty", "department stores", "central"] },
     { name: "Rainbow Grocery", category: "shopping", description: "SF's beloved worker-owned cooperative grocery. Exceptional selection of organic produce, bulk foods, vegan products, and local artisan goods since 1975.", address: "1745 Folsom St, Mission District", city: "San Francisco", lat: 37.7699, lng: -122.4160, rating: 4.6, reviewCount: 7200, openingHours: "Daily 9am-9pm", phone: "+1-415-863-0620", website: "https://www.rainbow.coop", imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800", images: ["https://images.unsplash.com/photo-1542838132-92c53300491e?w=800"], tags: ["grocery", "organic", "vegan", "bulk food", "cooperative"] },
     { name: "Fillmore Street Boutiques", category: "shopping", description: "Pacific Heights' chic shopping corridor. Independent boutiques for fashion, jewellery, wellness, and homeware line this leafy stretch between Sutter and Jackson.", address: "Fillmore Street, Pacific Heights", city: "San Francisco", lat: 37.7877, lng: -122.4334, rating: 4.4, reviewCount: 6800, openingHours: "Daily 10am-7pm (varies by store)", imageUrl: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800", images: ["https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800"], tags: ["apparel", "jewellery", "boutique", "lifestyle", "pacific heights"] },
-  ]))).returning();
+  ])), (row) => [row.city, row.name]))) as unknown as { id: number; name: string }[];
 
   console.log(`Inserted ${places.length} places`);
 
@@ -186,8 +211,12 @@ async function seed() {
   const d21 = new Date(now.getTime() + 21 * 86400000);
   const d30 = new Date(now.getTime() + 30 * 86400000);
   const h = (base: Date, hours: number) => new Date(base.getTime() + hours * 3600000);
+  // Deals were seeded with fixed 2025 dates, so a fresh install had almost no live inventory —
+  // the list endpoints correctly hide an expired deal, and every one of them was expired.
+  // Relative dates keep the seed producing a usable catalogue whenever it is run.
+  const inDays = (days: number) => new Date(now.getTime() + days * 86400000);
 
-  const events = await db.insert(eventsTable).values(withSearchText("events", [
+  const events = await upsertSeedRows(eventsTable, eventsTable.externalId, withExternalId("event", withSearchText("events", [
     // ─── MUMBAI EVENTS ────────────────────────────────────────────────────────
     { title: "Kala Ghoda Arts Festival", category: "art", venue: "Rampart Row, Kala Ghoda", address: "Kala Ghoda, Fort", city: "Mumbai", lat: 18.9285, lng: 72.8321, startDate: d7, endDate: h(d7, 9 * 24), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1561839561-b13bcfe95249?w=800", tags: ["art", "cultural festival", "free", "annual"] },
     { title: "Bollywood Night at NSCI", category: "music", venue: "NSCI Dome", address: "Worli Sports Complex, Worli", city: "Mumbai", lat: 18.9985, lng: 72.8186, startDate: d3, endDate: h(d3, 4), price: 1500, isFree: false, imageUrl: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800", tags: ["bollywood", "music", "dance", "party"] },
@@ -217,13 +246,13 @@ async function seed() {
     // ─── SAN FRANCISCO EVENTS ─────────────────────────────────────────────────
     { title: "Ferry Building Farmers Market", category: "food", venue: "Ferry Building Marketplace", address: "One Ferry Building, Embarcadero", city: "San Francisco", lat: 37.7955, lng: -122.3937, startDate: d1, endDate: h(d1, 5), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800", tags: ["market", "food", "local", "organic", "free"] },
     { title: "Dolores Park Movie Night", category: "film", venue: "Dolores Park", address: "Dolores St & 18th St, Mission", city: "San Francisco", lat: 37.7596, lng: -122.4269, startDate: d7, endDate: h(d7, 3), price: null, isFree: true, imageUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800", tags: ["film", "outdoor", "free", "park"] },
-  ])).returning();
+  ]), (row) => [row.city, row.title]));
 
   console.log(`Inserted ${events.length} events`);
 
   const nextMonth = new Date(now.getTime() + 30 * 86400000);
 
-  const deals = await db.insert(dealsTable).values(withSearchText("deals", [
+  const deals = await upsertSeedRows(dealsTable, dealsTable.externalId, withExternalId("deal", withSearchText("deals", [
     // ─── MUMBAI DEALS ─────────────────────────────────────────────────────────
     { title: "15% Off Seafood Lunch at Trishna", description: "Enjoy 15% off on the acclaimed butter-garlic crab and prawn dishes at lunch.", placeId: placeByName["Trishna"]?.id, placeName: "Trishna", city: "Mumbai", category: "food", discountPercent: 15, discountText: "15% Off Lunch", originalPrice: 2200, dealPrice: 1870, code: "TRISHNA15", expiresAt: nextMonth, imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800", lat: 18.9285, lng: 72.8314 },
     { title: "Bade Miyan — Buy 2 Kebab Plates, Get 1 Free", description: "Mumbai's legendary street kebabs. Buy any 2 full plates of seekh kebab or baida roti, get one free.", placeId: placeByName["Bade Miyan"]?.id, placeName: "Bade Miyan", city: "Mumbai", category: "food", discountPercent: 33, discountText: "Buy 2 Get 1 Free", originalPrice: 900, dealPrice: 600, expiresAt: nextMonth, imageUrl: "https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=800", lat: 18.9252, lng: 72.8319 },
@@ -255,12 +284,12 @@ async function seed() {
     { title: "Strand Bookstore — Free Tote with $50 Purchase", description: "Spend $50 or more at the Strand and receive their iconic red Strand tote bag absolutely free. The ultimate NY souvenir.", placeId: placeByName["Strand Bookstore"]?.id, placeName: "Strand Bookstore", city: "New York", category: "shopping", discountText: "Free Tote on $50+", code: "STRANDTOTE", expiresAt: nextMonth, imageUrl: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800", lat: 40.7330, lng: -73.9910 },
     { title: "Amoeba Music — 10% Off Vinyl", description: "Dig through thousands of records and save 10% on all vinyl purchases at Amoeba. Use code at checkout.", placeId: placeByName["Amoeba Music"]?.id, placeName: "Amoeba Music", city: "San Francisco", category: "shopping", discountPercent: 10, discountText: "10% Off Vinyl", code: "AMOEBA10", expiresAt: nextMonth, imageUrl: "https://images.unsplash.com/photo-1535992165812-68d1861aa71e?w=800", lat: 37.7692, lng: -122.4453 },
     { title: "Heath Ceramics — Free Shipping on Orders $150+", description: "Order online or in-store and receive complimentary shipping on all Heath Ceramics purchases over $150.", placeId: placeByName["Heath Ceramics"]?.id, placeName: "Heath Ceramics", city: "San Francisco", category: "shopping", discountText: "Free Shipping $150+", code: "HEATHSHIP", expiresAt: nextMonth, imageUrl: "https://images.unsplash.com/photo-1582560475093-ba66accbc424?w=800", lat: 37.7618, lng: -122.4103 },
-  ])).returning();
+  ]), (row) => [row.city, row.title]));
 
   console.log(`Inserted ${deals.length} deals`);
 
   // ─── ITINERARIES ────────────────────────────────────────────────────────────
-  const itineraries = await db.insert(itinerariesTable).values([
+  const itineraries = (await upsertSeedRows(itinerariesTable, itinerariesTable.externalId, withExternalId("itinerary", [
     // Mumbai
     {
       title: "Mumbai in a Day",
@@ -313,7 +342,7 @@ async function seed() {
       coverImageUrl: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800",
       tips: ["Book Alcatraz tickets 2 weeks ahead", "Tartine bread sells out by noon", "MUNI metro card saves time"],
     },
-  ]).returning();
+  ], (row) => [row.city, row.title]))) as unknown as { id: number; title: string }[];
 
   // Stops for Mumbai in a Day
   const mum1 = itineraries[0];
@@ -322,7 +351,7 @@ async function seed() {
   const blr2 = itineraries[3];
   const nyc1 = itineraries[4];
 
-  await db.insert(itineraryStopsTable).values([
+  await upsertSeedRows(itineraryStopsTable, [itineraryStopsTable.itineraryId, itineraryStopsTable.day, itineraryStopsTable.order], [
     // Mumbai in a Day
     { itineraryId: mum1.id, placeId: placeByName["Gateway of India"].id, day: 1, order: 1, tip: "Arrive at 8am before the crowds. Take the ferry to Elephanta Caves from here.", bestTimeToVisit: "7am–10am", estimatedCost: "Free entry", durationMinutes: 60 },
     { itineraryId: mum1.id, placeId: placeByName["Chhatrapati Shivaji Terminus"].id, day: 1, order: 2, tip: "A 5-minute walk from the Gateway. The architecture is breathtaking — marvel at the Victorian-Gothic details.", bestTimeToVisit: "10am–11am", estimatedCost: "Free", durationMinutes: 45 },
@@ -371,38 +400,42 @@ async function seed() {
   ]);
 
   // ─── MOVIES ────────────────────────────────────────────────────────────────
-  await db.insert(moviesTable).values(withSearchText("movies", [
+  // No `bookingUrl`. Every value here was a cinema chain's homepage, which is not a booking
+  // link for this film at this venue — it is an affordance that promises a transaction the app
+  // cannot complete. Section 2.4's fallback until a ticketing agreement exists is to present
+  // movies as curated information, so the column stays on the table and stays empty.
+  await upsertSeedRows(moviesTable, moviesTable.externalId, withExternalId("movie", withSearchText("movies", [
     // MUMBAI
-    { title: "Stree 2", genre: "Horror Comedy", language: "Hindi", durationMinutes: 157, rating: 4.8, reviewCount: 92000, posterUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600", synopsis: "The gang from Chanderi is back to face a new supernatural threat in this blockbuster horror comedy sequel.", director: "Amar Kaushik", cast: ["Rajkummar Rao", "Shraddha Kapoor", "Aparshakti Khurana"], releaseDate: "2024-08-15", city: "Mumbai", status: "now_showing", venue: "PVR Icon, Versova", price: 450, bookingUrl: "https://www.bookmyshow.com", tags: ["horror", "comedy", "hindi", "blockbuster"] },
-    { title: "Kill", genre: "Action", language: "Hindi", durationMinutes: 105, rating: 4.6, reviewCount: 34000, posterUrl: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600", synopsis: "A train journey turns into a brutal battle when two elite commandos take on a hundred armed criminals.", director: "Nikhil Nagesh Bhat", cast: ["Lakshya", "Raghav Juyal", "Tanya Maniktala"], releaseDate: "2024-07-05", city: "Mumbai", status: "now_showing", venue: "INOX Nariman Point", price: 380, bookingUrl: "https://www.bookmyshow.com", tags: ["action", "thriller", "train", "intense"] },
-    { title: "Devara: Part 1", genre: "Action Drama", language: "Telugu", durationMinutes: 166, rating: 4.4, reviewCount: 28000, posterUrl: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600", synopsis: "A fearless man who ruled the seas faces off against his own legacy in this epic two-era action saga.", director: "Koratala Siva", cast: ["Jr. NTR", "Janhvi Kapoor", "Saif Ali Khan"], releaseDate: "2024-09-27", city: "Mumbai", status: "now_showing", venue: "Cinepolis Andheri", price: 420, bookingUrl: "https://www.bookmyshow.com", tags: ["telugu", "action", "drama", "epic"] },
-    { title: "Singham Again", genre: "Action", language: "Hindi", durationMinutes: 163, rating: 4.3, reviewCount: 41000, posterUrl: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=600", synopsis: "ACP Singham returns to lead a team of elite cops in a battle against an international crime lord.", director: "Rohit Shetty", cast: ["Ajay Devgn", "Deepika Padukone", "Ranveer Singh", "Akshay Kumar"], releaseDate: "2024-11-01", city: "Mumbai", status: "now_showing", venue: "PVR Phoenix Mills", price: 500, bookingUrl: "https://www.bookmyshow.com", tags: ["action", "cop", "rohit shetty", "franchise"] },
-    { title: "Baby John", genre: "Action", language: "Hindi", durationMinutes: 158, rating: 4.0, reviewCount: 18000, posterUrl: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600", synopsis: "A retired cop returns to action when his daughter's life is threatened by his greatest nemesis.", director: "Kalees", cast: ["Varun Dhawan", "Keerthy Suresh", "Jackie Shroff"], releaseDate: "2024-12-25", city: "Mumbai", status: "coming_soon", venue: "Multiple Cinemas", price: 400, bookingUrl: "https://www.bookmyshow.com", tags: ["action", "hindi remake", "christmas release"] },
+    { title: "Stree 2", genre: "Horror Comedy", language: "Hindi", durationMinutes: 157, rating: 4.8, reviewCount: 92000, posterUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600", synopsis: "The gang from Chanderi is back to face a new supernatural threat in this blockbuster horror comedy sequel.", director: "Amar Kaushik", cast: ["Rajkummar Rao", "Shraddha Kapoor", "Aparshakti Khurana"], releaseDate: "2024-08-15", city: "Mumbai", status: "now_showing", venue: "PVR Icon, Versova", price: 450, tags: ["horror", "comedy", "hindi", "blockbuster"] },
+    { title: "Kill", genre: "Action", language: "Hindi", durationMinutes: 105, rating: 4.6, reviewCount: 34000, posterUrl: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600", synopsis: "A train journey turns into a brutal battle when two elite commandos take on a hundred armed criminals.", director: "Nikhil Nagesh Bhat", cast: ["Lakshya", "Raghav Juyal", "Tanya Maniktala"], releaseDate: "2024-07-05", city: "Mumbai", status: "now_showing", venue: "INOX Nariman Point", price: 380, tags: ["action", "thriller", "train", "intense"] },
+    { title: "Devara: Part 1", genre: "Action Drama", language: "Telugu", durationMinutes: 166, rating: 4.4, reviewCount: 28000, posterUrl: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600", synopsis: "A fearless man who ruled the seas faces off against his own legacy in this epic two-era action saga.", director: "Koratala Siva", cast: ["Jr. NTR", "Janhvi Kapoor", "Saif Ali Khan"], releaseDate: "2024-09-27", city: "Mumbai", status: "now_showing", venue: "Cinepolis Andheri", price: 420, tags: ["telugu", "action", "drama", "epic"] },
+    { title: "Singham Again", genre: "Action", language: "Hindi", durationMinutes: 163, rating: 4.3, reviewCount: 41000, posterUrl: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=600", synopsis: "ACP Singham returns to lead a team of elite cops in a battle against an international crime lord.", director: "Rohit Shetty", cast: ["Ajay Devgn", "Deepika Padukone", "Ranveer Singh", "Akshay Kumar"], releaseDate: "2024-11-01", city: "Mumbai", status: "now_showing", venue: "PVR Phoenix Mills", price: 500, tags: ["action", "cop", "rohit shetty", "franchise"] },
+    { title: "Baby John", genre: "Action", language: "Hindi", durationMinutes: 158, rating: 4.0, reviewCount: 18000, posterUrl: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600", synopsis: "A retired cop returns to action when his daughter's life is threatened by his greatest nemesis.", director: "Kalees", cast: ["Varun Dhawan", "Keerthy Suresh", "Jackie Shroff"], releaseDate: "2024-12-25", city: "Mumbai", status: "coming_soon", venue: "Multiple Cinemas", price: 400, tags: ["action", "hindi remake", "christmas release"] },
 
     // BANGALORE
-    { title: "KGF Chapter 3", genre: "Action Drama", language: "Kannada", durationMinutes: 185, rating: 4.9, reviewCount: 110000, posterUrl: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600", synopsis: "Rocky faces an even greater threat as the world fights over the Kolar Gold Fields in this much-awaited conclusion.", director: "Prashanth Neel", cast: ["Yash", "Sanjay Dutt", "Raveena Tandon"], releaseDate: "2025-01-26", city: "Bangalore", status: "coming_soon", venue: "PVR Royal Meenakshi Mall", price: 600, bookingUrl: "https://www.bookmyshow.com", tags: ["kannada", "pan india", "action", "blockbuster"] },
-    { title: "Pushpa: The Rule", genre: "Action Drama", language: "Telugu", durationMinutes: 189, rating: 4.7, reviewCount: 88000, posterUrl: "https://images.unsplash.com/photo-1512070679279-8988d32161be?w=600", synopsis: "Pushpa Raj strengthens his empire while a ruthless officer vows to bring him down at any cost.", director: "Sukumar", cast: ["Allu Arjun", "Rashmika Mandanna", "Fahadh Faasil"], releaseDate: "2024-12-05", city: "Bangalore", status: "now_showing", venue: "INOX Garuda Mall", price: 550, bookingUrl: "https://www.bookmyshow.com", tags: ["telugu", "action", "allu arjun", "sequel"] },
-    { title: "UI", genre: "Thriller", language: "Kannada", durationMinutes: 148, rating: 4.5, reviewCount: 42000, posterUrl: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600", synopsis: "A mind-bending thriller exploring the intersection of technology, politics, and human identity.", director: "Upendra", cast: ["Upendra", "Reecha Sinha", "Murali Sharma"], releaseDate: "2024-12-20", city: "Bangalore", status: "now_showing", venue: "PVR Orion", price: 350, bookingUrl: "https://www.bookmyshow.com", tags: ["kannada", "thriller", "upendra", "cerebral"] },
-    { title: "Marco", genre: "Action Thriller", language: "Malayalam", durationMinutes: 138, rating: 4.6, reviewCount: 31000, posterUrl: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600", synopsis: "A man is pushed to his limits when his family is held hostage by a cartel in this visceral action thriller.", director: "Haneef Adeni", cast: ["Unni Mukundan", "Kabir Duhan Singh"], releaseDate: "2024-12-20", city: "Bangalore", status: "now_showing", venue: "Cinepolis Bangalore Central", price: 350, bookingUrl: "https://www.bookmyshow.com", tags: ["malayalam", "action", "intense", "thriller"] },
-    { title: "Kantara Chapter 1", genre: "Action Drama", language: "Kannada", durationMinutes: 175, rating: 4.8, reviewCount: 55000, posterUrl: "https://images.unsplash.com/photo-1574267432553-4b4628081c31?w=600", synopsis: "The origin story of Shiva and the deity Panjurli—exploring the roots of the forest folk centuries before the original.", director: "Rishab Shetty", cast: ["Rishab Shetty", "Kishore", "Achyuth Kumar"], releaseDate: "2025-03-01", city: "Bangalore", status: "coming_soon", venue: "Multiple Cinemas", price: 500, bookingUrl: "https://www.bookmyshow.com", tags: ["kannada", "folklore", "spiritual", "prequel"] },
+    { title: "KGF Chapter 3", genre: "Action Drama", language: "Kannada", durationMinutes: 185, rating: 4.9, reviewCount: 110000, posterUrl: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600", synopsis: "Rocky faces an even greater threat as the world fights over the Kolar Gold Fields in this much-awaited conclusion.", director: "Prashanth Neel", cast: ["Yash", "Sanjay Dutt", "Raveena Tandon"], releaseDate: "2025-01-26", city: "Bangalore", status: "coming_soon", venue: "PVR Royal Meenakshi Mall", price: 600, tags: ["kannada", "pan india", "action", "blockbuster"] },
+    { title: "Pushpa: The Rule", genre: "Action Drama", language: "Telugu", durationMinutes: 189, rating: 4.7, reviewCount: 88000, posterUrl: "https://images.unsplash.com/photo-1512070679279-8988d32161be?w=600", synopsis: "Pushpa Raj strengthens his empire while a ruthless officer vows to bring him down at any cost.", director: "Sukumar", cast: ["Allu Arjun", "Rashmika Mandanna", "Fahadh Faasil"], releaseDate: "2024-12-05", city: "Bangalore", status: "now_showing", venue: "INOX Garuda Mall", price: 550, tags: ["telugu", "action", "allu arjun", "sequel"] },
+    { title: "UI", genre: "Thriller", language: "Kannada", durationMinutes: 148, rating: 4.5, reviewCount: 42000, posterUrl: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600", synopsis: "A mind-bending thriller exploring the intersection of technology, politics, and human identity.", director: "Upendra", cast: ["Upendra", "Reecha Sinha", "Murali Sharma"], releaseDate: "2024-12-20", city: "Bangalore", status: "now_showing", venue: "PVR Orion", price: 350, tags: ["kannada", "thriller", "upendra", "cerebral"] },
+    { title: "Marco", genre: "Action Thriller", language: "Malayalam", durationMinutes: 138, rating: 4.6, reviewCount: 31000, posterUrl: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600", synopsis: "A man is pushed to his limits when his family is held hostage by a cartel in this visceral action thriller.", director: "Haneef Adeni", cast: ["Unni Mukundan", "Kabir Duhan Singh"], releaseDate: "2024-12-20", city: "Bangalore", status: "now_showing", venue: "Cinepolis Bangalore Central", price: 350, tags: ["malayalam", "action", "intense", "thriller"] },
+    { title: "Kantara Chapter 1", genre: "Action Drama", language: "Kannada", durationMinutes: 175, rating: 4.8, reviewCount: 55000, posterUrl: "https://images.unsplash.com/photo-1574267432553-4b4628081c31?w=600", synopsis: "The origin story of Shiva and the deity Panjurli—exploring the roots of the forest folk centuries before the original.", director: "Rishab Shetty", cast: ["Rishab Shetty", "Kishore", "Achyuth Kumar"], releaseDate: "2025-03-01", city: "Bangalore", status: "coming_soon", venue: "Multiple Cinemas", price: 500, tags: ["kannada", "folklore", "spiritual", "prequel"] },
 
     // NEW YORK CITY
-    { title: "Gladiator II", genre: "Action Epic", language: "English", durationMinutes: 148, rating: 4.4, reviewCount: 67000, posterUrl: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600", synopsis: "Years after the fall of Maximus, a young warrior rises through the brutal hierarchy of Rome's gladiatorial arena.", director: "Ridley Scott", cast: ["Paul Mescal", "Denzel Washington", "Pedro Pascal"], releaseDate: "2024-11-22", city: "New York City", status: "now_showing", venue: "AMC Lincoln Square IMAX", price: 32, bookingUrl: "https://www.amctheatres.com", tags: ["epic", "action", "historical", "sequel", "imax"] },
-    { title: "Wicked", genre: "Musical", language: "English", durationMinutes: 160, rating: 4.7, reviewCount: 89000, posterUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600", synopsis: "The untold story of the witches of Oz—before Dorothy arrived—told through spectacular song and dance.", director: "Jon M. Chu", cast: ["Cynthia Erivo", "Ariana Grande", "Jeff Goldblum"], releaseDate: "2024-11-22", city: "New York City", status: "now_showing", venue: "Regal E-Walk Times Square", price: 30, bookingUrl: "https://www.regmovies.com", tags: ["musical", "fantasy", "broadway", "ariana grande"] },
-    { title: "Moana 2", genre: "Animation", language: "English", durationMinutes: 100, rating: 4.5, reviewCount: 52000, posterUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600", synopsis: "Moana embarks on a far-reaching voyage into the ocean to unite distant peoples of Oceania.", director: "David Derrick Jr.", cast: ["Auli'i Cravalho", "Dwayne Johnson", "Temuera Morrison"], releaseDate: "2024-11-27", city: "New York City", status: "now_showing", venue: "Cinemark 42nd Street", price: 25, bookingUrl: "https://www.fandango.com", tags: ["animation", "disney", "family", "adventure"] },
-    { title: "Nosferatu", genre: "Horror", language: "English", durationMinutes: 132, rating: 4.3, reviewCount: 28000, posterUrl: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=600", synopsis: "A gothic reimagining of Bram Stoker's Dracula, following a young woman tormented by an obsessive vampire count.", director: "Robert Eggers", cast: ["Bill Skarsgård", "Lily-Rose Depp", "Nicholas Hoult"], releaseDate: "2024-12-25", city: "New York City", status: "coming_soon", venue: "IFC Center", price: 20, bookingUrl: "https://www.ifccenter.com", tags: ["horror", "gothic", "vampire", "arthouse"] },
-    { title: "A Complete Unknown", genre: "Drama", language: "English", durationMinutes: 141, rating: 4.6, reviewCount: 21000, posterUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600", synopsis: "The story of Bob Dylan's meteoric rise in the early 1960s New York folk scene, culminating in his electrifying Newport debut.", director: "James Mangold", cast: ["Timothée Chalamet", "Elle Fanning", "Monica Barbaro"], releaseDate: "2024-12-25", city: "New York City", status: "coming_soon", venue: "Angelika Film Center", price: 22, bookingUrl: "https://www.angelikafilmcenter.com", tags: ["biopic", "music", "bob dylan", "drama"] },
+    { title: "Gladiator II", genre: "Action Epic", language: "English", durationMinutes: 148, rating: 4.4, reviewCount: 67000, posterUrl: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600", synopsis: "Years after the fall of Maximus, a young warrior rises through the brutal hierarchy of Rome's gladiatorial arena.", director: "Ridley Scott", cast: ["Paul Mescal", "Denzel Washington", "Pedro Pascal"], releaseDate: "2024-11-22", city: "New York City", status: "now_showing", venue: "AMC Lincoln Square IMAX", price: 32, tags: ["epic", "action", "historical", "sequel", "imax"] },
+    { title: "Wicked", genre: "Musical", language: "English", durationMinutes: 160, rating: 4.7, reviewCount: 89000, posterUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600", synopsis: "The untold story of the witches of Oz—before Dorothy arrived—told through spectacular song and dance.", director: "Jon M. Chu", cast: ["Cynthia Erivo", "Ariana Grande", "Jeff Goldblum"], releaseDate: "2024-11-22", city: "New York City", status: "now_showing", venue: "Regal E-Walk Times Square", price: 30, tags: ["musical", "fantasy", "broadway", "ariana grande"] },
+    { title: "Moana 2", genre: "Animation", language: "English", durationMinutes: 100, rating: 4.5, reviewCount: 52000, posterUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600", synopsis: "Moana embarks on a far-reaching voyage into the ocean to unite distant peoples of Oceania.", director: "David Derrick Jr.", cast: ["Auli'i Cravalho", "Dwayne Johnson", "Temuera Morrison"], releaseDate: "2024-11-27", city: "New York City", status: "now_showing", venue: "Cinemark 42nd Street", price: 25, tags: ["animation", "disney", "family", "adventure"] },
+    { title: "Nosferatu", genre: "Horror", language: "English", durationMinutes: 132, rating: 4.3, reviewCount: 28000, posterUrl: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=600", synopsis: "A gothic reimagining of Bram Stoker's Dracula, following a young woman tormented by an obsessive vampire count.", director: "Robert Eggers", cast: ["Bill Skarsgård", "Lily-Rose Depp", "Nicholas Hoult"], releaseDate: "2024-12-25", city: "New York City", status: "coming_soon", venue: "IFC Center", price: 20, tags: ["horror", "gothic", "vampire", "arthouse"] },
+    { title: "A Complete Unknown", genre: "Drama", language: "English", durationMinutes: 141, rating: 4.6, reviewCount: 21000, posterUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600", synopsis: "The story of Bob Dylan's meteoric rise in the early 1960s New York folk scene, culminating in his electrifying Newport debut.", director: "James Mangold", cast: ["Timothée Chalamet", "Elle Fanning", "Monica Barbaro"], releaseDate: "2024-12-25", city: "New York City", status: "coming_soon", venue: "Angelika Film Center", price: 22, tags: ["biopic", "music", "bob dylan", "drama"] },
 
     // SAN FRANCISCO
-    { title: "Conclave", genre: "Thriller", language: "English", durationMinutes: 120, rating: 4.6, reviewCount: 31000, posterUrl: "https://images.unsplash.com/photo-1519972064555-542444e71b54?w=600", synopsis: "A dean of the College of Cardinals navigates intrigue and betrayal as he oversees a papal election.", director: "Edward Berger", cast: ["Ralph Fiennes", "Stanley Tucci", "John Lithgow"], releaseDate: "2024-10-25", city: "San Francisco", status: "now_showing", venue: "Alamo Drafthouse New Mission", price: 20, bookingUrl: "https://www.drafthouse.com", tags: ["thriller", "religious", "political", "drama"] },
-    { title: "Heretic", genre: "Psychological Thriller", language: "English", durationMinutes: 110, rating: 4.4, reviewCount: 18000, posterUrl: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600", synopsis: "Two young missionaries find themselves in the home of a mysterious man who tests their faith in terrifying ways.", director: "Scott Beck & Bryan Woods", cast: ["Hugh Grant", "Sophie Thatcher", "Chloe East"], releaseDate: "2024-11-08", city: "San Francisco", status: "now_showing", venue: "AMC Metreon 16", price: 19, bookingUrl: "https://www.amctheatres.com", tags: ["thriller", "psychological", "horror", "faith"] },
-    { title: "The Wild Robot", genre: "Animation", language: "English", durationMinutes: 102, rating: 4.8, reviewCount: 48000, posterUrl: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600", synopsis: "A robot named Roz is stranded on a wild island and must learn to survive by adopting a baby gosling.", director: "Chris Sanders", cast: ["Lupita Nyong'o", "Pedro Pascal", "Kit Connor"], releaseDate: "2024-09-27", city: "San Francisco", status: "now_showing", venue: "Sundance Kabuki Cinema", price: 18, bookingUrl: "https://www.sundancecinemas.com", tags: ["animation", "dreamworks", "family", "nature"] },
-    { title: "Anora", genre: "Drama", language: "English", durationMinutes: 138, rating: 4.7, reviewCount: 15000, posterUrl: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600", synopsis: "A young sex worker from Brooklyn impulsively marries the son of an oligarch and discovers the fairy tale can't last.", director: "Sean Baker", cast: ["Mikey Madison", "Yura Borisov", "Karren Karagulian"], releaseDate: "2024-10-18", city: "San Francisco", status: "now_showing", venue: "Embarcadero Center Cinema", price: 18, bookingUrl: "https://www.landmarktheatres.com", tags: ["palme d'or", "indie", "drama", "sean baker"] },
-    { title: "Captain America: Brave New World", genre: "Action", language: "English", durationMinutes: 118, rating: 4.2, reviewCount: 22000, posterUrl: "https://images.unsplash.com/photo-1531259683007-016a7b628fc3?w=600", synopsis: "Sam Wilson's first outing as the new Captain America puts him at the center of an international incident.", director: "Julius Onah", cast: ["Anthony Mackie", "Harrison Ford", "Danny Ramirez"], releaseDate: "2025-02-14", city: "San Francisco", status: "coming_soon", venue: "Multiple Cinemas", price: 22, bookingUrl: "https://www.fandango.com", tags: ["marvel", "action", "superhero", "mcu"] },
-  ]));
+    { title: "Conclave", genre: "Thriller", language: "English", durationMinutes: 120, rating: 4.6, reviewCount: 31000, posterUrl: "https://images.unsplash.com/photo-1519972064555-542444e71b54?w=600", synopsis: "A dean of the College of Cardinals navigates intrigue and betrayal as he oversees a papal election.", director: "Edward Berger", cast: ["Ralph Fiennes", "Stanley Tucci", "John Lithgow"], releaseDate: "2024-10-25", city: "San Francisco", status: "now_showing", venue: "Alamo Drafthouse New Mission", price: 20, tags: ["thriller", "religious", "political", "drama"] },
+    { title: "Heretic", genre: "Psychological Thriller", language: "English", durationMinutes: 110, rating: 4.4, reviewCount: 18000, posterUrl: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600", synopsis: "Two young missionaries find themselves in the home of a mysterious man who tests their faith in terrifying ways.", director: "Scott Beck & Bryan Woods", cast: ["Hugh Grant", "Sophie Thatcher", "Chloe East"], releaseDate: "2024-11-08", city: "San Francisco", status: "now_showing", venue: "AMC Metreon 16", price: 19, tags: ["thriller", "psychological", "horror", "faith"] },
+    { title: "The Wild Robot", genre: "Animation", language: "English", durationMinutes: 102, rating: 4.8, reviewCount: 48000, posterUrl: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600", synopsis: "A robot named Roz is stranded on a wild island and must learn to survive by adopting a baby gosling.", director: "Chris Sanders", cast: ["Lupita Nyong'o", "Pedro Pascal", "Kit Connor"], releaseDate: "2024-09-27", city: "San Francisco", status: "now_showing", venue: "Sundance Kabuki Cinema", price: 18, tags: ["animation", "dreamworks", "family", "nature"] },
+    { title: "Anora", genre: "Drama", language: "English", durationMinutes: 138, rating: 4.7, reviewCount: 15000, posterUrl: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600", synopsis: "A young sex worker from Brooklyn impulsively marries the son of an oligarch and discovers the fairy tale can't last.", director: "Sean Baker", cast: ["Mikey Madison", "Yura Borisov", "Karren Karagulian"], releaseDate: "2024-10-18", city: "San Francisco", status: "now_showing", venue: "Embarcadero Center Cinema", price: 18, tags: ["palme d'or", "indie", "drama", "sean baker"] },
+    { title: "Captain America: Brave New World", genre: "Action", language: "English", durationMinutes: 118, rating: 4.2, reviewCount: 22000, posterUrl: "https://images.unsplash.com/photo-1531259683007-016a7b628fc3?w=600", synopsis: "Sam Wilson's first outing as the new Captain America puts him at the center of an international incident.", director: "Julius Onah", cast: ["Anthony Mackie", "Harrison Ford", "Danny Ramirez"], releaseDate: "2025-02-14", city: "San Francisco", status: "coming_soon", venue: "Multiple Cinemas", price: 22, tags: ["marvel", "action", "superhero", "mcu"] },
+  ]), (row) => [row.city, row.title]));
 
   // ─── HOTELS ────────────────────────────────────────────────────────────────
-  await db.insert(hotelsTable).values(withSearchText("hotels", [
+  await upsertSeedRows(hotelsTable, hotelsTable.externalId, withExternalId("hotel", withSearchText("hotels", [
     // MUMBAI
     { name: "The Taj Mahal Palace", category: "luxury", address: "Apollo Bunder, Colaba", city: "Mumbai", lat: 18.9217, lng: 72.8330, rating: 4.9, reviewCount: 14200, pricePerNight: 28000, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800", images: ["https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800"], amenities: ["pool", "spa", "gym", "restaurants", "bar", "concierge", "butler", "sea view"], phone: "+91-22-6665-3366", website: "https://www.tajhotels.com", checkIn: "14:00", checkOut: "12:00", description: "Arguably India's most iconic hotel, the Taj Palace opened in 1903. Its harbour-facing rooms offer unmatched views of the Gateway of India. Fine dining, Jiva Spa, and legendary service make it a once-in-a-lifetime stay.", tags: ["iconic", "heritage", "waterfront", "palace"] },
     { name: "The Oberoi Mumbai", category: "luxury", address: "Nariman Point", city: "Mumbai", lat: 18.9256, lng: 72.8238, rating: 4.8, reviewCount: 8900, pricePerNight: 22000, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800", images: ["https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800"], amenities: ["pool", "spa", "gym", "restaurant", "bar", "butler", "sea view"], phone: "+91-22-6632-5757", website: "https://www.oberoihotels.com", checkIn: "14:00", checkOut: "12:00", description: "Sleek contemporary luxury overlooking the Arabian Sea at Nariman Point. The rooms are among the largest in the city and the Ziya restaurant is rated one of India's finest.", tags: ["luxury", "sea view", "modern", "nariman point"] },
@@ -430,10 +463,10 @@ async function seed() {
     { name: "The Mission Inn", category: "mid-range", address: "943 S Mission Drive, Mission District", city: "San Francisco", lat: 37.7599, lng: -122.4148, rating: 4.4, reviewCount: 2100, pricePerNight: 185, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800", images: ["https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800"], amenities: ["wifi", "garden", "kitchen access", "breakfast available", "bike rental"], phone: "+1-415-285-9100", checkIn: "14:00", checkOut: "11:00", description: "A charming, affordable boutique in the heart of San Francisco's Mission District—the city's most vibrant neighbourhood for food, murals, and nightlife.", tags: ["boutique", "mission district", "artsy", "walkable"] },
     { name: "Proper Hotel San Francisco", category: "boutique", address: "1100 Market Street, Mid-Market", city: "San Francisco", lat: 37.7800, lng: -122.4144, rating: 4.6, reviewCount: 3200, pricePerNight: 320, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1561501900-3701fa6a0864?w=800", images: ["https://images.unsplash.com/photo-1561501900-3701fa6a0864?w=800"], amenities: ["rooftop pool", "spa", "gym", "restaurant", "bar", "design hotel"], phone: "+1-415-735-7777", website: "https://www.properhotel.com", checkIn: "15:00", checkOut: "12:00", description: "A jaw-dropping interior design hotel in a Victorian landmark building. The rooftop pool and bar have stunning city skyline views and become the city's hottest gathering spot on warm evenings.", tags: ["design", "rooftop pool", "victorian", "stylish"] },
     { name: "HI San Francisco Fisherman's Wharf", category: "budget", address: "Fort Mason, Building 240, Marina", city: "San Francisco", lat: 37.8065, lng: -122.4246, rating: 4.3, reviewCount: 6200, pricePerNight: 55, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1521783988139-89397d761dce?w=800", images: ["https://images.unsplash.com/photo-1521783988139-89397d761dce?w=800"], amenities: ["wifi", "kitchen", "dining room", "marina views", "lockers", "tours"], phone: "+1-415-771-7277", website: "https://www.hiusa.org", checkIn: "15:00", checkOut: "11:00", description: "Possibly America's most spectacularly located hostel—inside the Fort Mason complex with views of the Golden Gate Bridge and Alcatraz. Private rooms and dorms available.", tags: ["hostel", "budget", "fort mason", "bay views", "golden gate"] },
-  ]));
+  ]), (row) => [row.city, row.name]));
 
   // ─── ACTIVITIES ────────────────────────────────────────────────────────────
-  await db.insert(activitiesTable).values(withSearchText("activities", withStructuredHours([
+  await upsertSeedRows(activitiesTable, activitiesTable.externalId, withExternalId("activity", withSearchText("activities", withStructuredHours([
     // MUMBAI
     { name: "Dharavi Slum Walking Tour", category: "cultural", address: "Dharavi, Mumbai", city: "Mumbai", lat: 19.0411, lng: 72.8564, description: "A sensitively led walking tour through Asia's largest urban township, exploring its thriving leather, pottery, and recycling industries. Led by local guides from Dharavi.", durationMinutes: 120, price: 600, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1598618443855-232ee0f819f6?w=800", images: ["https://images.unsplash.com/photo-1598618443855-232ee0f819f6?w=800"], rating: 4.8, reviewCount: 3400, openingHours: "Daily 9am-1pm", bookingUrl: "https://www.realitytoursandtravel.com", tags: ["walking tour", "cultural", "dharavi", "community"] },
     { name: "Koli Village Heritage Walk", category: "cultural", address: "Koliwada, Mahim", city: "Mumbai", lat: 19.0445, lng: 72.8391, description: "Explore Mumbai's indigenous fishing communities—the Kolis—who have inhabited these shores for centuries. See traditional boats, dried fish markets, and century-old temples.", durationMinutes: 90, price: 500, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800", images: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800"], rating: 4.6, reviewCount: 1200, openingHours: "Tue-Sun 7am-10am", tags: ["heritage", "fishing", "community", "morning"] },
@@ -461,10 +494,10 @@ async function seed() {
     { name: "Mission District Food & Mural Walking Tour", category: "tour", address: "16th Street BART Station, Mission District", city: "San Francisco", lat: 37.7648, lng: -122.4194, description: "A 2.5-hour walk through the Mission's food paradise—taquerias, panaderías, and the famous Clarion Alley murals. Tastings of 7+ stops including La Lengua tacos and Dandelion chocolate.", durationMinutes: 150, price: 59, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800", images: ["https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800"], rating: 4.8, reviewCount: 4200, openingHours: "Sat-Sun 11am-1:30pm", bookingUrl: "https://www.sftours.com", tags: ["food tour", "mission district", "murals", "tacos", "latin"] },
     { name: "Sea Kayaking in the Bay", category: "adventure", address: "Sausalito, Marin County", city: "San Francisco", lat: 37.8590, lng: -122.4852, description: "Paddle the San Francisco Bay with spectacular views of the Golden Gate Bridge, Alcatraz, and the city skyline. Expert guides lead 2-hour tours from Sausalito.", durationMinutes: 120, price: 72, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800", images: ["https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800"], rating: 4.8, reviewCount: 2800, openingHours: "Daily 9am-11am, 1pm-3pm", bookingUrl: "https://www.seatrek.com", tags: ["kayaking", "golden gate", "bay", "outdoor", "sausalito"] },
     { name: "Muir Woods & Wine Country Day Tour", category: "adventure", address: "Union Square, Geary Street", city: "San Francisco", lat: 37.7879, lng: -122.4074, description: "Explore the ancient redwood forest of Muir Woods (permit included) then head to Sonoma Valley for wine tastings at 2 boutique wineries. Includes hotel pickup.", durationMinutes: 480, price: 145, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800", images: ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800"], rating: 4.9, reviewCount: 6700, openingHours: "Daily 8am-5pm", bookingUrl: "https://www.citydaytrips.com", tags: ["day trip", "redwoods", "muir woods", "wine", "sonoma"] },
-  ])));
+  ])), (row) => [row.city, row.name]));
 
   // ─── TRANSIT LINES ──────────────────────────────────────────────────────────
-  const transitLines = await db.insert(transitLinesTable).values([
+  const transitLines = (await upsertSeedRows(transitLinesTable, transitLinesTable.externalId, withExternalId("transit-line", [
     // MUMBAI
     { name: "Western Railway", shortName: "WR", type: "suburban_rail", city: "Mumbai", color: "#ef4444", from: "Churchgate", to: "Dahanu Road", stops: ["Churchgate","Marine Lines","Charni Road","Grant Road","Mumbai Central","Dadar","Bandra","Andheri","Borivali","Virar","Dahanu Road"], frequency: "Every 3-5 min (peak)", firstTrain: "04:10", lastTrain: "01:15", fare: 5, currency: "INR", operatedBy: "Western Railway / Mumbai Suburban", tags: ["suburban", "crowded", "frequent", "north-south"] },
     { name: "Central Railway", shortName: "CR", type: "suburban_rail", city: "Mumbai", color: "#f97316", from: "CSMT", to: "Kasara", stops: ["CSMT","Masjid","Byculla","Dadar","Kurla","Ghatkopar","Mulund","Thane","Kalyan","Kasara"], frequency: "Every 3-5 min (peak)", firstTrain: "04:00", lastTrain: "01:00", fare: 5, currency: "INR", operatedBy: "Central Railway", tags: ["suburban", "frequent", "east-west"] },
@@ -486,12 +519,12 @@ async function seed() {
     { name: "Muni Metro N Judah", shortName: "MUN", type: "tram", city: "San Francisco", color: "#3b82f6", from: "Caltrain 4th & King", to: "Ocean Beach", stops: ["4th & King","22nd St","Potrero","Church","Duboce & Church","Carl & Cole","Parnassus","Irving & 9th","Irving & 6th","Irving & 4th","Irving & 2nd","Ocean Beach"], frequency: "Every 8-12 min", firstTrain: "05:00", lastTrain: "01:00", fare: 3.00, currency: "USD", operatedBy: "SFMTA", tags: ["Muni", "light rail", "Inner Sunset", "Ocean Beach"] },
     { name: "Muni 38 Geary", shortName: "M38", type: "bus", city: "San Francisco", color: "#f97316", from: "Transbay Transit Center", to: "Point Lobos", stops: ["Transbay Center","1st St","3rd St","5th St","7th St","10th St","Fillmore","Divisadero","Masonic","Stanyan","Arguello","Park Presidio","8th Ave","25th Ave","33rd Ave","43rd Ave","48th Ave","Point Lobos"], frequency: "Every 5-8 min", firstTrain: "05:00", lastTrain: "00:30", fare: 3.00, currency: "USD", operatedBy: "SFMTA", tags: ["Muni", "bus", "Geary", "Richmond District", "frequent"] },
     { name: "BART Yellow Antioch–SFO", shortName: "BYEL", type: "metro", city: "San Francisco", color: "#f59e0b", from: "Antioch", to: "SFO / Millbrae", stops: ["Antioch","Pittsburg Center","Pittsburg Bay Point","North Concord","Concord","Pleasant Hill","Walnut Creek","Lafayette","Orinda","Rockridge","19th St Oakland","MacArthur","Downtown Berkeley","North Berkeley","El Cerrito Plaza","El Cerrito Del Norte","Richmond","Embarcadero","Montgomery St","Powell St","Civic Center","SFO"], frequency: "Every 15-20 min", firstTrain: "05:00", lastTrain: "00:00", fare: 2.60, currency: "USD", operatedBy: "BART", tags: ["BART", "airport", "east bay", "contra costa"] },
-  ]).returning();
+  ], (row) => [row.city, row.shortName ?? row.name]))) as unknown as { id: number; shortName: string | null }[];
 
   const lineByShortName = Object.fromEntries(transitLines.map(l => [l.shortName!, l]));
 
   // ─── TRANSIT ROUTES (common commuter journeys) ───────────────────────────────
-  await db.insert(transitRoutesTable).values([
+  await upsertSeedRows(transitRoutesTable, transitRoutesTable.externalId, withExternalId("transit-route", [
     // MUMBAI
     { lineId: lineByShortName["WR"].id, lineName: "Western Railway", lineType: "suburban_rail", lineColor: "#ef4444", city: "Mumbai", from: "Churchgate", to: "Andheri", stops: ["Churchgate","Marine Lines","Charni Road","Grant Road","Mumbai Central","Mahalaxmi","Lower Parel","Dadar","Mahim","Bandra","Khar Road","Santacruz","Vile Parle","Andheri"], durationMinutes: 40, fare: 10, currency: "INR", transfers: 0, transferDetails: [], tips: "Board from Platform 1-4 at Churchgate. Avoid 8–10am and 6–8pm peak hours — extremely crowded. First class costs ₹45 but is far less crowded." },
     { lineId: lineByShortName["WR"].id, lineName: "Western Railway", lineType: "suburban_rail", lineColor: "#ef4444", city: "Mumbai", from: "Andheri", to: "Borivali", stops: ["Andheri","Jogeshwari","Ram Mandir","Goregaon","Malad","Kandivali","Borivali"], durationMinutes: 22, fare: 10, currency: "INR", transfers: 0, transferDetails: [], tips: "Trains run every 3 minutes during peak hours. Ladies compartments are mid-train. Stand near the correct door for your exit side." },
@@ -513,10 +546,10 @@ async function seed() {
     { lineId: lineByShortName["MUN"].id, lineName: "Muni N Judah", lineType: "tram", lineColor: "#3b82f6", city: "San Francisco", from: "Church St", to: "Ocean Beach", stops: ["Church","Duboce & Church","Cole & Carl","Parnassus","Irving & 9th","Irving & 6th","Irving & 4th","Irving & 2nd","Ocean Beach"], durationMinutes: 18, fare: 3.00, currency: "USD", transfers: 0, transferDetails: [], tips: "Runs underground from Church to Cole Valley then above ground through the Inner Sunset. Great for a beach day." },
     { lineId: lineByShortName["M38"].id, lineName: "Muni 38 Geary Rapid", lineType: "bus", lineColor: "#f97316", city: "San Francisco", from: "Downtown", to: "Richmond District", stops: ["Transbay Center","5th St","10th St","Fillmore","Divisadero","Masonic","Stanyan","Arguello","Park Presidio","25th Ave","43rd Ave"], durationMinutes: 35, fare: 3.00, currency: "USD", transfers: 0, transferDetails: [], tips: "Take the 38R Rapid — skips local stops. Very frequent. Check real-time arrivals on the Muni app or 511.org." },
     { lineId: lineByShortName["BRML"].id, lineName: "BART + Muni Transfer", lineType: "metro", lineColor: "#ef4444", city: "San Francisco", from: "Embarcadero BART", to: "Golden Gate Park", stops: ["Embarcadero","Montgomery St","Powell St","Civic Center","Muni N Judah outbound","Carl & Cole","Irving & 9th Ave"], durationMinutes: 28, fare: 5.50, currency: "USD", transfers: 1, transferDetails: ["At Civic Center: exit BART, take Muni Metro N Judah outbound — alight at 9th Ave for park entrance"], tips: "Clipper Card covers both BART and Muni with a free 90-min Muni transfer. 9th Ave exit puts you right at Golden Gate Park." },
-  ]);
+  ], (row) => [row.city, row.lineName, row.from, row.to]));
 
   // ─── SPORTS & FITNESS ACTIVITIES ──────────────────────────────────────────
-  await db.insert(activitiesTable).values(withSearchText("activities", withStructuredHours([
+  await upsertSeedRows(activitiesTable, activitiesTable.externalId, withExternalId("activity", withSearchText("activities", withStructuredHours([
     // MUMBAI — Fitness
     { name: "Cult.fit Bandra", category: "fitness", address: "Hill Road, Bandra West, Mumbai", city: "Mumbai", lat: 19.0596, lng: 72.8295, description: "Mumbai's most popular fitness chain. Classes include yoga, Zumba, HIIT, and strength training. Drop-in classes or monthly memberships available.", durationMinutes: 60, price: 499, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", images: ["https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800"], rating: 4.5, reviewCount: 3200, openingHours: "Daily 5:30am–10pm", bookingUrl: "https://cult.fit", tags: ["gym", "yoga", "crossfit", "hiit", "classes"] },
     { name: "Gold's Gym Lower Parel", category: "fitness", address: "High Street Phoenix, Lower Parel, Mumbai", city: "Mumbai", lat: 18.9979, lng: 72.8259, description: "International gym brand with state-of-the-art equipment, free weights, cardio machines, and personal training. Day passes available.", durationMinutes: 90, price: 600, currency: "INR", imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800", images: ["https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800"], rating: 4.3, reviewCount: 1800, openingHours: "Mon–Sat 6am–11pm, Sun 7am–9pm", tags: ["gym", "weights", "cardio", "personal training"] },
@@ -559,31 +592,212 @@ async function seed() {
     // SAN FRANCISCO — Outdoor
     { name: "Embarcadero to Fort Mason Run", category: "outdoor", address: "Ferry Building, Embarcadero, San Francisco", city: "San Francisco", lat: 37.7955, lng: -122.3937, description: "The city's most scenic running route: 10 km from the Ferry Building, along the waterfront, past Fisherman's Wharf to Fort Mason with jaw-dropping bay and Alcatraz views.", durationMinutes: 60, price: 0, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", images: ["https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800"], rating: 4.9, reviewCount: 9800, openingHours: "24/7", tags: ["running", "outdoor", "waterfront", "free", "bay", "alcatraz"] },
     { name: "Marin Headlands Hiking", category: "outdoor", address: "Marin Headlands Visitor Center, Sausalito", city: "San Francisco", lat: 37.8325, lng: -122.5102, description: "Just across the Golden Gate Bridge, the Marin Headlands offer 100+ miles of trails from easy coastal walks to strenuous ridge hikes. Spectacular bay and city views.", durationMinutes: 240, price: 0, currency: "USD", imageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800", images: ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800"], rating: 4.9, reviewCount: 12600, openingHours: "Sunrise to sunset", tags: ["hiking", "outdoor", "free", "marin", "golden gate", "views"] },
-  ])));
+  ])), (row) => [row.city, row.name]));
 
   // ─── SPORTS EVENTS ──────────────────────────────────────────────────────────
-  await db.insert(eventsTable).values(withSearchText("events", [
-    { title: "Mumbai Indians vs CSK — IPL 2025", description: "The biggest rivalry in Indian cricket as Mumbai Indians host Chennai Super Kings at Wankhede Stadium. An electrifying night match under floodlights.", category: "sports", venue: "Wankhede Stadium", address: "Marine Lines, Mumbai", city: "Mumbai", lat: 18.9383, lng: 72.8250, startDate: new Date("2025-04-15T19:30:00+05:30"), endDate: new Date("2025-04-15T23:30:00+05:30"), price: 1500, isFree: false, imageUrl: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800", bookingUrl: "https://www.bookmyshow.com", tags: ["cricket", "IPL", "live", "wankhede"] },
-    { title: "Mumbai Marathon 2025", description: "One of Asia's most popular marathons with 42K full, 21K half, 10K, and Dream Run categories. Route covers iconic landmarks including the Sea Link and Marine Drive.", category: "sports", venue: "CST, Mumbai", address: "Chhatrapati Shivaji Terminus, Fort, Mumbai", city: "Mumbai", lat: 18.9402, lng: 72.8353, startDate: new Date("2025-01-19T05:00:00+05:30"), endDate: new Date("2025-01-19T14:00:00+05:30"), price: 2000, isFree: false, imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", bookingUrl: "https://www.procamrunning.in", tags: ["marathon", "running", "race", "iconic"] },
-    { title: "Bengaluru FC vs Mumbai City FC — ISL", description: "Indian Super League match at Sree Kanteerava Stadium. Bengaluru FC's passionate fanbase creates an incredible atmosphere for this southern derby.", category: "sports", venue: "Sree Kanteerava Outdoor Stadium", address: "Kasturba Road, Bangalore", city: "Bangalore", lat: 12.9774, lng: 77.5942, startDate: new Date("2025-02-08T19:30:00+05:30"), endDate: new Date("2025-02-08T22:00:00+05:30"), price: 500, isFree: false, imageUrl: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800", bookingUrl: "https://www.bookmyshow.com", tags: ["football", "ISL", "soccer", "live", "stadium"] },
-    { title: "Bangalore Open Badminton Championship", description: "State-level open badminton tournament at Kanteerava Indoor Stadium. Open to players of all age groups. Spectacular for spectators too.", category: "sports", venue: "Kanteerava Indoor Stadium", address: "Kasturba Road, Bangalore", city: "Bangalore", lat: 12.9774, lng: 77.5942, startDate: new Date("2025-03-22T08:00:00+05:30"), endDate: new Date("2025-03-24T18:00:00+05:30"), price: 200, isFree: false, imageUrl: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800", tags: ["badminton", "tournament", "championship", "indoor"] },
-    { title: "NYC Half Marathon — Central Park", description: "NYRR's iconic half marathon through the heart of Central Park. One of the most scenic 13.1-mile routes in the world with 20,000+ runners and incredible crowd energy.", category: "sports", venue: "Central Park", address: "Central Park South, Manhattan", city: "New York City", lat: 40.7829, lng: -73.9654, startDate: new Date("2025-03-16T07:00:00-04:00"), endDate: new Date("2025-03-16T13:00:00-04:00"), price: 80, isFree: false, imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", bookingUrl: "https://www.nyrr.org", tags: ["marathon", "half marathon", "running", "central park", "race"] },
-    { title: "NY Knicks vs Boston Celtics — NBA", description: "The biggest rivalry in the Eastern Conference. Watch the NY Knicks take on the Celtics at Madison Square Garden — the world's most famous arena.", category: "sports", venue: "Madison Square Garden", address: "4 Pennsylvania Plaza, Midtown Manhattan", city: "New York City", lat: 40.7505, lng: -73.9934, startDate: new Date("2025-02-20T19:30:00-05:00"), endDate: new Date("2025-02-20T22:30:00-05:00"), price: 180, isFree: false, imageUrl: "https://images.unsplash.com/photo-1546519638405-a9d1b7f9ac19?w=800", bookingUrl: "https://www.msg.com", tags: ["basketball", "NBA", "knicks", "MSG", "live"] },
-    { title: "San Francisco Marathon 2025", description: "The iconic SF Marathon crosses the Golden Gate Bridge — a bucket-list running experience. Full marathon, half, and 5K options with breathtaking views.", category: "sports", venue: "Embarcadero, San Francisco", address: "Ferry Building, Embarcadero, SF", city: "San Francisco", lat: 37.7955, lng: -122.3937, startDate: new Date("2025-07-27T05:30:00-07:00"), endDate: new Date("2025-07-27T14:00:00-07:00"), price: 160, isFree: false, imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", bookingUrl: "https://www.thesfmarathon.com", tags: ["marathon", "running", "golden gate", "race", "iconic"] },
-    { title: "Golden State Warriors vs Lakers — NBA", description: "The NBA's marquee West Coast rivalry. Watch the Warriors take on the LA Lakers at the Chase Center with 18,000 roaring fans.", category: "sports", venue: "Chase Center", address: "1 Warriors Way, Mission Bay, SF", city: "San Francisco", lat: 37.7681, lng: -122.3877, startDate: new Date("2025-02-06T19:30:00-08:00"), endDate: new Date("2025-02-06T22:30:00-08:00"), price: 250, isFree: false, imageUrl: "https://images.unsplash.com/photo-1546519638405-a9d1b7f9ac19?w=800", bookingUrl: "https://www.nba.com/warriors", tags: ["basketball", "NBA", "warriors", "chase center", "live"] },
-  ]));
+  await upsertSeedRows(eventsTable, eventsTable.externalId, withExternalId("event", withSearchText("events", [
+    { title: "Mumbai Indians vs CSK — IPL", description: "The biggest rivalry in Indian cricket as Mumbai Indians host Chennai Super Kings at Wankhede Stadium. An electrifying night match under floodlights.", category: "sports", venue: "Wankhede Stadium", address: "Marine Lines, Mumbai", city: "Mumbai", lat: 18.9383, lng: 72.8250, startDate: h(inDays(21), 19.5), endDate: h(inDays(21), 23.5), price: 1500, isFree: false, imageUrl: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800", bookingUrl: "https://www.bookmyshow.com", tags: ["cricket", "IPL", "live", "wankhede"] },
+    { title: "Mumbai Marathon", description: "One of Asia's most popular marathons with 42K full, 21K half, 10K, and Dream Run categories. Route covers iconic landmarks including the Sea Link and Marine Drive.", category: "sports", venue: "CST, Mumbai", address: "Chhatrapati Shivaji Terminus, Fort, Mumbai", city: "Mumbai", lat: 18.9402, lng: 72.8353, startDate: h(inDays(45), 5), endDate: h(inDays(45), 14), price: 2000, isFree: false, imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", bookingUrl: "https://www.procamrunning.in", tags: ["marathon", "running", "race", "iconic"] },
+    { title: "Bengaluru FC vs Mumbai City FC — ISL", description: "Indian Super League match at Sree Kanteerava Stadium. Bengaluru FC's passionate fanbase creates an incredible atmosphere for this southern derby.", category: "sports", venue: "Sree Kanteerava Outdoor Stadium", address: "Kasturba Road, Bangalore", city: "Bangalore", lat: 12.9774, lng: 77.5942, startDate: h(inDays(28), 19.5), endDate: h(inDays(28), 22), price: 500, isFree: false, imageUrl: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800", bookingUrl: "https://www.bookmyshow.com", tags: ["football", "ISL", "soccer", "live", "stadium"] },
+    { title: "Bangalore Open Badminton Championship", description: "State-level open badminton tournament at Kanteerava Indoor Stadium. Open to players of all age groups. Spectacular for spectators too.", category: "sports", venue: "Kanteerava Indoor Stadium", address: "Kasturba Road, Bangalore", city: "Bangalore", lat: 12.9774, lng: 77.5942, startDate: h(inDays(35), 8), endDate: h(inDays(37), 18), price: 200, isFree: false, imageUrl: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800", tags: ["badminton", "tournament", "championship", "indoor"] },
+    { title: "NYC Half Marathon — Central Park", description: "NYRR's iconic half marathon through the heart of Central Park. One of the most scenic 13.1-mile routes in the world with 20,000+ runners and incredible crowd energy.", category: "sports", venue: "Central Park", address: "Central Park South, Manhattan", city: "New York City", lat: 40.7829, lng: -73.9654, startDate: h(inDays(40), 7), endDate: h(inDays(40), 13), price: 80, isFree: false, imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", bookingUrl: "https://www.nyrr.org", tags: ["marathon", "half marathon", "running", "central park", "race"] },
+    { title: "NY Knicks vs Boston Celtics — NBA", description: "The biggest rivalry in the Eastern Conference. Watch the NY Knicks take on the Celtics at Madison Square Garden — the world's most famous arena.", category: "sports", venue: "Madison Square Garden", address: "4 Pennsylvania Plaza, Midtown Manhattan", city: "New York City", lat: 40.7505, lng: -73.9934, startDate: h(inDays(18), 19.5), endDate: h(inDays(18), 22.5), price: 180, isFree: false, imageUrl: "https://images.unsplash.com/photo-1546519638405-a9d1b7f9ac19?w=800", bookingUrl: "https://www.msg.com", tags: ["basketball", "NBA", "knicks", "MSG", "live"] },
+    { title: "San Francisco Marathon", description: "The iconic SF Marathon crosses the Golden Gate Bridge — a bucket-list running experience. Full marathon, half, and 5K options with breathtaking views.", category: "sports", venue: "Embarcadero, San Francisco", address: "Ferry Building, Embarcadero, SF", city: "San Francisco", lat: 37.7955, lng: -122.3937, startDate: h(inDays(52), 5.5), endDate: h(inDays(52), 14), price: 160, isFree: false, imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", bookingUrl: "https://www.thesfmarathon.com", tags: ["marathon", "running", "golden gate", "race", "iconic"] },
+    { title: "Golden State Warriors vs Lakers — NBA", description: "The NBA's marquee West Coast rivalry. Watch the Warriors take on the LA Lakers at the Chase Center with 18,000 roaring fans.", category: "sports", venue: "Chase Center", address: "1 Warriors Way, Mission Bay, SF", city: "San Francisco", lat: 37.7681, lng: -122.3877, startDate: h(inDays(24), 19.5), endDate: h(inDays(24), 22.5), price: 250, isFree: false, imageUrl: "https://images.unsplash.com/photo-1546519638405-a9d1b7f9ac19?w=800", bookingUrl: "https://www.nba.com/warriors", tags: ["basketball", "NBA", "warriors", "chase center", "live"] },
+  ]), (row) => [row.city, row.title]));
 
   // ─── FITNESS DEALS ──────────────────────────────────────────────────────────
-  await db.insert(dealsTable).values(withSearchText("deals", [
-    { title: "Cult.fit — 20% Off Monthly Pass", description: "Get 20% off your first Cult.fit monthly membership. Includes unlimited classes across yoga, HIIT, boxing, and strength training at all Mumbai centres.", placeName: "Cult.fit Mumbai", category: "fitness", discountPercent: 20, discountText: "20% OFF first month", originalPrice: 2999, dealPrice: 2399, code: "INMYCITY20", expiresAt: new Date("2025-12-31"), imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", city: "Mumbai", lat: 19.0596, lng: 72.8295 },
-    { title: "NSCI — Day Pass Combo (Gym + Pool)", description: "Special day pass for NSCI Dome: access the gym, swimming pool, and badminton courts for an entire day. Perfect for a full fitness experience in Worli.", placeName: "NSCI Dome", category: "fitness", discountPercent: 25, discountText: "25% OFF day pass", originalPrice: 800, dealPrice: 600, code: "NSCI600", expiresAt: new Date("2025-09-30"), imageUrl: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800", city: "Mumbai", lat: 19.0082, lng: 72.8178 },
-    { title: "Cult.fit Bangalore — Free Trial Week", description: "First week absolutely free at any Cult.fit centre in Bangalore. Includes unlimited class bookings across all formats for 7 days. No credit card required.", placeName: "Cult.fit Bangalore", category: "fitness", discountPercent: 100, discountText: "FREE 7-day trial", originalPrice: 799, dealPrice: 0, code: "BLRTRIAL", expiresAt: new Date("2025-12-31"), imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", city: "Bangalore", lat: 12.9352, lng: 77.6245 },
-    { title: "Decathlon Bangalore — 15% Off Sports Gear", description: "Exclusive inMyCity deal: 15% off all fitness and sports equipment at Decathlon stores across Bangalore. Valid on clothing, shoes, gym equipment, and rackets.", placeName: "Decathlon Bangalore", category: "fitness", discountPercent: 15, discountText: "15% OFF all sports gear", code: "DECA15", expiresAt: new Date("2025-08-31"), imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800", city: "Bangalore", lat: 12.9352, lng: 77.6245 },
-    { title: "Chelsea Piers — Visitor Day Pass", description: "Full-day access to Chelsea Piers' fitness club: cardio, weights, pool, and climbing wall. New York's most complete sports destination on the Hudson River.", placeName: "Chelsea Piers", category: "fitness", discountPercent: 30, discountText: "30% OFF day pass", originalPrice: 70, dealPrice: 49, code: "CHELSEA49", expiresAt: new Date("2025-10-31"), imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", city: "New York City", lat: 40.7479, lng: -74.0076 },
-    { title: "CrossFit NYC — Drop-In 3-Session Pack", description: "Three drop-in CrossFit sessions at any participating NYC box for a flat rate. Try WODs across Brooklyn, Manhattan, and Queens locations.", placeName: "CrossFit NYC", category: "fitness", discountPercent: 20, discountText: "3 sessions — 20% OFF", originalPrice: 105, dealPrice: 84, code: "CFNYC3", expiresAt: new Date("2025-11-30"), imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800", city: "New York City", lat: 40.6698, lng: -73.9834 },
-    { title: "24 Hour Fitness SF — Week Pass", description: "One full week of unlimited gym access at any 24 Hour Fitness in San Francisco. Full equipment access, group classes, and locker rooms included.", placeName: "24 Hour Fitness", category: "fitness", discountPercent: 40, discountText: "40% OFF week pass", originalPrice: 40, dealPrice: 24, code: "SF24W", expiresAt: new Date("2025-09-30"), imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800", city: "San Francisco", lat: 37.7749, lng: -122.4194 },
-    { title: "Archipelago CrossFit SF — 2-Week Intro", description: "Two weeks of unlimited CrossFit classes at Archipelago in the Mission. Perfect for first-timers wanting to experience SF's best CrossFit community.", placeName: "Archipelago CrossFit", category: "fitness", discountPercent: 35, discountText: "35% OFF 2-week intro", originalPrice: 150, dealPrice: 99, code: "ARCHI99", expiresAt: new Date("2025-12-31"), imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", city: "San Francisco", lat: 37.7649, lng: -122.4196 },
-  ]));
+  await upsertSeedRows(dealsTable, dealsTable.externalId, withExternalId("deal", withSearchText("deals", [
+    { title: "Cult.fit — 20% Off Monthly Pass", description: "Get 20% off your first Cult.fit monthly membership. Includes unlimited classes across yoga, HIIT, boxing, and strength training at all Mumbai centres.", placeName: "Cult.fit Mumbai", category: "fitness", discountPercent: 20, discountText: "20% OFF first month", originalPrice: 2999, dealPrice: 2399, code: "INMYCITY20", expiresAt: inDays(90), imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", city: "Mumbai", lat: 19.0596, lng: 72.8295 },
+    { title: "NSCI — Day Pass Combo (Gym + Pool)", description: "Special day pass for NSCI Dome: access the gym, swimming pool, and badminton courts for an entire day. Perfect for a full fitness experience in Worli.", placeName: "NSCI Dome", category: "fitness", discountPercent: 25, discountText: "25% OFF day pass", originalPrice: 800, dealPrice: 600, code: "NSCI600", expiresAt: inDays(45), imageUrl: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800", city: "Mumbai", lat: 19.0082, lng: 72.8178 },
+    { title: "Cult.fit Bangalore — Free Trial Week", description: "First week absolutely free at any Cult.fit centre in Bangalore. Includes unlimited class bookings across all formats for 7 days. No credit card required.", placeName: "Cult.fit Bangalore", category: "fitness", discountPercent: 100, discountText: "FREE 7-day trial", originalPrice: 799, dealPrice: 0, code: "BLRTRIAL", expiresAt: inDays(90), imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", city: "Bangalore", lat: 12.9352, lng: 77.6245 },
+    { title: "Decathlon Bangalore — 15% Off Sports Gear", description: "Exclusive inMyCity deal: 15% off all fitness and sports equipment at Decathlon stores across Bangalore. Valid on clothing, shoes, gym equipment, and rackets.", placeName: "Decathlon Bangalore", category: "fitness", discountPercent: 15, discountText: "15% OFF all sports gear", code: "DECA15", expiresAt: inDays(30), imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800", city: "Bangalore", lat: 12.9352, lng: 77.6245 },
+    { title: "Chelsea Piers — Visitor Day Pass", description: "Full-day access to Chelsea Piers' fitness club: cardio, weights, pool, and climbing wall. New York's most complete sports destination on the Hudson River.", placeName: "Chelsea Piers", category: "fitness", discountPercent: 30, discountText: "30% OFF day pass", originalPrice: 70, dealPrice: 49, code: "CHELSEA49", expiresAt: inDays(60), imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", city: "New York City", lat: 40.7479, lng: -74.0076 },
+    { title: "CrossFit NYC — Drop-In 3-Session Pack", description: "Three drop-in CrossFit sessions at any participating NYC box for a flat rate. Try WODs across Brooklyn, Manhattan, and Queens locations.", placeName: "CrossFit NYC", category: "fitness", discountPercent: 20, discountText: "3 sessions — 20% OFF", originalPrice: 105, dealPrice: 84, code: "CFNYC3", expiresAt: inDays(75), imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800", city: "New York City", lat: 40.6698, lng: -73.9834 },
+    { title: "24 Hour Fitness SF — Week Pass", description: "One full week of unlimited gym access at any 24 Hour Fitness in San Francisco. Full equipment access, group classes, and locker rooms included.", placeName: "24 Hour Fitness", category: "fitness", discountPercent: 40, discountText: "40% OFF week pass", originalPrice: 40, dealPrice: 24, code: "SF24W", expiresAt: inDays(45), imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800", city: "San Francisco", lat: 37.7749, lng: -122.4194 },
+    { title: "Archipelago CrossFit SF — 2-Week Intro", description: "Two weeks of unlimited CrossFit classes at Archipelago in the Mission. Perfect for first-timers wanting to experience SF's best CrossFit community.", placeName: "Archipelago CrossFit", category: "fitness", discountPercent: 35, discountText: "35% OFF 2-week intro", originalPrice: 150, dealPrice: 99, code: "ARCHI99", expiresAt: inDays(90), imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", city: "San Francisco", lat: 37.7649, lng: -122.4196 },
+  ]), (row) => [row.city, row.title]));
+
+
+  // ─── NEWS SOURCES (the ingestion allowlist) ─────────────────────────────────
+  // Seeded inactive and without a feed URL on purpose: enabling a source is an editorial
+  // decision that requires checking the publisher's endpoint, not something a seed should
+  // make on someone's behalf. See `lib/news/allowlist.ts`.
+  await upsertSeedRows(
+    newsSourcesTable,
+    newsSourcesTable.slug,
+    MUMBAI_NEWS_SOURCES.map((source) => ({
+      slug: source.slug,
+      name: source.name,
+      kind: source.kind,
+      city: source.city,
+      homepageUrl: source.homepageUrl,
+      trustLabel: source.trustLabel,
+      defaultConfidence: source.defaultConfidence,
+      defaultCategory: source.defaultCategory,
+      // Inactive until someone verifies the publisher's feed URL. The column defaults to
+      // `true`, so leaving this out would silently enable ten unconfigured sources.
+      isActive: false,
+    })),
+  );
+
+  console.log(`Seeded ${MUMBAI_NEWS_SOURCES.length} news sources (inactive until a feed URL is verified)`);
+
+  // ─── CITY GUIDE HEADER ──────────────────────────────────────────────────────
+  // Currency is deliberately absent: `currencyFor` in @workspace/city-config resolves it, and
+  // a symbol stored here would be one more place for a city to be priced in the wrong money.
+  await upsertSeedRows(cityGuidesTable, cityGuidesTable.city, [
+    { city: "Mumbai", tagline: "The City of Dreams", knownFor: "Bollywood & Finance", tripLength: "3–5 Days", timezoneLabel: "IST +5:30", status: "published" },
+    { city: "Bangalore", tagline: "The Garden City", knownFor: "Tech Hub & Gardens", tripLength: "2–3 Days", timezoneLabel: "IST +5:30", status: "published" },
+    { city: "New York City", tagline: "The City That Never Sleeps", knownFor: "Culture & Skyline", tripLength: "5–7 Days", timezoneLabel: "EST −5:00", status: "published" },
+    { city: "San Francisco", tagline: "The City by the Bay", knownFor: "Tech & Bay Views", tripLength: "3–4 Days", timezoneLabel: "PST −8:00", status: "published" },
+  ]);
+
+  // ─── CITY FACTS ─────────────────────────────────────────────────────────────
+  await upsertSeedRows(
+    cityFactsTable,
+    cityFactsTable.externalId,
+    withExternalId("city-fact", [
+      // Mumbai — the practical strip
+      { city: "Mumbai", group: "essential", icon: "sun", label: "Best Season", value: "Nov – Feb", sortOrder: 1, status: "published" },
+      { city: "Mumbai", group: "essential", icon: "navigation", label: "Getting Around", value: "Local trains, Metro, autos", sortOrder: 2, status: "published" },
+      { city: "Mumbai", group: "essential", icon: "phone", label: "Emergency", value: "112", sortOrder: 3, status: "published" },
+      { city: "Mumbai", group: "essential", icon: "globe", label: "Language", value: "Marathi, Hindi, English", sortOrder: 4, status: "published" },
+      { city: "Mumbai", group: "essential", icon: "dollar-sign", label: "Tipping", value: "5–10% is common", sortOrder: 5, status: "published" },
+      { city: "Mumbai", group: "extra", icon: "credit-card", label: "Payments", value: "UPI everywhere, cards in restaurants, cash at stalls", sortOrder: 1, status: "published" },
+      { city: "Mumbai", group: "extra", icon: "cloud-rain", label: "Monsoon", value: "June to September. Plan indoor backups.", sortOrder: 2, status: "published" },
+      { city: "Mumbai", group: "extra", icon: "wifi", label: "Connectivity", value: "Prepaid SIM or eSIM; coverage is good citywide", sortOrder: 3, status: "published" },
+      { city: "Mumbai", group: "extra", icon: "shield", label: "Safety", value: "Crowds, not crime, are the usual risk. Watch bags on trains.", sortOrder: 4, status: "published" },
+      // Bangalore
+      { city: "Bangalore", group: "essential", icon: "sun", label: "Best Season", value: "Oct – Feb", sortOrder: 1, status: "published" },
+      { city: "Bangalore", group: "essential", icon: "navigation", label: "Getting Around", value: "Namma Metro & auto-rickshaw", sortOrder: 2, status: "published" },
+      { city: "Bangalore", group: "essential", icon: "phone", label: "Emergency", value: "112", sortOrder: 3, status: "published" },
+      { city: "Bangalore", group: "essential", icon: "globe", label: "Language", value: "Kannada, English, Hindi", sortOrder: 4, status: "published" },
+      { city: "Bangalore", group: "essential", icon: "dollar-sign", label: "Tipping", value: "5–10% is common", sortOrder: 5, status: "published" },
+      // New York City
+      { city: "New York City", group: "essential", icon: "sun", label: "Best Season", value: "Apr – Jun, Sep – Nov", sortOrder: 1, status: "published" },
+      { city: "New York City", group: "essential", icon: "navigation", label: "Getting Around", value: "Subway & bus", sortOrder: 2, status: "published" },
+      { city: "New York City", group: "essential", icon: "phone", label: "Emergency", value: "911", sortOrder: 3, status: "published" },
+      { city: "New York City", group: "essential", icon: "globe", label: "Language", value: "English, Spanish", sortOrder: 4, status: "published" },
+      { city: "New York City", group: "essential", icon: "dollar-sign", label: "Tipping", value: "18–20% is standard", sortOrder: 5, status: "published" },
+      // San Francisco
+      { city: "San Francisco", group: "essential", icon: "sun", label: "Best Season", value: "Sep – Nov", sortOrder: 1, status: "published" },
+      { city: "San Francisco", group: "essential", icon: "navigation", label: "Getting Around", value: "BART & Muni", sortOrder: 2, status: "published" },
+      { city: "San Francisco", group: "essential", icon: "phone", label: "Emergency", value: "911", sortOrder: 3, status: "published" },
+      { city: "San Francisco", group: "essential", icon: "globe", label: "Language", value: "English, Spanish", sortOrder: 4, status: "published" },
+      { city: "San Francisco", group: "essential", icon: "dollar-sign", label: "Tipping", value: "18–20% is standard", sortOrder: 5, status: "published" },
+    ], (row) => [row.city, row.group, row.label]),
+  );
+
+  // ─── INSIDER TIPS ───────────────────────────────────────────────────────────
+  await upsertSeedRows(
+    insiderTipsTable,
+    insiderTipsTable.externalId,
+    withExternalId("insider-tip", [
+      { city: "Mumbai", neighborhoodId: "juhu", icon: "clock", color: "#b45309", label: "Best timing", tip: "Juhu Beach before 7am belongs to walkers and the stray dogs. The vendors and the crowd arrive later.", sortOrder: 1, status: "published" },
+      { city: "Mumbai", neighborhoodId: "dadar", icon: "navigation", color: "#0369a1", label: "Local hack", tip: "Dadar is the one station on both the Western and Central lines. Almost any cross-city trip is one change there.", sortOrder: 2, status: "published" },
+      { city: "Mumbai", neighborhoodId: "fort", icon: "coffee", color: "#c2410c", label: "Food tip", tip: "The Irani cafes in Fort are a lunch institution and several close by 4pm. Britannia & Co. is the strictest about it.", sortOrder: 3, status: "published" },
+      { city: "Mumbai", neighborhoodId: "worli", icon: "map-pin", color: "#047857", label: "Hidden gem", tip: "Banganga Tank in Walkeshwar is a 12th-century stepwell in the middle of Malabar Hill, and almost nobody photographs it.", sortOrder: 4, status: "published" },
+      { city: "Mumbai", neighborhoodId: null, icon: "cloud-rain", color: "#4f46e5", label: "Monsoon tip", tip: "The hour after heavy rain stops is the best light Mumbai gets all year, and the streets are briefly empty.", sortOrder: 5, status: "published" },
+      { city: "Mumbai", neighborhoodId: null, icon: "credit-card", color: "#7c3aed", label: "Money tip", tip: "UPI works at almost every stall. Carry a little cash anyway — the oldest institutions are proudly cash-only.", sortOrder: 6, status: "published" },
+      { city: "Bangalore", neighborhoodId: null, icon: "clock", color: "#b45309", label: "Best timing", tip: "Cubbon Park on a weekday morning is the city's open-air office. It is a different place after 9am.", sortOrder: 1, status: "published" },
+      { city: "Bangalore", neighborhoodId: null, icon: "cloud-rain", color: "#4f46e5", label: "Weather tip", tip: "Carry a light jacket. Bangalore evenings drop eight to ten degrees, which catches out everyone from the rest of India.", sortOrder: 2, status: "published" },
+      { city: "New York City", neighborhoodId: null, icon: "navigation", color: "#0369a1", label: "Subway tip", tip: "The 7 train from Times Square to Flushing passes through more cuisines per stop than any food tour sells.", sortOrder: 1, status: "published" },
+      { city: "San Francisco", neighborhoodId: null, icon: "cloud-rain", color: "#4f46e5", label: "Weather tip", tip: "Pack a layer even in July. The Mission can be eight degrees warmer than the Sunset on the same afternoon.", sortOrder: 1, status: "published" },
+    ], (row) => [row.city, row.label, row.neighborhoodId]),
+  );
+
+  // ─── COMMUNITIES ────────────────────────────────────────────────────────────
+  // `memberCount` is left at its default of zero. It is a real counter maintained by the join
+  // route, and seeding it with a plausible-looking number would be inventing social proof.
+  await upsertSeedRows(
+    communitiesTable,
+    communitiesTable.externalId,
+    withExternalId("community", [
+      { slug: "mumbai-foodies", city: "Mumbai", name: "Mumbai Foodies", description: "Street eats, new openings and the arguments about which vada pav is actually best.", icon: "coffee", tags: ["Food", "Street Food", "Restaurants"], status: "published" },
+      { slug: "mumbai-local-train-riders", city: "Mumbai", name: "Local Train Riders", description: "Timings, megablocks, platform hacks and which carriage to board. Written by people who do it daily.", icon: "navigation", tags: ["Transit", "Western", "Central", "Harbour"], status: "published" },
+      { slug: "mumbai-monsoon-watch", city: "Mumbai", name: "Monsoon Watch", description: "Waterlogging reports, which roads to avoid, and what is still worth doing when it is pouring.", icon: "cloud-rain", tags: ["Monsoon", "Weather", "Civic"], status: "published" },
+      { slug: "mumbai-heritage-walks", city: "Mumbai", name: "Heritage Walks", description: "Fort, Kala Ghoda, Banganga and the Art Deco of Marine Drive, walked slowly and explained properly.", icon: "map", tags: ["Heritage", "Architecture", "Walks"], status: "published" },
+      { slug: "mumbai-runners", city: "Mumbai", name: "Mumbai Runners", description: "Marine Drive at 5am, Shivaji Park loops, and where to run when the air is bad.", icon: "activity", tags: ["Running", "Fitness", "Outdoors"], status: "published" },
+      { slug: "bandra-residents", city: "Mumbai", name: "Bandra Residents", description: "Hyperlocal notices, roadworks, small business openings and what the neighbourhood is arguing about.", icon: "home", tags: ["Bandra", "Neighbourhood", "Local"], status: "published" },
+    ], (row) => [row.slug]),
+  );
+
+  // ─── PULSE (editorial launch content) ───────────────────────────────────────
+  // No `mediaUrl`. Every image in the catalogue is still stock, and section 2.3 is explicit
+  // that a stock photo on a real named place destroys trust faster than no photo does. These
+  // publish as text cards until commissioned photography exists.
+  const publishedAt = new Date();
+  await upsertSeedRows(
+    pulsePostsTable,
+    pulsePostsTable.externalId,
+    withExternalId("pulse", [
+      { city: "Mumbai", tier: "official", authorName: "inMyCity Mumbai", authorHandle: "@inmycity.mumbai", location: "Mumbai", neighborhoodId: null, caption: "Every street-food stall in this app has been visited, GPS-pinned and had its hours checked on the day. When we have not verified something, we say so on the card rather than guessing.", filterTags: ["all", "food", "tips"], trustLabel: "verified", confidence: "high", source: "inMyCity editorial", isFeatured: true, status: "published", publishedAt, lastVerifiedAt: publishedAt },
+      { city: "Mumbai", tier: "local_expert", authorName: "inMyCity Transit Desk", authorHandle: "@inmycity.transit", location: "Dadar", neighborhoodId: "dadar", caption: "Dadar is the only station on both the Western and Central lines, which makes it the default change for almost any cross-city trip. Coming from Churchgate and heading to Thane? One change, not three.", filterTags: ["all", "transit", "tips"], trustLabel: "editorial", confidence: "high", source: "inMyCity editorial", status: "published", publishedAt, lastVerifiedAt: publishedAt },
+      { city: "Mumbai", tier: "local_expert", authorName: "inMyCity Food Desk", authorHandle: "@inmycity.food", location: "Ghatkopar", neighborhoodId: "ghatkopar", caption: "The Ghatkopar khau galli on Jawahar Road is almost entirely vegetarian and much of it is Jain. Worth knowing before you plan a night around it. It gets going after 6pm and is a five-minute walk from the station.", filterTags: ["all", "food", "tips"], trustLabel: "editorial", confidence: "high", source: "inMyCity editorial", status: "published", publishedAt, lastVerifiedAt: publishedAt },
+      { city: "Mumbai", tier: "official", authorName: "inMyCity Mumbai", authorHandle: "@inmycity.mumbai", location: "Mumbai", neighborhoodId: null, caption: "Monsoon plans: Lower Parel, Colaba and Fort are the three areas where an evening survives heavy rain without changing shape. Each neighbourhood page lists its own wet-weather backup.", filterTags: ["all", "tips"], trustLabel: "verified", confidence: "high", source: "inMyCity editorial", status: "published", publishedAt, lastVerifiedAt: publishedAt },
+      { city: "Mumbai", tier: "local_expert", authorName: "inMyCity Food Desk", authorHandle: "@inmycity.food", location: "Fort", neighborhoodId: "fort", caption: "Fort's Irani cafes are a lunch institution and several shut by four in the afternoon. Britannia & Co. is the strictest about it, and it is closed on Sundays along with most of the district.", filterTags: ["all", "food", "tips"], trustLabel: "editorial", confidence: "high", source: "inMyCity editorial", status: "published", publishedAt, lastVerifiedAt: publishedAt },
+    ], (row) => [row.city, row.authorHandle, row.caption.slice(0, 60)]),
+  );
+
+  // ─── Q&A (editorial launch content) ─────────────────────────────────────────
+  const qaQuestions = (await upsertSeedRows(
+    qaQuestionsTable,
+    qaQuestionsTable.externalId,
+    withExternalId("qa-question", [
+      { city: "Mumbai", question: "What is the fastest way from the airport to South Mumbai at 6pm?", body: "Landing at T2 on a weekday evening and staying near Colaba.", authorName: "inMyCity Editorial", tags: ["Transit", "Airport", "Traffic"], status: "published", publishedAt },
+      { city: "Mumbai", question: "Is the local train safe and sensible for a first-time visitor?", body: null, authorName: "inMyCity Editorial", tags: ["Transit", "Local Train", "First Visit"], status: "published", publishedAt },
+      { city: "Mumbai", question: "Where should I actually eat vada pav?", body: null, authorName: "inMyCity Editorial", tags: ["Food", "Street Food", "Vada Pav"], status: "published", publishedAt },
+      { city: "Mumbai", question: "What is worth doing when it is pouring?", body: null, authorName: "inMyCity Editorial", tags: ["Monsoon", "Rain", "Plans"], status: "published", publishedAt },
+      { city: "Mumbai", question: "Do I need cash, or is UPI enough?", body: null, authorName: "inMyCity Editorial", tags: ["Payments", "UPI", "Practical"], status: "published", publishedAt },
+    ], (row) => [row.city, row.question]),
+  )) as unknown as { id: number; question: string }[];
+
+  const questionIdByText = Object.fromEntries(qaQuestions.map((row) => [row.question, row.id]));
+
+  await upsertSeedRows(
+    qaAnswersTable,
+    qaAnswersTable.externalId,
+    withExternalId("qa-answer", [
+      {
+        questionId: questionIdByText["What is the fastest way from the airport to South Mumbai at 6pm?"],
+        body: "Avoid the Western Express Highway if you can. Metro Line 3 (the Aqua Line) runs underground from the airport terminals down through BKC and Worli toward Cuffe Parade — check which stretch is running on the day, because it opened in phases. By road at 6pm, budget 90 minutes or more to Colaba; the Atal Setu and the Coastal Road help only if your driver is already on them.",
+        authorName: "inMyCity Transit Desk", isAccepted: true, status: "published", publishedAt,
+      },
+      {
+        questionId: questionIdByText["Is the local train safe and sensible for a first-time visitor?"],
+        body: "Yes, outside peak hours. Between roughly 8–10am and 6–8:30pm the crowding is genuinely extreme and not worth attempting with luggage. Off-peak it is the fastest thing in the city. Buy a ticket before boarding — travelling without one is a fine — and note that the ladies' compartments are mid-train and enforced.",
+        authorName: "inMyCity Transit Desk", isAccepted: true, status: "published", publishedAt,
+      },
+      {
+        questionId: questionIdByText["Where should I actually eat vada pav?"],
+        body: "Ashok Vada Pav by Kirti College in Dadar is the one most people agree on, with dry garlic chutney and a fried chilli. Aaram opposite CSMT has been doing it since 1939 if you are in Fort, and Anand Stall in Vile Parle is the northern suburbs' version. All three are in this app with their hours.",
+        authorName: "inMyCity Food Desk", isAccepted: true, status: "published", publishedAt,
+      },
+      {
+        questionId: questionIdByText["What is worth doing when it is pouring?"],
+        body: "Lower Parel is the most reliable rain-proof evening in the city because nearly all of it is indoors. Fort and Colaba work too — the arcades, the museums and the Irani cafes were built for this weather. What does not work is anything sea-facing at high tide, or a plan that depends on a specific road being passable.",
+        authorName: "inMyCity Editorial", isAccepted: true, status: "published", publishedAt,
+      },
+      {
+        questionId: questionIdByText["Do I need cash, or is UPI enough?"],
+        body: "UPI is accepted almost everywhere, including most street stalls. Carry a few hundred rupees anyway: a handful of the oldest institutions are proudly cash-only, and Britannia & Co. is the famous example.",
+        authorName: "inMyCity Editorial", isAccepted: true, status: "published", publishedAt,
+      },
+    ], (row) => [row.questionId, row.body.slice(0, 60)]),
+  );
+
+  // `answerCount` is maintained by the moderation route when an answer is published; the
+  // seeded answers go straight to `published`, so set the count to match what is there.
+  for (const question of qaQuestions) {
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(qaAnswersTable)
+      .where(and(eq(qaAnswersTable.questionId, question.id), eq(qaAnswersTable.status, "published")));
+    await db.update(qaQuestionsTable).set({ answerCount: total }).where(eq(qaQuestionsTable.id, question.id));
+  }
+
+  console.log("Seeded Pulse, Q&A, communities, city facts and insider tips");
 
   console.log("Database seeded successfully!");
 }

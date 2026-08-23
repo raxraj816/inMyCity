@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, doublePrecision, integer, real, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, doublePrecision, integer, real, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -34,6 +34,10 @@ export const placesTable = pgTable(
      * single indexed predicate instead of six list downloads filtered in the client.
      */
     searchText: text("search_text"),
+    /** Stable key from the content source. Idempotent seeding and admin imports match on it. */
+    externalId: text("external_id"),
+    /** When someone last confirmed this row's hours, phone, address and price against reality. */
+    lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
@@ -42,6 +46,8 @@ export const placesTable = pgTable(
     index("places_category_idx").on(table.category),
     index("places_city_category_idx").on(table.city, table.category),
     index("places_lat_lng_idx").on(table.lat, table.lng),
+    uniqueIndex("places_external_id_idx").on(table.externalId),
+    index("places_last_verified_idx").on(table.lastVerifiedAt),
   ],
 );
 

@@ -271,6 +271,11 @@ export const GetDealsResponseItem = zod.object({
   code: zod.string().nullish(),
   qrData: zod.string().nullish(),
   expiresAt: zod.string().nullish(),
+  isExpired: zod
+    .boolean()
+    .describe(
+      "True only on the detail route, and only for a deal whose expiry has passed. The list route never returns an expired deal, so it is always false there.",
+    ),
   imageUrl: zod.string().nullish(),
   lat: zod.number().nullish(),
   lng: zod.number().nullish(),
@@ -301,6 +306,11 @@ export const GetDealByIdResponse = zod.object({
   code: zod.string().nullish(),
   qrData: zod.string().nullish(),
   expiresAt: zod.string().nullish(),
+  isExpired: zod
+    .boolean()
+    .describe(
+      "True only on the detail route, and only for a deal whose expiry has passed. The list route never returns an expired deal, so it is always false there.",
+    ),
   imageUrl: zod.string().nullish(),
   lat: zod.number().nullish(),
   lng: zod.number().nullish(),
@@ -1163,6 +1173,527 @@ export const GetRecommendationsResponse = zod.object({
       route: zod.string(),
       tags: zod.array(zod.string()),
       scoreText: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary List published Pulse posts for a city
+ */
+export const GetPulsePostsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  filter: zod.coerce
+    .string()
+    .optional()
+    .describe("One of the feed's filter tags, or `all`."),
+  neighborhood: zod.coerce
+    .string()
+    .optional()
+    .describe("Launch zone id, e.g. `bandra`."),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetPulsePostsHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetPulsePostsResponseItem = zod.object({
+  id: zod.number(),
+  city: zod.string(),
+  tier: zod.enum([
+    "official",
+    "local_expert",
+    "creator",
+    "business",
+    "resident",
+  ]),
+  authorName: zod.string(),
+  authorHandle: zod.string(),
+  location: zod.string().nullish(),
+  neighborhoodId: zod.string().nullish(),
+  caption: zod.string(),
+  mediaType: zod.enum(["image", "video"]),
+  mediaUrl: zod.string().nullish(),
+  videoDurationSeconds: zod.number().nullish(),
+  filterTags: zod.array(zod.string()),
+  likeCount: zod.number(),
+  saveCount: zod.number(),
+  source: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
+  trustLabel: zod
+    .string()
+    .nullish()
+    .describe("verified | editorial | partner | community | user-submitted"),
+  confidence: zod.string().nullish().describe("high | medium | low"),
+  isSponsored: zod.boolean(),
+  isFeatured: zod.boolean(),
+  publishedAt: zod.string(),
+  viewerHasLiked: zod.boolean(),
+  viewerHasSaved: zod.boolean(),
+});
+export const GetPulsePostsResponse = zod.array(GetPulsePostsResponseItem);
+
+/**
+ * Answers 503 while submissions are closed. Nothing submitted here is ever published directly; it lands in the moderation queue as a pending row.
+ * @summary Submit a Pulse post for moderation
+ */
+export const SubmitPulsePostHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const submitPulsePostBodyCaptionMin = 10;
+export const submitPulsePostBodyCaptionMax = 1000;
+
+export const SubmitPulsePostBody = zod.object({
+  city: zod.string(),
+  caption: zod
+    .string()
+    .min(submitPulsePostBodyCaptionMin)
+    .max(submitPulsePostBodyCaptionMax),
+  mediaUrl: zod.string().nullish(),
+  mediaType: zod.enum(["image", "video"]).optional(),
+  neighborhoodId: zod.string().nullish(),
+  location: zod.string().nullish(),
+  filterTags: zod.array(zod.string()).optional(),
+});
+
+/**
+ * @summary Get one published Pulse post
+ */
+export const GetPulsePostByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPulsePostByIdHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetPulsePostByIdResponse = zod.object({
+  id: zod.number(),
+  city: zod.string(),
+  tier: zod.enum([
+    "official",
+    "local_expert",
+    "creator",
+    "business",
+    "resident",
+  ]),
+  authorName: zod.string(),
+  authorHandle: zod.string(),
+  location: zod.string().nullish(),
+  neighborhoodId: zod.string().nullish(),
+  caption: zod.string(),
+  mediaType: zod.enum(["image", "video"]),
+  mediaUrl: zod.string().nullish(),
+  videoDurationSeconds: zod.number().nullish(),
+  filterTags: zod.array(zod.string()),
+  likeCount: zod.number(),
+  saveCount: zod.number(),
+  source: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
+  trustLabel: zod
+    .string()
+    .nullish()
+    .describe("verified | editorial | partner | community | user-submitted"),
+  confidence: zod.string().nullish().describe("high | medium | low"),
+  isSponsored: zod.boolean(),
+  isFeatured: zod.boolean(),
+  publishedAt: zod.string(),
+  viewerHasLiked: zod.boolean(),
+  viewerHasSaved: zod.boolean(),
+});
+
+/**
+ * @summary Toggle a like or a save on a post
+ */
+export const TogglePulseReactionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const TogglePulseReactionHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const TogglePulseReactionBody = zod.object({
+  kind: zod.enum(["like", "save"]),
+});
+
+export const TogglePulseReactionResponse = zod.object({
+  postId: zod.number(),
+  kind: zod.enum(["like", "save"]),
+  active: zod.boolean(),
+  likeCount: zod.number(),
+  saveCount: zod.number(),
+});
+
+/**
+ * @summary List published news items for a city
+ */
+export const GetNewsItemsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  category: zod.coerce.string().optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetNewsItemsResponseItem = zod.object({
+  id: zod.number(),
+  city: zod.string(),
+  category: zod.string(),
+  headline: zod.string(),
+  summary: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  link: zod.string().nullish(),
+  source: zod.string(),
+  sourceKind: zod.string(),
+  trustLabel: zod.string().nullish(),
+  confidence: zod.string().nullish(),
+  publishedAt: zod.string(),
+});
+export const GetNewsItemsResponse = zod.array(GetNewsItemsResponseItem);
+
+/**
+ * @summary List communities for a city
+ */
+export const GetCommunitiesQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetCommunitiesHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetCommunitiesResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  city: zod.string(),
+  name: zod.string(),
+  description: zod.string(),
+  icon: zod.string(),
+  tags: zod.array(zod.string()),
+  memberCount: zod.number(),
+  activitySummary: zod.string().nullish(),
+  viewerHasJoined: zod.boolean(),
+});
+export const GetCommunitiesResponse = zod.array(GetCommunitiesResponseItem);
+
+/**
+ * @summary Join or leave a community
+ */
+export const SetCommunityMembershipParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SetCommunityMembershipHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const SetCommunityMembershipBody = zod.object({
+  join: zod
+    .boolean()
+    .optional()
+    .describe("Defaults to true. Send false to leave."),
+});
+
+export const SetCommunityMembershipResponse = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  city: zod.string(),
+  name: zod.string(),
+  description: zod.string(),
+  icon: zod.string(),
+  tags: zod.array(zod.string()),
+  memberCount: zod.number(),
+  activitySummary: zod.string().nullish(),
+  viewerHasJoined: zod.boolean(),
+});
+
+/**
+ * @summary List published questions for a city
+ */
+export const GetQaQuestionsQueryParams = zod.object({
+  city: zod.coerce.string().optional(),
+  sort: zod.enum(["recent", "top"]).optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const GetQaQuestionsHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetQaQuestionsResponseItem = zod.object({
+  id: zod.number(),
+  city: zod.string(),
+  question: zod.string(),
+  body: zod.string().nullish(),
+  authorName: zod.string(),
+  authorInitials: zod.string(),
+  neighborhoodId: zod.string().nullish(),
+  tags: zod.array(zod.string()),
+  upvoteCount: zod.number(),
+  answerCount: zod.number(),
+  publishedAt: zod.string(),
+  viewerHasUpvoted: zod.boolean(),
+});
+export const GetQaQuestionsResponse = zod.array(GetQaQuestionsResponseItem);
+
+/**
+ * @summary Ask a question, for moderation
+ */
+export const SubmitQaQuestionHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const submitQaQuestionBodyQuestionMin = 10;
+export const submitQaQuestionBodyQuestionMax = 300;
+
+export const SubmitQaQuestionBody = zod.object({
+  city: zod.string(),
+  question: zod
+    .string()
+    .min(submitQaQuestionBodyQuestionMin)
+    .max(submitQaQuestionBodyQuestionMax),
+  body: zod.string().nullish(),
+  neighborhoodId: zod.string().nullish(),
+  tags: zod.array(zod.string()).optional(),
+});
+
+/**
+ * @summary Get one question with its published answers
+ */
+export const GetQaQuestionByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetQaQuestionByIdHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const GetQaQuestionByIdResponse = zod
+  .object({
+    id: zod.number(),
+    city: zod.string(),
+    question: zod.string(),
+    body: zod.string().nullish(),
+    authorName: zod.string(),
+    authorInitials: zod.string(),
+    neighborhoodId: zod.string().nullish(),
+    tags: zod.array(zod.string()),
+    upvoteCount: zod.number(),
+    answerCount: zod.number(),
+    publishedAt: zod.string(),
+    viewerHasUpvoted: zod.boolean(),
+  })
+  .and(
+    zod.object({
+      answers: zod.array(
+        zod.object({
+          id: zod.number(),
+          questionId: zod.number(),
+          body: zod.string(),
+          authorName: zod.string(),
+          authorInitials: zod.string(),
+          isAccepted: zod.boolean(),
+          upvoteCount: zod.number(),
+          publishedAt: zod.string(),
+          viewerHasUpvoted: zod.boolean(),
+        }),
+      ),
+    }),
+  );
+
+/**
+ * @summary Answer a question, for moderation
+ */
+export const SubmitQaAnswerParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SubmitQaAnswerHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const submitQaAnswerBodyBodyMin = 10;
+export const submitQaAnswerBodyBodyMax = 2000;
+
+export const SubmitQaAnswerBody = zod.object({
+  body: zod
+    .string()
+    .min(submitQaAnswerBodyBodyMin)
+    .max(submitQaAnswerBodyBodyMax),
+});
+
+/**
+ * @summary Toggle an upvote on a question or an answer
+ */
+export const ToggleQaUpvoteParams = zod.object({
+  targetType: zod.enum(["questions", "answers"]),
+  id: zod.coerce.number(),
+});
+
+export const ToggleQaUpvoteHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const ToggleQaUpvoteResponse = zod.object({
+  id: zod.number(),
+  targetType: zod.enum(["question", "answer"]),
+  upvoteCount: zod.number(),
+  active: zod.boolean(),
+});
+
+/**
+ * Open to signed-out readers. The response carries the window inside which the report will be answered, which is what the app shows back to the reporter.
+ * @summary Report a piece of content
+ */
+export const SubmitContentReportHeader = zod.object({
+  "X-Device-Id": zod
+    .string()
+    .optional()
+    .describe(
+      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
+    ),
+});
+
+export const SubmitContentReportBody = zod.object({
+  targetType: zod.enum([
+    "pulse_post",
+    "news_item",
+    "qa_question",
+    "qa_answer",
+    "community",
+  ]),
+  targetId: zod.number(),
+  reason: zod.enum([
+    "inaccurate",
+    "spam",
+    "harassment",
+    "hate_speech",
+    "adult_content",
+    "impersonation",
+    "copyright",
+    "privacy",
+    "illegal",
+    "other",
+  ]),
+  details: zod.string().nullish(),
+  reporterEmail: zod.string().nullish(),
+});
+
+/**
+ * @summary The published grievance contact, report reasons and submission state
+ */
+export const GetCommunityPolicyResponse = zod.object({
+  submissionsEnabled: zod.boolean(),
+  reportReasons: zod.array(
+    zod.object({
+      id: zod.string(),
+      responseHours: zod.number(),
+    }),
+  ),
+  grievanceOfficer: zod
+    .union([
+      zod.object({
+        officerName: zod.string(),
+        email: zod.string(),
+        address: zod.string().nullish(),
+        acknowledgementHours: zod.number(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+});
+
+/**
+ * @summary Editable City Guide header, facts and insider tips for a city
+ */
+export const GetCityGuideQueryParams = zod.object({
+  city: zod.coerce.string(),
+});
+
+export const GetCityGuideResponse = zod.object({
+  city: zod.string(),
+  tagline: zod.string().nullish(),
+  knownFor: zod.string().nullish(),
+  tripLength: zod.string().nullish(),
+  timezoneLabel: zod.string().nullish(),
+  lastVerifiedAt: zod.string().nullish(),
+  facts: zod.array(
+    zod.object({
+      id: zod.number(),
+      group: zod.enum(["essential", "extra"]),
+      label: zod.string(),
+      value: zod.string(),
+      icon: zod.string(),
+    }),
+  ),
+  insiderTips: zod.array(
+    zod.object({
+      id: zod.number(),
+      label: zod.string(),
+      tip: zod.string(),
+      icon: zod.string(),
+      color: zod.string(),
+      neighborhoodId: zod.string().nullish(),
     }),
   ),
 });

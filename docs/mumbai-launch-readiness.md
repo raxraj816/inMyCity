@@ -98,7 +98,8 @@ journeys, and fix what makes them hesitate.
 Healthy:
 
 - `corepack pnpm run typecheck` passes clean across libs, api-server, app, and scripts.
-- 36 screens, 17 API route modules, 14 Drizzle tables.
+- 36 screens, 17 API route modules, 14 Drizzle tables. Phase 2 added three screens, eight
+  route modules and fourteen tables on top of this.
 - OpenAPI → orval → typed React Query client + Zod. The contract discipline is real.
 - Auth works end to end: OIDC + Google, Postgres-backed sessions, mobile token exchange
   via the `inmycity://oauth` deep link.
@@ -140,7 +141,9 @@ Repository-level fixes made while working through Phase 0:
   app, using Node's built-in runner — no extra tooling. This is the base to build the Phase 4
   suite on. Phase 1 took it from 32 tests to 92, including thirteen that run against a real
   Postgres — nine covering search end to end, four asserting that the SQL "open now" filter and
-  the JavaScript evaluator agree row for row — and skip themselves when none is reachable.
+  the JavaScript evaluator agree row for row — and skip themselves when none is reachable. Phase 2
+  took it from 92 to 231, including 39 more against a real Postgres covering the moderation
+  lifecycle, the admin surface and news ingestion.
 
 ---
 
@@ -612,6 +615,12 @@ Done when: `/api/places` for Mumbai responds in under 150ms with 2,000 rows seed
 Roughly six to eight weeks, and the largest slice of the plan. This is the direct cost of
 keeping full feature scope.
 
+> **Status — engineering complete, content operations outstanding.** Every surface below now
+> reads from the database, has an API and a spec entry, and can be edited, moderated and taken
+> down without a deploy. What remains is not code: photography, venue verification, editorial
+> volume, and the commercial agreements behind section 2.4. Those are tracked at the end of
+> this section under "What is still open".
+
 ### 2.1 Pulse
 
 `artifacts/inmycity/app/(tabs)/feeds.tsx` is 858 lines with `HAPPENING_NOW`,
@@ -637,6 +646,33 @@ Do:
 Done when: Pulse content is created, edited and removed without a deploy, and a reported
 post can be taken down within the required window.
 
+**Built.** `pulse_posts`, `pulse_post_reactions`, `news_sources`, `news_items`, `communities`,
+`community_members`, `qa_questions`, `qa_answers`, `qa_votes`, `content_reports` and
+`moderation_actions`, each row carrying source, trust label, confidence and city. Routes,
+OpenAPI entries, codegen and a rewritten `feeds.tsx` that reads all four tabs from the API.
+Submission routes for posts, questions and answers, rate limited per hour and gated behind
+`COMMUNITY_SUBMISSIONS_ENABLED` so they stay closed until moderation is staffed — decision 2,
+enforced by the code rather than by a habit. Ingestion runs from an allowlist of Mumbai sources
+and files everything as `pending`; nothing an outside publisher says reaches a reader without an
+editor publishing it. Reporting is one tap from every post, question, answer and news item, and
+the response window shown to the reporter is the same one stamped on the queue: 24 hours for the
+categories the IT Rules give 24 hours, 72 for the rest.
+
+Three things changed shape in the process, and all three are the same decision:
+
+- **Engagement counts are real.** The mock feed shipped posts with three thousand invented likes.
+  Counts now come from `pulse_post_reactions`, start at zero, and a zero is not drawn.
+- **There is no comment button**, because there are no comments. An affordance that does nothing
+  is the same broken promise as a booking button with no booking behind it.
+- **Seeded Pulse posts carry no image.** Every image in the catalogue is still stock, and 2.3 is
+  explicit that a stock photo on a real named place destroys trust faster than no photo does.
+  The cards render text-first until commissioned photography exists.
+
+Still needed before submissions can be switched on: a named grievance officer
+(`GRIEVANCE_OFFICER_NAME` / `_EMAIL`), a staffed queue, and a verified feed URL per news source.
+Every source ships inactive because a feed endpoint is a fact to check with the publisher, not
+one to guess.
+
 ### 2.2 City Guide
 
 `artifacts/inmycity/app/(tabs)/cityguide.tsx` holds `CITY_META`, `INSIDER_TIPS`,
@@ -651,6 +687,18 @@ Do:
 - Expand from 12 zone summaries to real neighborhood pages: what it is for, how to get
   there, what it costs, when to go, what to avoid, and the monsoon and safety notes that
   already exist in config.
+
+**Built.** `NEIGHBORHOODS` is gone; `MUMBAI_LAUNCH_ZONES` is the only neighborhood source, and
+each of the twelve now carries a written summary, ordered routes in, a per-person cost range,
+what to avoid, and the anchors worth planning around — checked for completeness by a test, since
+a missing field renders as a blank section rather than failing to compile. `CITY_META`,
+`INSIDER_TIPS` and `CITY_AT_A_GLANCE` are rows in `city_guides`, `city_facts` and `insider_tips`,
+served by `GET /api/city-guide`. Insider tips were dead code — defined and never rendered — and
+now appear on both the City Guide and the neighborhood page they belong to.
+
+One thing the old constants got wrong is worth naming: `CITY_AT_A_GLANCE` hardcoded `"INR (₹)"`
+per city. Currency is resolved by `currencyFor` now and is deliberately absent from the schema,
+so there is one fewer place for a Mumbai row to be priced in dollars.
 
 ### 2.3 Content operations
 
@@ -676,6 +724,30 @@ This is the part that decides whether the app is still good in month two.
   places, 60+ activities, 40+ events live at any time, 30+ current deals, all 12 zones fully
   written.
 
+**Built.** A protected CRUD surface over all fifteen content tables
+([docs/admin-api.md](admin-api.md)), driven by a field registry rather than fifteen hand-written
+routers — so a column that is not declared editable cannot be written at all, and a corrected
+name rewrites `search_text` and `opening_hours_json` instead of leaving the row findable under
+its old name. Deleting a place is refused while a favorite or a collection points at it. Every
+edit, verification and takedown appends to `moderation_actions`.
+
+`seed.ts` no longer opens by deleting every content table. It upserts on an `external_id` derived
+from each row's natural key, refuses to run under `NODE_ENV=production` without an explicit
+opt-in, and refuses the destructive path there outright. The first run against a database seeded
+the old way backfills ids onto the existing rows, so the transition corrects the catalogue rather
+than duplicating it.
+
+`GET /api/admin/content-health` and `pnpm run content:maintain` report live volume against the
+targets above and the rows overdue for verification, and the maintenance job deletes deals that
+expired more than 30 days ago. Seeded deals and fixtures carried hardcoded 2025 dates, which meant
+a fresh install had almost no live inventory — those are relative now.
+
+**Not built, and not buildable in code.** Photography, venue verification, and the editorial
+volume the targets describe. `content-health` currently reports Mumbai below target on places,
+activities, events and deals; writing 300 real venues with verified hours and phone numbers is
+the content-operations job the plan says has the longest lead time. The tooling to do it without
+a deploy now exists, which was the prerequisite.
+
 ### 2.4 Movies, hotels and deals
 
 These surfaces imply transactions the app cannot complete. "Now Showing" with no showtimes
@@ -690,6 +762,36 @@ Decide per surface, and be honest in the UI about which it is:
   promise booking.
 
 Either is defensible. Shipping the current in-between is not.
+
+**Reframed, per decision 6.** No agreement exists, so the fallback applies and the booking
+affordances are gone:
+
+- Movies lose the "Book Tickets" button. Every `bookingUrl` in the seed was a cinema chain's
+  homepage — not a booking link for this film at this venue. The column stays on the table for
+  the eventual integration and stays empty; the detail screen shows the typical ticket price and
+  where it is playing.
+- Hotels lose "Book Now". The button opened the hotel's homepage and completed nothing; it now
+  says "Hotel website", or offers a call when there is no site, and disappears when there is
+  neither.
+- Deals lose the fake QR block — an icon captioned "QR Code" with nothing behind it. The promo
+  code the venue actually accepts is shown instead, and a deal reached by an old link now says it
+  has ended rather than looking live.
+
+The integration seam is unchanged: `bookingUrl` on movies, `website` on hotels, and `code` on
+deals are where a real partner drops in.
+
+### What is still open
+
+Everything left in Phase 2 is a business or content dependency, not an engineering one:
+
+| Item | Blocks | Owner |
+| --- | --- | --- |
+| Commission photography for launch venues | Every place showing a real photograph; seeded Pulse posts carrying images | Content ops |
+| Verify hours, phone, address and price per Mumbai row | `content-health` reporting a verified catalogue | Content ops |
+| Author to the volume targets (300+ places, 60+ activities, 40+ events, 30+ deals) | Launch readiness | Content ops |
+| Name and staff a grievance officer; staff the moderation queue | Turning on `COMMUNITY_SUBMISSIONS_ENABLED` | Ops / legal |
+| Verify a feed URL per allowlisted news source | Activating ingestion | Editorial |
+| Ticketing, hotel and venue partner agreements | Replacing the 2.4 reframe with real transactions | Business |
 
 ---
 
@@ -792,7 +894,7 @@ Runs in parallel from Phase 1 onward. Roughly two weeks of net effort.
 | --- | --- | --- |
 | 0 | Launch blockers | 2 weeks |
 | 1 | Table stakes | 3–4 weeks |
-| 2 | Make surfaces real | 6–8 weeks |
+| 2 | Make surfaces real | 6–8 weeks — engineering complete, content ops outstanding |
 | 3 | Mumbai differentiation | 2–3 weeks |
 | 4 | Launch ops (parallel) | 2 weeks |
 

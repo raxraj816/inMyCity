@@ -1,9 +1,11 @@
-import { pgTable, text, serial, timestamp, real, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, real, integer, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const transitLinesTable = pgTable("transit_lines", {
   id: serial("id").primaryKey(),
+  /** Stable key from the content source. Idempotent seeding and admin imports match on it. */
+  externalId: text("external_id"),
   name: text("name").notNull(),
   shortName: text("short_name"),
   type: text("type").notNull(), // metro | bus | tram | ferry | suburban_rail
@@ -20,10 +22,12 @@ export const transitLinesTable = pgTable("transit_lines", {
   operatedBy: text("operated_by"),
   tags: text("tags").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [uniqueIndex("transit_lines_external_id_idx").on(table.externalId)]);
 
 export const transitRoutesTable = pgTable("transit_routes", {
   id: serial("id").primaryKey(),
+  /** Stable key from the content source. Idempotent seeding and admin imports match on it. */
+  externalId: text("external_id"),
   lineId: integer("line_id").notNull(),
   lineName: text("line_name").notNull(),
   lineType: text("line_type").notNull(),
@@ -39,7 +43,7 @@ export const transitRoutesTable = pgTable("transit_routes", {
   transferDetails: text("transfer_details").array().notNull().default([]),
   tips: text("tips"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [uniqueIndex("transit_routes_external_id_idx").on(table.externalId)]);
 
 export const insertTransitLineSchema = createInsertSchema(transitLinesTable).omit({ id: true, createdAt: true });
 export const insertTransitRouteSchema = createInsertSchema(transitRoutesTable).omit({ id: true, createdAt: true });

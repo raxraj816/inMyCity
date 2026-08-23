@@ -21,6 +21,8 @@ import { ErrorState, useListRefreshControl } from "@/components/ListStates";
 import { AppHeader } from "@/components/AppHeader";
 import { AiChatFab } from "@/components/AiChatFab";
 import {
+  getGetCityGuideQueryKey,
+  useGetCityGuide,
   useGetItineraries,
   useGetPlaces,
   useGetEvents,
@@ -33,61 +35,7 @@ import {
   type Hotel,
   type Activity,
 } from "@workspace/api-client-react";
-import { MUMBAI_LAUNCH_ZONES, formatPriceForCity } from "@workspace/city-config";
-
-const CITY_META: Record<string, { tagline: string; tips: { icon: string; label: string; value: string }[] }> = {
-  Mumbai: {
-    tagline: "The City of Dreams",
-    tips: [
-      { icon: "sun", label: "Best Season", value: "Nov – Feb" },
-      { icon: "navigation", label: "Getting Around", value: "Metro & Local Trains" },
-      { icon: "phone", label: "Emergency", value: "112" },
-      { icon: "globe", label: "Language", value: "Marathi, Hindi, English" },
-      { icon: "dollar-sign", label: "Tipping", value: "5–10% is common" },
-    ],
-  },
-  Bangalore: {
-    tagline: "The Garden City",
-    tips: [
-      { icon: "sun", label: "Best Season", value: "Oct – Feb" },
-      { icon: "navigation", label: "Getting Around", value: "Metro & Auto-Rickshaw" },
-      { icon: "phone", label: "Emergency", value: "112" },
-      { icon: "globe", label: "Language", value: "Kannada, English" },
-      { icon: "dollar-sign", label: "Tipping", value: "5–10% is common" },
-    ],
-  },
-  "New York City": {
-    tagline: "The City That Never Sleeps",
-    tips: [
-      { icon: "sun", label: "Best Season", value: "Apr – Jun, Sep – Nov" },
-      { icon: "navigation", label: "Getting Around", value: "Subway & Bus" },
-      { icon: "phone", label: "Emergency", value: "911" },
-      { icon: "globe", label: "Language", value: "English, Spanish" },
-      { icon: "dollar-sign", label: "Tipping", value: "18–20% is standard" },
-    ],
-  },
-  "San Francisco": {
-    tagline: "The City by the Bay",
-    tips: [
-      { icon: "sun", label: "Best Season", value: "Sep – Nov" },
-      { icon: "navigation", label: "Getting Around", value: "BART & Muni" },
-      { icon: "phone", label: "Emergency", value: "911" },
-      { icon: "globe", label: "Language", value: "English, Spanish" },
-      { icon: "dollar-sign", label: "Tipping", value: "18–20% is standard" },
-    ],
-  },
-};
-
-const DEFAULT_META = {
-  tagline: "Discover this city",
-  tips: [
-    { icon: "sun", label: "Best Season", value: "Check locally" },
-    { icon: "navigation", label: "Getting Around", value: "Public Transit" },
-    { icon: "phone", label: "Emergency", value: "Local number" },
-    { icon: "globe", label: "Language", value: "Local language" },
-    { icon: "dollar-sign", label: "Tipping", value: "Ask locally" },
-  ],
-};
+import { MUMBAI_LAUNCH_ZONES, currencyFor, formatPriceForCity } from "@workspace/city-config";
 
 const PLACE_FILTERS = [
   { id: "all", label: "All" },
@@ -132,87 +80,16 @@ const GUIDE_FILTERS = [
   { id: "4", label: "4 Days" },
 ];
 
-const INSIDER_TIPS: Record<string, { icon: string; color: string; tip: string; label: string }[]> = {
-  Mumbai: [
-    { icon: "clock",       color: "#b45309", label: "Best timing",    tip: "Visit Juhu Beach at sunrise — you'll have the whole beach to yourself before vendors arrive." },
-    { icon: "navigation",  color: "#0369a1", label: "Local hack",     tip: "The first carriage on Western Line is always less crowded during rush hour. A local secret." },
-    { icon: "coffee",      color: "#c2410c", label: "Food tip",       tip: "Chai at Yazdani Bakery in Fort costs ₹10 and beats any coffee shop. Locals have known since 1953." },
-    { icon: "map-pin",     color: "#047857", label: "Hidden gem",     tip: "Banganga Tank in Walkeshwar is peaceful and less photographed than the Gateway. Skip the crowds." },
-    { icon: "cloud-rain",  color: "#4f46e5", label: "Monsoon tip",    tip: "Pre-book Bandra Worli Sealink photos for 30 min after rain — the city glistens unlike any other time." },
-  ],
-  Bangalore: [
-    { icon: "clock",       color: "#b45309", label: "Best timing",    tip: "Cubbon Park is best on weekday mornings — the city's open-air office before 9am." },
-    { icon: "coffee",      color: "#c2410c", label: "Coffee tip",     tip: "Blue Tokai roastery in Indiranagar lets you taste before you buy. Free cuppings every Saturday." },
-    { icon: "map-pin",     color: "#047857", label: "Hidden gem",     tip: "Lalbagh's Botanical Garden glass house section is rarely crowded on Tuesday afternoons." },
-    { icon: "navigation",  color: "#0369a1", label: "Getting around", tip: "Auto-rickshaws on Indiranagar 100 Feet Road ignore apps. Just wave — they charge meter rates." },
-    { icon: "cloud-rain",  color: "#4f46e5", label: "Weather tip",    tip: "Keep a light jacket — Bangalore evenings drop by 8–10°C even in summer, unlike the rest of India." },
-  ],
-  "New York City": [
-    { icon: "navigation",  color: "#0369a1", label: "Subway tip",     tip: "The 7 train is the world's cheapest food tour — from Times Sq to Jackson Heights, every stop is a cuisine." },
-    { icon: "clock",       color: "#b45309", label: "Best timing",    tip: "Go to MoMA on a Friday evening after 5:30pm — entrance is free and attendance drops sharply." },
-    { icon: "map-pin",     color: "#047857", label: "Hidden gem",     tip: "Wave Hill in the Bronx has better Hudson River views than most Manhattan rooftops. No tourist crowds." },
-    { icon: "coffee",      color: "#c2410c", label: "Food tip",       tip: "New York bagels are best at places that haven't changed their water or ovens since the 80s. Ask locals." },
-    { icon: "dollar-sign", color: "#7c3aed", label: "Money tip",      tip: "The Staten Island Ferry is free and gives you a front-row view of the Statue of Liberty both ways." },
-  ],
-  "San Francisco": [
-    { icon: "cloud-rain",  color: "#4f46e5", label: "Weather tip",    tip: "Pack a layer even in summer — SF micro-climates mean the Mission can be 18°C while the Sunset is 10°C." },
-    { icon: "clock",       color: "#b45309", label: "Best timing",    tip: "The Golden Gate Bridge is clear before 9am most days. Fog rolls in after 10am and stays until early afternoon." },
-    { icon: "map-pin",     color: "#047857", label: "Hidden gem",     tip: "Lands End trail at sunset is extraordinary and barely on tourist itineraries. Free, 30-min drive from Downtown." },
-    { icon: "navigation",  color: "#0369a1", label: "Transit tip",    tip: "BART to the Mission is faster than any rideshare on weekends. 24th Street station is a 1-minute walk to good tacos." },
-    { icon: "coffee",      color: "#c2410c", label: "Food tip",       tip: "Tartine Bakery's bread goes on sale at 5pm if any is left. Croissants sell out before 9am." },
-  ],
-};
-
-const DEFAULT_INSIDER_TIPS = [
-  { icon: "clock",    color: "#b45309", label: "Best timing",  tip: "Early mornings before 9am are universally the best time to visit major attractions." },
-  { icon: "coffee",   color: "#c2410c", label: "Food tip",     tip: "Ask locals where they eat — not where tourists eat. The best food is rarely near the landmarks." },
-  { icon: "map-pin",  color: "#047857", label: "Hidden gem",   tip: "Walk 2–3 blocks off the main tourist strip — that's where the city actually lives." },
-];
-
-type GuideNeighborhood = { id?: string; name: string; vibe: string; color: string };
-
-const NEIGHBORHOODS: Record<string, GuideNeighborhood[]> = {
-  Mumbai: [
-    { name: "Colaba", vibe: "Heritage & cafes", color: "#0369a1" },
-    { name: "Bandra", vibe: "Food & nightlife", color: "#be185d" },
-    { name: "Juhu", vibe: "Beachfront", color: "#b45309" },
-    { name: "Fort", vibe: "Old city", color: "#047857" },
-  ],
-  Bangalore: [
-    { name: "Indiranagar", vibe: "Dining & bars", color: "#be185d" },
-    { name: "Koramangala", vibe: "Startups & food", color: "#0369a1" },
-    { name: "MG Road", vibe: "Central district", color: "#b45309" },
-    { name: "Jayanagar", vibe: "Local markets", color: "#047857" },
-  ],
-  "New York City": [
-    { name: "Manhattan", vibe: "Iconic sights", color: "#0369a1" },
-    { name: "Brooklyn", vibe: "Creative scene", color: "#be185d" },
-    { name: "Queens", vibe: "Food districts", color: "#b45309" },
-    { name: "SoHo", vibe: "Shopping & style", color: "#047857" },
-  ],
-  "San Francisco": [
-    { name: "Fisherman's Wharf", vibe: "Waterfront", color: "#0369a1" },
-    { name: "Mission", vibe: "Food & murals", color: "#be185d" },
-    { name: "SoMa", vibe: "Museums", color: "#b45309" },
-    { name: "Nob Hill", vibe: "Classic city", color: "#047857" },
-  ],
-};
-
-const CITY_AT_A_GLANCE: Record<string, { currency: string; timezone: string; knownFor: string; tripLength: string }> = {
-  Mumbai: { currency: "INR (₹)", timezone: "IST +5:30", knownFor: "Bollywood & Finance", tripLength: "3–5 Days" },
-  Bangalore: { currency: "INR (₹)", timezone: "IST +5:30", knownFor: "Tech Hub & Gardens", tripLength: "2–3 Days" },
-  "New York City": { currency: "USD ($)", timezone: "EST −5:00", knownFor: "Culture & Skyline", tripLength: "5–7 Days" },
-  "San Francisco": { currency: "USD ($)", timezone: "PST −8:00", knownFor: "Tech & Bay Views", tripLength: "3–4 Days" },
-};
-const DEFAULT_GLANCE = { currency: "Local Currency", timezone: "Local Time", knownFor: "Discover & Explore", tripLength: "2–4 Days" };
-const EXTRA_TIPS = [
-  { icon: "shield", label: "Safety", value: "Keep valuables secure" },
-  { icon: "wifi", label: "Connectivity", value: "eSIM / local SIM" },
-  { icon: "credit-card", label: "Payments", value: "UPI & cards accepted" },
-  { icon: "coffee", label: "Food", value: "Try local street food" },
-  { icon: "cloud-rain", label: "Weather", value: "Pack for humidity" },
-];
-
+/**
+ * Neighbourhoods, insider tips and city facts used to be four constants keyed by city name in
+ * this file. The tips and facts are rows now — `GET /city-guide` returns them, so a wrong
+ * emergency number is an edit rather than a release — and neighbourhoods come from
+ * `MUMBAI_LAUNCH_ZONES`, which was always the better source and is now the only one.
+ *
+ * Currency is resolved by `currencyFor`. It is never stored or written into copy: the old
+ * `CITY_AT_A_GLANCE` hardcoded "INR (₹)" per city, which is exactly how a Mumbai row ends up
+ * priced in dollars.
+ */
 const HIGHLIGHT_LIMITS = { places: 4, food: 3 };
 
 export default function CityGuideScreen() {
@@ -230,11 +107,21 @@ export default function CityGuideScreen() {
   const [todTime, setTodTime] = useState("morning");
 
   const cityName = selectedCity?.name;
-  const meta = (cityName ? CITY_META[cityName] : undefined) ?? DEFAULT_META;
   const topPadding = Platform.OS === "web" ? 20 : insets.top + 4;
   const bottomPadding = Platform.OS === "web" ? 84 : 84 + insets.bottom;
 
-  const glance = (cityName ? CITY_AT_A_GLANCE[cityName] : undefined) ?? DEFAULT_GLANCE;
+  const { data: cityGuide } = useGetCityGuide(
+    { city: cityName ?? "" },
+    { query: { enabled: Boolean(cityName), queryKey: getGetCityGuideQueryKey({ city: cityName ?? "" }) } },
+  );
+
+  const facts = cityGuide?.facts ?? [];
+  const insiderTips = cityGuide?.insiderTips ?? [];
+  const factValue = (label: string) => facts.find((fact) => fact.label === label)?.value;
+  const tagline = cityGuide?.tagline ?? "Discover this city";
+  // The one fact that is computed rather than stored, so it can never disagree with a price.
+  const currency = currencyFor(cityName);
+  const currencyLabel = `${currency.code} (${currency.symbol})`;
 
   const { data: itineraries = [], isLoading: iLoading, isRefetching: iRefetching,
     error: iError, refetch: iRefetch } = useGetItineraries({ city: cityName });
@@ -250,7 +137,7 @@ export default function CityGuideScreen() {
     placeFilter === "all" ? allPlaces : allPlaces.filter((p) => p.category?.toLowerCase() === placeFilter)
   ).slice(0, 10);
   const upcomingEvents = events.slice(0, 5);
-  const neighborhoods: GuideNeighborhood[] =
+  const neighborhoods =
     cityName === "Mumbai"
       ? MUMBAI_LAUNCH_ZONES.map((zone, index) => ({
           id: zone.id,
@@ -258,7 +145,7 @@ export default function CityGuideScreen() {
           vibe: zone.vibe,
           color: ["#be185d", "#0369a1", "#b45309", "#047857", "#4f46e5", "#dc2626"][index % 6],
         }))
-      : (cityName ? NEIGHBORHOODS[cityName] : undefined) ?? [];
+      : [];
   const guideItems = useMemo(() => {
     if (guideFilter === "all") return itineraries;
     return itineraries.filter((itinerary) => String(itinerary.durationDays) === guideFilter);
@@ -326,7 +213,7 @@ export default function CityGuideScreen() {
             <View style={styles.heroContent}>
               <Text style={styles.heroEyebrow}>Visiting</Text>
               <Text style={styles.heroCity}>{selectedCity?.displayName ?? "Your City"}</Text>
-              <Text style={styles.heroTagline}>{meta.tagline}</Text>
+              <Text style={styles.heroTagline}>{tagline}</Text>
             </View>
             <TouchableOpacity
               activeOpacity={0.82}
@@ -343,11 +230,11 @@ export default function CityGuideScreen() {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.heroFactsScroll}>
             {[
-              { icon: "sun", label: "Best season", value: meta.tips.find((t) => t.label === "Best Season")?.value ?? "Check locally" },
-              { icon: "navigation", label: "Transit", value: meta.tips.find((t) => t.label === "Getting Around")?.value ?? "Public transit" },
-              { icon: "clock", label: "Timezone", value: glance.timezone },
-              { icon: "calendar", label: "Trip length", value: glance.tripLength },
-              { icon: "credit-card", label: "Currency", value: glance.currency },
+              { icon: "sun", label: "Best season", value: factValue("Best Season") ?? "Check locally" },
+              { icon: "navigation", label: "Transit", value: factValue("Getting Around") ?? "Public transit" },
+              { icon: "clock", label: "Timezone", value: cityGuide?.timezoneLabel ?? "Local time" },
+              { icon: "calendar", label: "Trip length", value: cityGuide?.tripLength ?? "2–4 days" },
+              { icon: "credit-card", label: "Currency", value: currencyLabel },
             ].map((item) => (
               <View key={item.label} style={styles.heroFactPill}>
                 <Feather name={item.icon as any} size={12} color="rgba(249,115,22,0.9)" />
@@ -375,6 +262,31 @@ export default function CityGuideScreen() {
                   <View style={[styles.neighborhoodDot, { backgroundColor: hood.color }]} />
                   <Text style={[styles.neighborhoodName, { color: colors.foreground }]}>{hood.name}</Text>
                   <Text style={[styles.neighborhoodVibe, { color: colors.mutedForeground }]}>{hood.vibe}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {insiderTips.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader title="Insider tips" icon="zap" colors={colors} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.insiderScroll}>
+              {insiderTips.map((tip) => (
+                <TouchableOpacity
+                  key={tip.id}
+                  activeOpacity={tip.neighborhoodId ? 0.85 : 1}
+                  disabled={!tip.neighborhoodId}
+                  onPress={() => tip.neighborhoodId && router.push(`/neighborhood/${tip.neighborhoodId}` as any)}
+                  style={[styles.insiderCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  accessibilityRole={tip.neighborhoodId ? "button" : "text"}
+                  accessibilityLabel={`${tip.label}. ${tip.tip}`}
+                >
+                  <View style={[styles.insiderIcon, { backgroundColor: tip.color + "18" }]}>
+                    <Feather name={tip.icon as any} size={14} color={tip.color} />
+                  </View>
+                  <Text style={[styles.insiderLabel, { color: tip.color }]}>{tip.label}</Text>
+                  <Text style={[styles.insiderText, { color: colors.foreground }]}>{tip.tip}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -728,18 +640,18 @@ export default function CityGuideScreen() {
               ))}
             </View>
             <View style={styles.modalGlanceGrid}>
-              <GlanceStat icon="credit-card" label="Currency" value={glance.currency} colors={colors} />
-              <GlanceStat icon="clock" label="Timezone" value={glance.timezone} colors={colors} />
-              <GlanceStat icon="trending-up" label="Known For" value={glance.knownFor} colors={colors} />
-              <GlanceStat icon="calendar" label="Best Trip" value={glance.tripLength} colors={colors} />
+              <GlanceStat icon="credit-card" label="Currency" value={currencyLabel} colors={colors} />
+              <GlanceStat icon="clock" label="Timezone" value={cityGuide?.timezoneLabel ?? "Local time"} colors={colors} />
+              <GlanceStat icon="trending-up" label="Known For" value={cityGuide?.knownFor ?? "Discover & explore"} colors={colors} />
+              <GlanceStat icon="calendar" label="Best Trip" value={cityGuide?.tripLength ?? "2–4 days"} colors={colors} />
             </View>
             <View style={styles.modalTipList}>
-              {[...meta.tips.slice(0, 3), ...EXTRA_TIPS.slice(0, 2)].map((tip) => (
-                <View key={`${tip.label}-${tip.value}`} style={[styles.modalTipRow, { borderBottomColor: colors.border }]}>
-                  <Feather name={tip.icon as any} size={14} color={colors.amber} />
+              {facts.slice(0, 6).map((fact) => (
+                <View key={fact.id} style={[styles.modalTipRow, { borderBottomColor: colors.border }]}>
+                  <Feather name={fact.icon as any} size={14} color={colors.amber} />
                   <View style={styles.modalTipText}>
-                    <Text style={[styles.modalTipLabel, { color: colors.foreground }]}>{tip.label}</Text>
-                    <Text style={[styles.modalTipValue, { color: colors.mutedForeground }]}>{tip.value}</Text>
+                    <Text style={[styles.modalTipLabel, { color: colors.foreground }]}>{fact.label}</Text>
+                    <Text style={[styles.modalTipValue, { color: colors.mutedForeground }]}>{fact.value}</Text>
                   </View>
                 </View>
               ))}
@@ -1032,6 +944,11 @@ const styles = StyleSheet.create({
   tipLabel: { fontFamily: "Inter_400Regular", fontSize: 11 },
   tipValue: { fontFamily: "Inter_600SemiBold", fontSize: 13, lineHeight: 17 },
   neighborhoodsScroll: { paddingHorizontal: 20, gap: 10 },
+  insiderScroll: { paddingHorizontal: 20, gap: 10 },
+  insiderCard: { width: 268, borderRadius: 16, borderWidth: 1, padding: 14, gap: 7 },
+  insiderIcon: { width: 30, height: 30, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  insiderLabel: { fontFamily: "Inter_600SemiBold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.4 },
+  insiderText: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
   neighborhoodCard: { width: 150, borderRadius: 16, borderWidth: 1, padding: 14, gap: 8 },
   neighborhoodDot: { width: 10, height: 10, borderRadius: 5 },
   neighborhoodName: { fontFamily: "Inter_700Bold", fontSize: 14 },

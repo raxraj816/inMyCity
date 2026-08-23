@@ -87,6 +87,19 @@ Packages are referenced as `@workspace/<name>`.
 
 ## Rules that are easy to get wrong
 
+**The admin API is deliberately not in the OpenAPI spec.** `/api/admin/*` has no app client, so
+generating a React Query hook and a Zod schema per endpoint would be dead code, and its generic
+`/admin/{collection}` route makes orval emit a value and a type under one name. It is documented
+in [docs/admin-api.md](docs/admin-api.md) instead; keep that file in step when you change a route
+there. Everything the app consumes still goes through the spec.
+
+**Moderated content has one way in.** `pulse_posts`, `news_items`, `qa_questions`, `qa_answers`
+and `communities` carry a `status`, and it may only move through `/api/admin/moderation/...`,
+which records who changed it and why. Never expose `status` as an editable field on a moderated
+collection in `lib/adminCollections.ts`, and never let a route publish a row as a side effect of
+creating it — a submission that skips review is a takedown obligation nobody can meet.
+(`movies.status` is the release status on an unmoderated table, and is exempt.)
+
 **Never hand-edit generated code.** `lib/api-client-react/src/generated/` and all of
 `lib/api-zod` are produced by orval from `lib/api-spec/openapi.yaml`. Change the spec,
 then regenerate:
@@ -103,7 +116,16 @@ inconsistent: update the route in `artifacts/api-server`, update `lib/api-spec/o
 run codegen, then fix the app screens that consume it.
 
 **Schema changes** go in `lib/db/src/schema`, then `db:push`, then update
-`artifacts/api-server/src/seed.ts` if the new columns need data, then `db:seed`.
+`artifacts/api-server/src/seed.ts` if the new columns need data, then `db:seed`. Prefer
+`uniqueIndex(...)` in the table's extras config over a `.unique()` column modifier: `drizzle-kit
+push` prompts interactively before adding a unique *constraint* to a populated table, which stalls
+any non-interactive run.
+
+**The seed is an upsert, not a rebuild.** Rows are matched on `external_id`, derived from the
+row's natural key by `seedExternalId`. Adding a row to the seed needs no identifier; renaming one
+creates a new row and leaves the old one, which is deliberate — retiring content should be a
+decision, not a side effect. Never reintroduce a `DELETE` at the top of `seed.ts`: run against
+production it wipes the rows users' favorites and collections point at.
 
 **Database objects Drizzle cannot express** — extensions, and indexes over an expression with
 an operator class — go in `lib/db/src/bootstrap.ts`, which `db:push` runs afterwards. Every

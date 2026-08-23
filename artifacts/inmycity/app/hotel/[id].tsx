@@ -199,20 +199,39 @@ export default function HotelDetailScreen() {
       {/* Bottom Bar */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom || 24, backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <View>
-          <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Starting from</Text>
+          <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Typical rate</Text>
           <Text style={[styles.bottomPrice, { color: colors.foreground }]}>
             {hotel.pricePerNight
               ? `${formatPriceForCity(Math.round(hotel.pricePerNight), hotel.city, hotel.currency)}/night`
               : "Check availability"}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.bookBtn, { backgroundColor: catColor }]}
-          onPress={() => hotel.website && Linking.openURL(hotel.website)}
-          disabled={!hotel.website}
-        >
-          <Text style={styles.bookBtnText}>Book Now</Text>
-        </TouchableOpacity>
+        {/*
+          "Book Now" opened the hotel's homepage and completed nothing. With no availability
+          partner behind it that is a promise the app cannot keep, so the button says what it
+          actually does — and disappears entirely when there is no site to open.
+        */}
+        {hotel.website ? (
+          <TouchableOpacity
+            style={[styles.bookBtn, { backgroundColor: catColor }]}
+            onPress={() => Linking.openURL(hotel.website!)}
+            accessibilityRole="link"
+            accessibilityLabel={`Open the website for ${hotel.name}`}
+          >
+            <Feather name="external-link" size={15} color="#fff" />
+            <Text style={styles.bookBtnText}>Hotel website</Text>
+          </TouchableOpacity>
+        ) : hotel.phone ? (
+          <TouchableOpacity
+            style={[styles.bookBtn, { backgroundColor: catColor }]}
+            onPress={() => Linking.openURL(`tel:${hotel.phone}`)}
+            accessibilityRole="button"
+            accessibilityLabel={`Call ${hotel.name}`}
+          >
+            <Feather name="phone" size={15} color="#fff" />
+            <Text style={styles.bookBtnText}>Call to enquire</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );
@@ -273,6 +292,6 @@ const styles = StyleSheet.create({
   },
   priceLabel: { fontFamily: "Inter_400Regular", fontSize: 12, marginBottom: 2 },
   bottomPrice: { fontFamily: "Inter_700Bold", fontSize: 18 },
-  bookBtn: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12 },
+  bookBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 22, paddingVertical: 14, borderRadius: 12 },
   bookBtnText: { color: "#fff", fontFamily: "Inter_600SemiBold", fontSize: 16 },
 });

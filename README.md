@@ -134,7 +134,26 @@ OIDC_CLIENT_ID=
 OIDC_CLIENT_SECRET=
 ```
 
+Content operations settings — see [.env.example](.env.example) for the full list and
+[docs/admin-api.md](docs/admin-api.md) for what they gate:
+
+```sh
+# Who may use /api/admin. Unset means the admin routes answer 503 for everyone.
+ADMIN_EMAILS=
+
+# Opens Pulse and Q&A to reader submissions. Leave unset until moderation is staffed.
+COMMUNITY_SUBMISSIONS_ENABLED=
+
+# The grievance officer the IT Rules require, published through /api/community-policy.
+GRIEVANCE_OFFICER_NAME=
+GRIEVANCE_OFFICER_EMAIL=
+```
+
 The app can run without `OPENAI_API_KEY`; only the CityPilot chat endpoint will return an unavailable response until the key is configured.
+
+It also runs with `ADMIN_EMAILS` and `COMMUNITY_SUBMISSIONS_ENABLED` unset, which is the intended
+launch posture: Pulse and Q&A show editorial content, the compose affordances are hidden, and the
+admin surface is closed.
 
 ## Workspace Commands
 
@@ -146,7 +165,9 @@ Run these from the repository root.
 | `corepack pnpm run dev:api` | Build and start the API server on port `3001` |
 | `corepack pnpm run dev:app` | Start Expo on port `8081` |
 | `corepack pnpm run db:push` | Push Drizzle schema to PostgreSQL, then apply the search extension and indexes |
-| `corepack pnpm run db:seed` | Seed local city data |
+| `corepack pnpm run db:seed` | Seed local city data — an idempotent upsert, safe to re-run |
+| `corepack pnpm run news:ingest` | Fetch every active allowlisted news feed into the moderation queue |
+| `corepack pnpm run content:maintain` | Weekly content pass: expire stale deals, report volume and staleness |
 | `corepack pnpm run typecheck` | Typecheck shared libs, API server, app, and scripts |
 | `corepack pnpm run test` | Run the test suite across the API server and the app |
 | `corepack pnpm run build` | Typecheck and build packages with build scripts |
@@ -165,6 +186,18 @@ corepack pnpm --filter @workspace/scripts run bench:places
 `bootstrap` applies the database objects Drizzle's schema DSL cannot express — the `pg_trgm`
 extension, the trigram indexes search matches against, and the `lower(city)` expression
 indexes the list endpoints filter on. It is idempotent and already runs as part of `db:push`.
+
+`db:seed` upserts on a stable external id rather than deleting first, so running it against a
+database with real content corrects the rows it owns and touches nothing else. It refuses to run
+under `NODE_ENV=production` without `ALLOW_PRODUCTION_SEED=true`. The old behaviour is still
+available for a clean local rebuild as `corepack pnpm --filter @workspace/api-server run seed --
+--reset`, which deletes every content row and therefore needs `ALLOW_DESTRUCTIVE_SEED=true` and is
+refused in production outright.
+
+`news:ingest` and `content:maintain` are the two scheduled content jobs. Neither publishes
+anything: ingestion files what it finds as pending for an editor, and maintenance only deletes
+deals that expired more than `DEAL_EXPIRY_GRACE_DAYS` ago. See
+[docs/admin-api.md](docs/admin-api.md).
 
 `bench:places` load-checks the list endpoints against 2,000 seeded rows. It inserts synthetic
 rows tagged as generated, measures, and deletes them again, so curated seed data is untouched.
@@ -229,7 +262,12 @@ Important routes include:
 - `GET /api/activities`
 - `GET /api/transit/lines`
 - `GET /api/transit/routes`
+- `GET /api/pulse`, `GET /api/news`, `GET /api/communities`, `GET /api/qa/questions`
+- `GET /api/city-guide` — the editable City Guide header, facts and insider tips
+- `GET /api/community-policy`, `POST /api/reports` — the published takedown path
 - `POST /api/ai/chat`
+- `/api/admin/*` — the protected content and moderation surface, documented in
+  [docs/admin-api.md](docs/admin-api.md) rather than in the OpenAPI spec
 
 The API uses the shared database package in `lib/db` and generated schemas/types from `lib/api-zod`.
 

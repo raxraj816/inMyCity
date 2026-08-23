@@ -174,6 +174,8 @@ export interface Deal {
   qrData?: string | null;
   /** @nullable */
   expiresAt?: string | null;
+  /** True only on the detail route, and only for a deal whose expiry has passed. The list route never returns an expired deal, so it is always false there. */
+  isExpired: boolean;
   /** @nullable */
   imageUrl?: string | null;
   /** @nullable */
@@ -573,10 +575,346 @@ export interface Activity {
   createdAt: string;
 }
 
+export type PulsePostTier = (typeof PulsePostTier)[keyof typeof PulsePostTier];
+
+export const PulsePostTier = {
+  official: "official",
+  local_expert: "local_expert",
+  creator: "creator",
+  business: "business",
+  resident: "resident",
+} as const;
+
+export type PulsePostMediaType =
+  (typeof PulsePostMediaType)[keyof typeof PulsePostMediaType];
+
+export const PulsePostMediaType = {
+  image: "image",
+  video: "video",
+} as const;
+
+export interface PulsePost {
+  id: number;
+  city: string;
+  tier: PulsePostTier;
+  authorName: string;
+  authorHandle: string;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  neighborhoodId?: string | null;
+  caption: string;
+  mediaType: PulsePostMediaType;
+  /** @nullable */
+  mediaUrl?: string | null;
+  /** @nullable */
+  videoDurationSeconds?: number | null;
+  filterTags: string[];
+  likeCount: number;
+  saveCount: number;
+  /** @nullable */
+  source?: string | null;
+  /** @nullable */
+  sourceUrl?: string | null;
+  /**
+   * verified | editorial | partner | community | user-submitted
+   * @nullable
+   */
+  trustLabel?: string | null;
+  /**
+   * high | medium | low
+   * @nullable
+   */
+  confidence?: string | null;
+  isSponsored: boolean;
+  isFeatured: boolean;
+  publishedAt: string;
+  viewerHasLiked: boolean;
+  viewerHasSaved: boolean;
+}
+
+export type SubmitPulsePostInputMediaType =
+  (typeof SubmitPulsePostInputMediaType)[keyof typeof SubmitPulsePostInputMediaType];
+
+export const SubmitPulsePostInputMediaType = {
+  image: "image",
+  video: "video",
+} as const;
+
+export interface SubmitPulsePostInput {
+  city: string;
+  /**
+   * @minLength 10
+   * @maxLength 1000
+   */
+  caption: string;
+  /** @nullable */
+  mediaUrl?: string | null;
+  mediaType?: SubmitPulsePostInputMediaType;
+  /** @nullable */
+  neighborhoodId?: string | null;
+  /** @nullable */
+  location?: string | null;
+  filterTags?: string[];
+}
+
+export type PulseReactionInputKind =
+  (typeof PulseReactionInputKind)[keyof typeof PulseReactionInputKind];
+
+export const PulseReactionInputKind = {
+  like: "like",
+  save: "save",
+} as const;
+
+export interface PulseReactionInput {
+  kind: PulseReactionInputKind;
+}
+
+export interface CommunityMembershipInput {
+  /** Defaults to true. Send false to leave. */
+  join?: boolean;
+}
+
+export interface SubmitQaAnswerInput {
+  /**
+   * @minLength 10
+   * @maxLength 2000
+   */
+  body: string;
+}
+
+export type PulseReactionStateKind =
+  (typeof PulseReactionStateKind)[keyof typeof PulseReactionStateKind];
+
+export const PulseReactionStateKind = {
+  like: "like",
+  save: "save",
+} as const;
+
+export interface PulseReactionState {
+  postId: number;
+  kind: PulseReactionStateKind;
+  active: boolean;
+  likeCount: number;
+  saveCount: number;
+}
+
+export interface SubmissionAccepted {
+  id: number;
+  status: string;
+  message: string;
+}
+
+export interface NewsItem {
+  id: number;
+  city: string;
+  category: string;
+  headline: string;
+  /** @nullable */
+  summary?: string | null;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  link?: string | null;
+  source: string;
+  sourceKind: string;
+  /** @nullable */
+  trustLabel?: string | null;
+  /** @nullable */
+  confidence?: string | null;
+  publishedAt: string;
+}
+
+export interface Community {
+  id: number;
+  slug: string;
+  city: string;
+  name: string;
+  description: string;
+  icon: string;
+  tags: string[];
+  memberCount: number;
+  /** @nullable */
+  activitySummary?: string | null;
+  viewerHasJoined: boolean;
+}
+
+export interface QaQuestion {
+  id: number;
+  city: string;
+  question: string;
+  /** @nullable */
+  body?: string | null;
+  authorName: string;
+  authorInitials: string;
+  /** @nullable */
+  neighborhoodId?: string | null;
+  tags: string[];
+  upvoteCount: number;
+  answerCount: number;
+  publishedAt: string;
+  viewerHasUpvoted: boolean;
+}
+
+export interface QaAnswer {
+  id: number;
+  questionId: number;
+  body: string;
+  authorName: string;
+  authorInitials: string;
+  isAccepted: boolean;
+  upvoteCount: number;
+  publishedAt: string;
+  viewerHasUpvoted: boolean;
+}
+
+export type QaQuestionDetail = QaQuestion & {
+  answers: QaAnswer[];
+};
+
+export interface SubmitQaQuestionInput {
+  city: string;
+  /**
+   * @minLength 10
+   * @maxLength 300
+   */
+  question: string;
+  /** @nullable */
+  body?: string | null;
+  /** @nullable */
+  neighborhoodId?: string | null;
+  tags?: string[];
+}
+
+export type QaUpvoteStateTargetType =
+  (typeof QaUpvoteStateTargetType)[keyof typeof QaUpvoteStateTargetType];
+
+export const QaUpvoteStateTargetType = {
+  question: "question",
+  answer: "answer",
+} as const;
+
+export interface QaUpvoteState {
+  id: number;
+  targetType: QaUpvoteStateTargetType;
+  upvoteCount: number;
+  active: boolean;
+}
+
+export type SubmitContentReportInputTargetType =
+  (typeof SubmitContentReportInputTargetType)[keyof typeof SubmitContentReportInputTargetType];
+
+export const SubmitContentReportInputTargetType = {
+  pulse_post: "pulse_post",
+  news_item: "news_item",
+  qa_question: "qa_question",
+  qa_answer: "qa_answer",
+  community: "community",
+} as const;
+
+export type SubmitContentReportInputReason =
+  (typeof SubmitContentReportInputReason)[keyof typeof SubmitContentReportInputReason];
+
+export const SubmitContentReportInputReason = {
+  inaccurate: "inaccurate",
+  spam: "spam",
+  harassment: "harassment",
+  hate_speech: "hate_speech",
+  adult_content: "adult_content",
+  impersonation: "impersonation",
+  copyright: "copyright",
+  privacy: "privacy",
+  illegal: "illegal",
+  other: "other",
+} as const;
+
+export interface SubmitContentReportInput {
+  targetType: SubmitContentReportInputTargetType;
+  targetId: number;
+  reason: SubmitContentReportInputReason;
+  /** @nullable */
+  details?: string | null;
+  /** @nullable */
+  reporterEmail?: string | null;
+}
+
+export interface ContentReportReceipt {
+  id: number;
+  status: string;
+  dueAt: string;
+  responseHours: number;
+  message: string;
+}
+
+export interface GrievanceOfficer {
+  officerName: string;
+  email: string;
+  /** @nullable */
+  address?: string | null;
+  acknowledgementHours: number;
+}
+
+export type CommunityPolicyReportReasonsItem = {
+  id: string;
+  responseHours: number;
+};
+
+export interface CommunityPolicy {
+  submissionsEnabled: boolean;
+  reportReasons: CommunityPolicyReportReasonsItem[];
+  grievanceOfficer?: GrievanceOfficer | null;
+}
+
+export type CityFactGroup = (typeof CityFactGroup)[keyof typeof CityFactGroup];
+
+export const CityFactGroup = {
+  essential: "essential",
+  extra: "extra",
+} as const;
+
+export interface CityFact {
+  id: number;
+  group: CityFactGroup;
+  label: string;
+  value: string;
+  icon: string;
+}
+
+export interface InsiderTip {
+  id: number;
+  label: string;
+  tip: string;
+  icon: string;
+  color: string;
+  /** @nullable */
+  neighborhoodId?: string | null;
+}
+
+export interface CityGuideContent {
+  city: string;
+  /** @nullable */
+  tagline?: string | null;
+  /** @nullable */
+  knownFor?: string | null;
+  /** @nullable */
+  tripLength?: string | null;
+  /** @nullable */
+  timezoneLabel?: string | null;
+  /** @nullable */
+  lastVerifiedAt?: string | null;
+  facts: CityFact[];
+  insiderTips: InsiderTip[];
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */
 export type AuthorizationSessionHeaderParameter = string;
+
+/**
+ * Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.
+ */
+export type DeviceIdHeaderParameter = string;
 
 export type BeginBrowserLoginParams = {
   /**
@@ -742,3 +1080,49 @@ export type GetRecommendationsWeatherMode =
 export const GetRecommendationsWeatherMode = {
   "rain-safe": "rain-safe",
 } as const;
+
+export type GetPulsePostsParams = {
+  city?: string;
+  /**
+   * One of the feed's filter tags, or `all`.
+   */
+  filter?: string;
+  /**
+   * Launch zone id, e.g. `bandra`.
+   */
+  neighborhood?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export type GetNewsItemsParams = {
+  city?: string;
+  category?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export type GetCommunitiesParams = {
+  city?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export type GetQaQuestionsParams = {
+  city?: string;
+  sort?: GetQaQuestionsSort;
+  limit?: number;
+  offset?: number;
+};
+
+export type GetQaQuestionsSort =
+  (typeof GetQaQuestionsSort)[keyof typeof GetQaQuestionsSort];
+
+export const GetQaQuestionsSort = {
+  recent: "recent",
+  top: "top",
+} as const;
+
+export type GetCityGuideParams = {
+  city: string;
+};

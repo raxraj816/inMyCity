@@ -20,6 +20,19 @@ const SEARCHABLE_TABLES = [
   "movies",
 ] as const;
 
+/**
+ * Phase 2 content tables are all filtered by `lower(city)` the same way the catalogue is, so
+ * they need the same expression index. They carry no `search_text`, so no trigram index here.
+ */
+const CITY_SCOPED_TABLES = [
+  "pulse_posts",
+  "news_items",
+  "communities",
+  "qa_questions",
+  "insider_tips",
+  "city_facts",
+] as const;
+
 export async function ensureSearchObjects(): Promise<void> {
   await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
 
@@ -47,6 +60,12 @@ export async function ensureSearchObjects(): Promise<void> {
       sql.raw(
         `CREATE INDEX IF NOT EXISTS ${table}_lower_city_category_idx ON ${table} (lower(city), ${table === "movies" ? "genre" : "category"})`,
       ),
+    );
+  }
+
+  for (const table of CITY_SCOPED_TABLES) {
+    await db.execute(
+      sql.raw(`CREATE INDEX IF NOT EXISTS ${table}_lower_city_idx ON ${table} (lower(city))`),
     );
   }
 }

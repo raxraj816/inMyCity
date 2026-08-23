@@ -81,13 +81,34 @@ export default function DealDetailScreen() {
               <Text style={styles.discountText}>{deal.discountText}</Text>
             </View>
             
-            {daysLeft > 0 && (
+            {deal.isExpired ? (
+              <View style={[styles.expiryBadge, { backgroundColor: colors.destructive + "1A" }]}>
+                <Feather name="slash" size={14} color={colors.destructive} />
+                <Text style={[styles.expiryText, { color: colors.destructive }]}>This deal has ended</Text>
+              </View>
+            ) : daysLeft > 0 ? (
               <View style={[styles.expiryBadge, { backgroundColor: colors.muted }]}>
                 <Feather name="clock" size={14} color={colors.foreground} />
-                <Text style={[styles.expiryText, { color: colors.foreground }]}>Ends in {daysLeft} days</Text>
+                <Text style={[styles.expiryText, { color: colors.foreground }]}>
+                  Ends in {daysLeft} {daysLeft === 1 ? "day" : "days"}
+                </Text>
               </View>
-            )}
+            ) : null}
           </View>
+
+          {/*
+            The list route drops an expired deal, but a saved link or a shared one still lands
+            here. Saying so plainly beats a page that looks live and is not.
+          */}
+          {deal.isExpired ? (
+            <View style={[styles.expiredNotice, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+              <Feather name="info" size={14} color={colors.mutedForeground} />
+              <Text style={[styles.expiredNoticeText, { color: colors.mutedForeground }]}>
+                This offer expired on {new Date(deal.expiresAt!).toLocaleDateString()}. The venue may still be
+                worth a visit, but do not expect this price.
+              </Text>
+            </View>
+          ) : null}
 
           <Text style={[styles.title, { color: colors.foreground }]}>{deal.title}</Text>
           <Text style={[styles.placeName, { color: colors.mutedForeground }]}>{deal.placeName}</Text>
@@ -112,27 +133,22 @@ export default function DealDetailScreen() {
             </View>
           )}
 
-          {(deal.code || deal.qrData) && (
+          {/*
+            The QR block used to draw an icon captioned "QR Code" with nothing behind it — a
+            redemption affordance for a redemption the app cannot perform. Until partner deals
+            are real, this shows the code the venue actually accepts and says where to use it.
+          */}
+          {deal.code && !deal.isExpired ? (
             <View style={styles.redemptionSection}>
               <Text style={[styles.redemptionTitle, { color: colors.foreground }]}>How to redeem</Text>
-              
               <View style={[styles.codeBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                {deal.qrData && (
-                  <View style={[styles.qrPlaceholder, { backgroundColor: colors.muted }]}>
-                    <Feather name="maximize" size={48} color={colors.mutedForeground} />
-                    <Text style={{ marginTop: 8, color: colors.mutedForeground }}>QR Code</Text>
-                  </View>
-                )}
-                
-                {deal.code && (
-                  <View style={styles.codeContainer}>
-                    <Text style={[styles.codeLabel, { color: colors.mutedForeground }]}>Promo Code</Text>
-                    <Text style={[styles.codeValue, { color: colors.foreground }]}>{deal.code}</Text>
-                  </View>
-                )}
+                <View style={styles.codeContainer}>
+                  <Text style={[styles.codeLabel, { color: colors.mutedForeground }]}>Show this code at {deal.placeName}</Text>
+                  <Text style={[styles.codeValue, { color: colors.foreground }]}>{deal.code}</Text>
+                </View>
               </View>
             </View>
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </View>
@@ -141,6 +157,16 @@ export default function DealDetailScreen() {
 
 const styles = StyleSheet.create({
   errorBack: { alignSelf: "center", padding: 16, minHeight: 44 },
+  expiredNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  expiredNoticeText: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, flex: 1 },
   errorBackText: { fontFamily: "Inter_500Medium", fontSize: 15 },
   container: {
     flex: 1,
@@ -257,14 +283,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     alignItems: "center",
-  },
-  qrPlaceholder: {
-    width: 160,
-    height: 160,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
   },
   codeContainer: {
     alignItems: "center",

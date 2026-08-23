@@ -39,6 +39,25 @@ tags:
     description: AI assistant operations
   - name: search
     description: Cross-catalogue search
+  - name: pulse
+    description: Pulse feed — editorial and reader-submitted posts
+  - name: news
+    description: Ingested, editorially reviewed local news
+  - name: communities
+    description: Local community directory and membership
+  - name: qa
+    description: Local questions and answers
+  - name: moderation
+    description: Reporting and the published grievance path
+  - name: cityGuide
+    description: Editable City Guide header, facts and insider tips
+  - name: admin
+    description: >-
+      Protected content operations, documented in docs/admin-api.md rather than here. The
+      admin surface has no app client, so generating a React Query hook and a Zod schema per
+      endpoint would be dead code; and its generic `/admin/{collection}` route carries both a
+      path parameter and query filters, which orval renders as a value and a type under one
+      name. Both reasons point the same way: the spec covers what the app consumes.
 paths:
   /auth/user:
     get:
@@ -1050,6 +1069,409 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecommendationsResponse"
 
+  /pulse:
+    get:
+      operationId: getPulsePosts
+      tags: [pulse]
+      summary: List published Pulse posts for a city
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: filter
+          in: query
+          description: One of the feed's filter tags, or `all`.
+          schema:
+            type: string
+        - name: neighborhood
+          in: query
+          description: Launch zone id, e.g. `bandra`.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Published posts, featured first then newest
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PulsePost"
+    post:
+      operationId: submitPulsePost
+      tags: [pulse]
+      summary: Submit a Pulse post for moderation
+      description: >-
+        Answers 503 while submissions are closed. Nothing submitted here is ever published
+        directly; it lands in the moderation queue as a pending row.
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitPulsePostInput"
+      responses:
+        "202":
+          description: Accepted for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionAccepted"
+        "400":
+          description: Invalid submission
+        "503":
+          description: Submissions are not open yet
+
+  /pulse/{id}:
+    get:
+      operationId: getPulsePostById
+      tags: [pulse]
+      summary: Get one published Pulse post
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PulsePost"
+        "404":
+          description: Not found
+
+  /pulse/{id}/reactions:
+    post:
+      operationId: togglePulseReaction
+      tags: [pulse]
+      summary: Toggle a like or a save on a post
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PulseReactionInput"
+      responses:
+        "200":
+          description: The reaction's new state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PulseReactionState"
+        "404":
+          description: Not found
+
+  /news:
+    get:
+      operationId: getNewsItems
+      tags: [news]
+      summary: List published news items for a city
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Published news, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsItem"
+
+  /communities:
+    get:
+      operationId: getCommunities
+      tags: [communities]
+      summary: List communities for a city
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Communities, most joined first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Community"
+
+  /communities/{id}/membership:
+    post:
+      operationId: setCommunityMembership
+      tags: [communities]
+      summary: Join or leave a community
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunityMembershipInput"
+      responses:
+        "200":
+          description: The community with its updated membership state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Community"
+        "404":
+          description: Not found
+
+  /qa/questions:
+    get:
+      operationId: getQaQuestions
+      tags: [qa]
+      summary: List published questions for a city
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [recent, top]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Published questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QaQuestion"
+    post:
+      operationId: submitQaQuestion
+      tags: [qa]
+      summary: Ask a question, for moderation
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitQaQuestionInput"
+      responses:
+        "202":
+          description: Accepted for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionAccepted"
+        "400":
+          description: Invalid submission
+        "503":
+          description: Submissions are not open yet
+
+  /qa/questions/{id}:
+    get:
+      operationId: getQaQuestionById
+      tags: [qa]
+      summary: Get one question with its published answers
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The question and its answers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QaQuestionDetail"
+        "404":
+          description: Not found
+
+  /qa/questions/{id}/answers:
+    post:
+      operationId: submitQaAnswer
+      tags: [qa]
+      summary: Answer a question, for moderation
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitQaAnswerInput"
+      responses:
+        "202":
+          description: Accepted for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionAccepted"
+        "400":
+          description: Invalid submission
+        "404":
+          description: Question not found
+        "503":
+          description: Submissions are not open yet
+
+  /qa/{targetType}/{id}/upvote:
+    post:
+      operationId: toggleQaUpvote
+      tags: [qa]
+      summary: Toggle an upvote on a question or an answer
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - name: targetType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [questions, answers]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The new vote state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QaUpvoteState"
+        "404":
+          description: Not found
+
+  /reports:
+    post:
+      operationId: submitContentReport
+      tags: [moderation]
+      summary: Report a piece of content
+      description: >-
+        Open to signed-out readers. The response carries the window inside which the report
+        will be answered, which is what the app shows back to the reporter.
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitContentReportInput"
+      responses:
+        "201":
+          description: Report filed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentReportReceipt"
+        "400":
+          description: Invalid report
+
+  /community-policy:
+    get:
+      operationId: getCommunityPolicy
+      tags: [moderation]
+      summary: The published grievance contact, report reasons and submission state
+      responses:
+        "200":
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityPolicy"
+
+  /city-guide:
+    get:
+      operationId: getCityGuide
+      tags: [cityGuide]
+      summary: Editable City Guide header, facts and insider tips for a city
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: City guide content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CityGuideContent"
+        "400":
+          description: city is required
+
 components:
   parameters:
     AuthorizationSessionHeader:
@@ -1064,6 +1486,15 @@ components:
       in: cookie
       required: false
       description: Browser session cookie.
+      schema:
+        type: string
+    DeviceIdHeader:
+      name: X-Device-Id
+      in: header
+      required: false
+      description: >-
+        Stable per-install identifier. Lets likes, saves, joins and upvotes work before
+        sign-in; the server namespaces it so it can never collide with a user id.
       schema:
         type: string
   schemas:
@@ -1333,6 +1764,11 @@ components:
           type: ["string", "null"]
         expiresAt:
           type: ["string", "null"]
+        isExpired:
+          type: boolean
+          description: >-
+            True only on the detail route, and only for a deal whose expiry has passed. The
+            list route never returns an expired deal, so it is always false there.
         imageUrl:
           type: ["string", "null"]
         lat:
@@ -1349,6 +1785,7 @@ components:
         - placeName
         - category
         - discountText
+        - isExpired
         - createdAt
 
     Favorite:
@@ -2054,3 +2491,396 @@ components:
         - images
         - tags
         - createdAt
+    PulsePost:
+      type: object
+      required:
+        [id, city, tier, authorName, authorHandle, caption, mediaType, filterTags,
+         likeCount, saveCount, isSponsored, isFeatured, publishedAt, viewerHasLiked, viewerHasSaved]
+      properties:
+        id:
+          type: integer
+        city:
+          type: string
+        tier:
+          type: string
+          enum: [official, local_expert, creator, business, resident]
+        authorName:
+          type: string
+        authorHandle:
+          type: string
+        location:
+          type: [string, 'null']
+        neighborhoodId:
+          type: [string, 'null']
+        caption:
+          type: string
+        mediaType:
+          type: string
+          enum: [image, video]
+        mediaUrl:
+          type: [string, 'null']
+        videoDurationSeconds:
+          type: [integer, 'null']
+        filterTags:
+          type: array
+          items:
+            type: string
+        likeCount:
+          type: integer
+        saveCount:
+          type: integer
+        source:
+          type: [string, 'null']
+        sourceUrl:
+          type: [string, 'null']
+        trustLabel:
+          type: [string, 'null']
+          description: verified | editorial | partner | community | user-submitted
+        confidence:
+          type: [string, 'null']
+          description: high | medium | low
+        isSponsored:
+          type: boolean
+        isFeatured:
+          type: boolean
+        publishedAt:
+          type: string
+        viewerHasLiked:
+          type: boolean
+        viewerHasSaved:
+          type: boolean
+    SubmitPulsePostInput:
+      type: object
+      required: [city, caption]
+      properties:
+        city:
+          type: string
+        caption:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        mediaUrl:
+          type: [string, 'null']
+        mediaType:
+          type: string
+          enum: [image, video]
+        neighborhoodId:
+          type: [string, 'null']
+        location:
+          type: [string, 'null']
+        filterTags:
+          type: array
+          items:
+            type: string
+    PulseReactionInput:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [like, save]
+    CommunityMembershipInput:
+      type: object
+      properties:
+        join:
+          type: boolean
+          description: Defaults to true. Send false to leave.
+    SubmitQaAnswerInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 10
+          maxLength: 2000
+    PulseReactionState:
+      type: object
+      required: [postId, kind, active, likeCount, saveCount]
+      properties:
+        postId:
+          type: integer
+        kind:
+          type: string
+          enum: [like, save]
+        active:
+          type: boolean
+        likeCount:
+          type: integer
+        saveCount:
+          type: integer
+    SubmissionAccepted:
+      type: object
+      required: [id, status, message]
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        message:
+          type: string
+    NewsItem:
+      type: object
+      required: [id, city, category, headline, source, sourceKind, publishedAt]
+      properties:
+        id:
+          type: integer
+        city:
+          type: string
+        category:
+          type: string
+        headline:
+          type: string
+        summary:
+          type: [string, 'null']
+        imageUrl:
+          type: [string, 'null']
+        link:
+          type: [string, 'null']
+        source:
+          type: string
+        sourceKind:
+          type: string
+        trustLabel:
+          type: [string, 'null']
+        confidence:
+          type: [string, 'null']
+        publishedAt:
+          type: string
+    Community:
+      type: object
+      required: [id, slug, city, name, description, icon, tags, memberCount, viewerHasJoined]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        city:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        memberCount:
+          type: integer
+        activitySummary:
+          type: [string, 'null']
+        viewerHasJoined:
+          type: boolean
+    QaQuestion:
+      type: object
+      required:
+        [id, city, question, authorName, authorInitials, tags, upvoteCount, answerCount,
+         publishedAt, viewerHasUpvoted]
+      properties:
+        id:
+          type: integer
+        city:
+          type: string
+        question:
+          type: string
+        body:
+          type: [string, 'null']
+        authorName:
+          type: string
+        authorInitials:
+          type: string
+        neighborhoodId:
+          type: [string, 'null']
+        tags:
+          type: array
+          items:
+            type: string
+        upvoteCount:
+          type: integer
+        answerCount:
+          type: integer
+        publishedAt:
+          type: string
+        viewerHasUpvoted:
+          type: boolean
+    QaAnswer:
+      type: object
+      required: [id, questionId, body, authorName, authorInitials, isAccepted, upvoteCount, publishedAt, viewerHasUpvoted]
+      properties:
+        id:
+          type: integer
+        questionId:
+          type: integer
+        body:
+          type: string
+        authorName:
+          type: string
+        authorInitials:
+          type: string
+        isAccepted:
+          type: boolean
+        upvoteCount:
+          type: integer
+        publishedAt:
+          type: string
+        viewerHasUpvoted:
+          type: boolean
+    QaQuestionDetail:
+      allOf:
+        - $ref: "#/components/schemas/QaQuestion"
+        - type: object
+          required: [answers]
+          properties:
+            answers:
+              type: array
+              items:
+                $ref: "#/components/schemas/QaAnswer"
+    SubmitQaQuestionInput:
+      type: object
+      required: [city, question]
+      properties:
+        city:
+          type: string
+        question:
+          type: string
+          minLength: 10
+          maxLength: 300
+        body:
+          type: [string, 'null']
+        neighborhoodId:
+          type: [string, 'null']
+        tags:
+          type: array
+          items:
+            type: string
+    QaUpvoteState:
+      type: object
+      required: [id, targetType, upvoteCount, active]
+      properties:
+        id:
+          type: integer
+        targetType:
+          type: string
+          enum: [question, answer]
+        upvoteCount:
+          type: integer
+        active:
+          type: boolean
+    SubmitContentReportInput:
+      type: object
+      required: [targetType, targetId, reason]
+      properties:
+        targetType:
+          type: string
+          enum: [pulse_post, news_item, qa_question, qa_answer, community]
+        targetId:
+          type: integer
+        reason:
+          type: string
+          enum: [inaccurate, spam, harassment, hate_speech, adult_content, impersonation, copyright, privacy, illegal, other]
+        details:
+          type: [string, 'null']
+        reporterEmail:
+          type: [string, 'null']
+    ContentReportReceipt:
+      type: object
+      required: [id, status, dueAt, responseHours, message]
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        dueAt:
+          type: string
+        responseHours:
+          type: integer
+        message:
+          type: string
+    GrievanceOfficer:
+      type: object
+      required: [officerName, email, acknowledgementHours]
+      properties:
+        officerName:
+          type: string
+        email:
+          type: string
+        address:
+          type: [string, 'null']
+        acknowledgementHours:
+          type: integer
+    CommunityPolicy:
+      type: object
+      required: [submissionsEnabled, reportReasons]
+      properties:
+        submissionsEnabled:
+          type: boolean
+        reportReasons:
+          type: array
+          items:
+            type: object
+            required: [id, responseHours]
+            properties:
+              id:
+                type: string
+              responseHours:
+                type: integer
+        grievanceOfficer:
+          oneOf:
+            - $ref: "#/components/schemas/GrievanceOfficer"
+            - type: 'null'
+    CityFact:
+      type: object
+      required: [id, group, label, value, icon]
+      properties:
+        id:
+          type: integer
+        group:
+          type: string
+          enum: [essential, extra]
+        label:
+          type: string
+        value:
+          type: string
+        icon:
+          type: string
+    InsiderTip:
+      type: object
+      required: [id, label, tip, icon, color]
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        tip:
+          type: string
+        icon:
+          type: string
+        color:
+          type: string
+        neighborhoodId:
+          type: [string, 'null']
+    CityGuideContent:
+      type: object
+      required: [city, facts, insiderTips]
+      properties:
+        city:
+          type: string
+        tagline:
+          type: [string, 'null']
+        knownFor:
+          type: [string, 'null']
+        tripLength:
+          type: [string, 'null']
+        timezoneLabel:
+          type: [string, 'null']
+        lastVerifiedAt:
+          type: [string, 'null']
+        facts:
+          type: array
+          items:
+            $ref: "#/components/schemas/CityFact"
+        insiderTips:
+          type: array
+          items:
+            $ref: "#/components/schemas/InsiderTip"

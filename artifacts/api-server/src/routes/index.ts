@@ -16,6 +16,14 @@ import transitRouter from "./transit";
 import aiRouter from "./ai";
 import recommendationsRouter from "./recommendations";
 import searchRouter from "./search";
+import pulseRouter from "./pulse";
+import newsRouter from "./news";
+import communitiesRouter from "./communities";
+import qaRouter from "./qa";
+import reportsRouter from "./reports";
+import cityGuideRouter from "./cityGuide";
+import adminRouter from "./admin";
+import moderationRouter from "./moderation";
 
 const router: IRouter = Router();
 
@@ -34,6 +42,17 @@ router.use(hotelsRouter);
 router.use(activitiesRouter);
 router.use(transitRouter);
 router.use(searchRouter);
+router.use(pulseRouter);
+router.use(newsRouter);
+router.use(communitiesRouter);
+router.use(qaRouter);
+router.use(reportsRouter);
+router.use(cityGuideRouter);
+// The moderation router owns the `/admin/moderation`, `/admin/reports` and
+// `/admin/content-health` paths, so it is mounted ahead of the generic `/admin/:collection`
+// CRUD router — which passes anything that is not a known collection straight through.
+router.use(moderationRouter);
+router.use(adminRouter);
 router.use(recommendationsRouter);
 router.use(aiRouter);
 

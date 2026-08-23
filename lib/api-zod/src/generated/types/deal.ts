@@ -30,6 +30,8 @@ export interface Deal {
   qrData?: string | null;
   /** @nullable */
   expiresAt?: string | null;
+  /** True only on the detail route, and only for a deal whose expiry has passed. The list route never returns an expired deal, so it is always false there. */
+  isExpired: boolean;
   /** @nullable */
   imageUrl?: string | null;
   /** @nullable */

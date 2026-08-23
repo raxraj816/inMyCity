@@ -57,6 +57,7 @@ function RootLayoutNav() {
       <Stack.Screen name="dining" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="nightlife" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="sports" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="spa-salons" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="places" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="movies" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="movie/[id]" options={{ headerShown: false, presentation: "card" }} />

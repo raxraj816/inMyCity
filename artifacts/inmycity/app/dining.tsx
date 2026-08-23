@@ -21,9 +21,11 @@ import { TrendingStrip, TrendingStripItem } from "@/components/TrendingStrip";
 import { NearbyFilters } from "@/components/NearbyFilters";
 import { useNearby } from "@/hooks/useNearby";
 
+// "Sit-down" rather than "Restaurants": the screen itself is called Restaurants now, and a
+// pill repeating the screen's own name reads as a no-op rather than as a filter.
 const FILTERS = [
   { id: "all",         label: "All"         },
-  { id: "restaurant",  label: "Restaurants" },
+  { id: "restaurant",  label: "Sit-down"    },
   { id: "cafe",        label: "Cafes"       },
   { id: "street food", label: "Street Food" },
   { id: "bar",         label: "Bars"        },
@@ -57,7 +59,7 @@ export default function DiningScreen() {
     imageUrl: p.imageUrl,
     meta1:    p.tags?.[0]
       ? p.tags[0].charAt(0).toUpperCase() + p.tags[0].slice(1)
-      : "Dining",
+      : "Restaurant",
     meta2:    p.rating != null ? `⭐ ${p.rating.toFixed(1)}` : undefined,
     route:    `/place/${p.id}`,
   }));
@@ -70,13 +72,13 @@ export default function DiningScreen() {
       items={trendingItems}
       accentColor={ACCENT}
       isLoading={isLoading}
-      label="Trending Dining"
+      label="Trending Restaurants"
     />
   );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Dining" topPadding={Math.max(insets.top, 20)} />
+      <ScreenHeader title="Restaurants" topPadding={Math.max(insets.top, 20)} />
 
       {/* Filter Pills */}
       <ScrollView
@@ -97,7 +99,7 @@ export default function DiningScreen() {
               onPress={() => setActiveFilter(f.id)}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={`${f.label} in dining`}
+              accessibilityLabel={`${f.label} restaurants`}
             >
               <Text style={[styles.pillText, { color: active ? "#fff" : colors.foreground }]}>
                 {f.label}
@@ -111,7 +113,7 @@ export default function DiningScreen() {
 
       {/* Content */}
       {error ? (
-        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="dining spots" />
+        <ErrorState error={error} onRetry={refetch} accent={ACCENT} subject="restaurants" />
       ) : isLoading ? (
         <>
           {ListHeader}
@@ -137,7 +139,7 @@ export default function DiningScreen() {
               message={
                 activeFilter !== "all"
                   ? `No ${activeFilter} spots in ${selectedCity?.name ?? "this city"} yet.`
-                  : `No dining spots in ${selectedCity?.name ?? "this city"} yet.`
+                  : `No restaurants in ${selectedCity?.name ?? "this city"} yet.`
               }
             />
           }

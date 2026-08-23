@@ -25,6 +25,7 @@ const FILTERS = [
   { id: "attraction", label: "Attractions",  category: "attraction"  },
   { id: "nightlife",  label: "Nightlife",    category: "nightlife"   },
   { id: "essentials", label: "Essentials",   category: "essentials"  },
+  { id: "wellness",   label: "Spa & Salons", category: "wellness"    },
 ];
 
 const ACCENT = "#4f46e5";

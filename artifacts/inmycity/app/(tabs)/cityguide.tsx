@@ -42,6 +42,7 @@ const PLACE_FILTERS = [
   { id: "attraction", label: "Attractions" },
   { id: "nightlife", label: "Nightlife" },
   { id: "essentials", label: "Essentials" },
+  { id: "wellness", label: "Spa & Salons" },
 ];
 
 const ACTIVITY_SORT_OPTIONS = [
@@ -692,7 +693,7 @@ function EmptySection({ icon, message, colors }: { icon: string; message: string
 }
 
 function PlaceGuideCard({ place, colors, onPress }: { place: Place; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; onPress: () => void; }) {
-  const categoryColor = place.category === "food" ? "#c2410c" : place.category === "attraction" ? "#0369a1" : place.category === "nightlife" ? "#be185d" : place.category === "essentials" ? "#047857" : colors.mutedForeground;
+  const categoryColor = place.category === "food" ? "#c2410c" : place.category === "attraction" ? "#0369a1" : place.category === "nightlife" ? "#be185d" : place.category === "essentials" ? "#047857" : place.category === "wellness" ? "#0e7490" : colors.mutedForeground;
   return (
     <TouchableOpacity activeOpacity={0.85} style={[styles.placeCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onPress}>
       <View style={styles.placeImageBox}>

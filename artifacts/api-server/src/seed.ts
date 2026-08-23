@@ -24,7 +24,6 @@ import {
   transitRoutesTable,
   cityFactsTable,
   cityGuidesTable,
-  communitiesTable,
   insiderTipsTable,
   newsSourcesTable,
   pulsePostsTable,
@@ -723,22 +722,6 @@ async function seed() {
     ], (row) => [row.city, row.label, row.neighborhoodId]),
   );
 
-  // ─── COMMUNITIES ────────────────────────────────────────────────────────────
-  // `memberCount` is left at its default of zero. It is a real counter maintained by the join
-  // route, and seeding it with a plausible-looking number would be inventing social proof.
-  await upsertSeedRows(
-    communitiesTable,
-    communitiesTable.externalId,
-    withExternalId("community", [
-      { slug: "mumbai-foodies", city: "Mumbai", name: "Mumbai Foodies", description: "Street eats, new openings and the arguments about which vada pav is actually best.", icon: "coffee", tags: ["Food", "Street Food", "Restaurants"], status: "published" },
-      { slug: "mumbai-local-train-riders", city: "Mumbai", name: "Local Train Riders", description: "Timings, megablocks, platform hacks and which carriage to board. Written by people who do it daily.", icon: "navigation", tags: ["Transit", "Western", "Central", "Harbour"], status: "published" },
-      { slug: "mumbai-monsoon-watch", city: "Mumbai", name: "Monsoon Watch", description: "Waterlogging reports, which roads to avoid, and what is still worth doing when it is pouring.", icon: "cloud-rain", tags: ["Monsoon", "Weather", "Civic"], status: "published" },
-      { slug: "mumbai-heritage-walks", city: "Mumbai", name: "Heritage Walks", description: "Fort, Kala Ghoda, Banganga and the Art Deco of Marine Drive, walked slowly and explained properly.", icon: "map", tags: ["Heritage", "Architecture", "Walks"], status: "published" },
-      { slug: "mumbai-runners", city: "Mumbai", name: "Mumbai Runners", description: "Marine Drive at 5am, Shivaji Park loops, and where to run when the air is bad.", icon: "activity", tags: ["Running", "Fitness", "Outdoors"], status: "published" },
-      { slug: "bandra-residents", city: "Mumbai", name: "Bandra Residents", description: "Hyperlocal notices, roadworks, small business openings and what the neighbourhood is arguing about.", icon: "home", tags: ["Bandra", "Neighbourhood", "Local"], status: "published" },
-    ], (row) => [row.slug]),
-  );
-
   // ─── PULSE (editorial launch content) ───────────────────────────────────────
   // No `mediaUrl`. Every image in the catalogue is still stock, and section 2.3 is explicit
   // that a stock photo on a real named place destroys trust faster than no photo does. These
@@ -813,7 +796,7 @@ async function seed() {
     await db.update(qaQuestionsTable).set({ answerCount: total }).where(eq(qaQuestionsTable.id, question.id));
   }
 
-  console.log("Seeded Pulse, Q&A, communities, city facts and insider tips");
+  console.log("Seeded Pulse, Q&A, city facts and insider tips");
 
   console.log("Database seeded successfully!");
 }

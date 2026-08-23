@@ -2,7 +2,6 @@ import { Router } from "express";
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import {
-  communitiesTable,
   contentReportsTable,
   db,
   newsItemsTable,
@@ -98,14 +97,6 @@ const MODERATED: Record<string, ModeratedTarget> = {
     publishedAtColumn: qaAnswersTable.publishedAt,
     createdAtColumn: qaAnswersTable.createdAt,
     onStatusChange: syncAnswerCount,
-  },
-  community: {
-    table: communitiesTable,
-    idColumn: communitiesTable.id,
-    statusColumn: communitiesTable.status,
-    titleColumn: communitiesTable.name,
-    createdAtColumn: communitiesTable.createdAt,
-    cityColumn: communitiesTable.city,
   },
 };
 

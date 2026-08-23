@@ -670,11 +670,6 @@ export interface PulseReactionInput {
   kind: PulseReactionInputKind;
 }
 
-export interface CommunityMembershipInput {
-  /** Defaults to true. Send false to leave. */
-  join?: boolean;
-}
-
 export interface SubmitQaAnswerInput {
   /**
    * @minLength 10
@@ -723,20 +718,6 @@ export interface NewsItem {
   /** @nullable */
   confidence?: string | null;
   publishedAt: string;
-}
-
-export interface Community {
-  id: number;
-  slug: string;
-  city: string;
-  name: string;
-  description: string;
-  icon: string;
-  tags: string[];
-  memberCount: number;
-  /** @nullable */
-  activitySummary?: string | null;
-  viewerHasJoined: boolean;
 }
 
 export interface QaQuestion {
@@ -809,7 +790,6 @@ export const SubmitContentReportInputTargetType = {
   news_item: "news_item",
   qa_question: "qa_question",
   qa_answer: "qa_answer",
-  community: "community",
 } as const;
 
 export type SubmitContentReportInputReason =
@@ -1098,12 +1078,6 @@ export type GetPulsePostsParams = {
 export type GetNewsItemsParams = {
   city?: string;
   category?: string;
-  limit?: number;
-  offset?: number;
-};
-
-export type GetCommunitiesParams = {
-  city?: string;
   limit?: number;
   offset?: number;
 };

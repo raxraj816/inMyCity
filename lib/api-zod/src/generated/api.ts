@@ -1374,74 +1374,6 @@ export const GetNewsItemsResponseItem = zod.object({
 export const GetNewsItemsResponse = zod.array(GetNewsItemsResponseItem);
 
 /**
- * @summary List communities for a city
- */
-export const GetCommunitiesQueryParams = zod.object({
-  city: zod.coerce.string().optional(),
-  limit: zod.coerce.number().optional(),
-  offset: zod.coerce.number().optional(),
-});
-
-export const GetCommunitiesHeader = zod.object({
-  "X-Device-Id": zod
-    .string()
-    .optional()
-    .describe(
-      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
-    ),
-});
-
-export const GetCommunitiesResponseItem = zod.object({
-  id: zod.number(),
-  slug: zod.string(),
-  city: zod.string(),
-  name: zod.string(),
-  description: zod.string(),
-  icon: zod.string(),
-  tags: zod.array(zod.string()),
-  memberCount: zod.number(),
-  activitySummary: zod.string().nullish(),
-  viewerHasJoined: zod.boolean(),
-});
-export const GetCommunitiesResponse = zod.array(GetCommunitiesResponseItem);
-
-/**
- * @summary Join or leave a community
- */
-export const SetCommunityMembershipParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const SetCommunityMembershipHeader = zod.object({
-  "X-Device-Id": zod
-    .string()
-    .optional()
-    .describe(
-      "Stable per-install identifier. Lets likes, saves, joins and upvotes work before sign-in; the server namespaces it so it can never collide with a user id.",
-    ),
-});
-
-export const SetCommunityMembershipBody = zod.object({
-  join: zod
-    .boolean()
-    .optional()
-    .describe("Defaults to true. Send false to leave."),
-});
-
-export const SetCommunityMembershipResponse = zod.object({
-  id: zod.number(),
-  slug: zod.string(),
-  city: zod.string(),
-  name: zod.string(),
-  description: zod.string(),
-  icon: zod.string(),
-  tags: zod.array(zod.string()),
-  memberCount: zod.number(),
-  activitySummary: zod.string().nullish(),
-  viewerHasJoined: zod.boolean(),
-});
-
-/**
  * @summary List published questions for a city
  */
 export const GetQaQuestionsQueryParams = zod.object({
@@ -1615,13 +1547,7 @@ export const SubmitContentReportHeader = zod.object({
 });
 
 export const SubmitContentReportBody = zod.object({
-  targetType: zod.enum([
-    "pulse_post",
-    "news_item",
-    "qa_question",
-    "qa_answer",
-    "community",
-  ]),
+  targetType: zod.enum(["pulse_post", "news_item", "qa_question", "qa_answer"]),
   targetId: zod.number(),
   reason: zod.enum([
     "inaccurate",

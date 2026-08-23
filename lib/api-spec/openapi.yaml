@@ -43,8 +43,6 @@ tags:
     description: Pulse feed — editorial and reader-submitted posts
   - name: news
     description: Ingested, editorially reviewed local news
-  - name: communities
-    description: Local community directory and membership
   - name: qa
     description: Local questions and answers
   - name: moderation
@@ -1215,63 +1213,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/NewsItem"
-
-  /communities:
-    get:
-      operationId: getCommunities
-      tags: [communities]
-      summary: List communities for a city
-      parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
-        - name: city
-          in: query
-          schema:
-            type: string
-        - name: limit
-          in: query
-          schema:
-            type: integer
-        - name: offset
-          in: query
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Communities, most joined first
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Community"
-
-  /communities/{id}/membership:
-    post:
-      operationId: setCommunityMembership
-      tags: [communities]
-      summary: Join or leave a community
-      parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CommunityMembershipInput"
-      responses:
-        "200":
-          description: The community with its updated membership state
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Community"
-        "404":
-          description: Not found
 
   /qa/questions:
     get:
@@ -2579,12 +2520,6 @@ components:
         kind:
           type: string
           enum: [like, save]
-    CommunityMembershipInput:
-      type: object
-      properties:
-        join:
-          type: boolean
-          description: Defaults to true. Send false to leave.
     SubmitQaAnswerInput:
       type: object
       required: [body]
@@ -2646,32 +2581,6 @@ components:
           type: [string, 'null']
         publishedAt:
           type: string
-    Community:
-      type: object
-      required: [id, slug, city, name, description, icon, tags, memberCount, viewerHasJoined]
-      properties:
-        id:
-          type: integer
-        slug:
-          type: string
-        city:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        icon:
-          type: string
-        tags:
-          type: array
-          items:
-            type: string
-        memberCount:
-          type: integer
-        activitySummary:
-          type: [string, 'null']
-        viewerHasJoined:
-          type: boolean
     QaQuestion:
       type: object
       required:
@@ -2773,7 +2682,7 @@ components:
       properties:
         targetType:
           type: string
-          enum: [pulse_post, news_item, qa_question, qa_answer, community]
+          enum: [pulse_post, news_item, qa_question, qa_answer]
         targetId:
           type: integer
         reason:

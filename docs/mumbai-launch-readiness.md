@@ -646,9 +646,9 @@ Do:
 Done when: Pulse content is created, edited and removed without a deploy, and a reported
 post can be taken down within the required window.
 
-**Built.** `pulse_posts`, `pulse_post_reactions`, `news_sources`, `news_items`, `communities`,
-`community_members`, `qa_questions`, `qa_answers`, `qa_votes`, `content_reports` and
-`moderation_actions`, each row carrying source, trust label, confidence and city. Routes,
+**Built.** `pulse_posts`, `pulse_post_reactions`, `news_sources`, `news_items`, `qa_questions`,
+`qa_answers`, `qa_votes`, `content_reports` and `moderation_actions`, each row carrying source,
+trust label, confidence and city. Routes,
 OpenAPI entries, codegen and a rewritten `feeds.tsx` that reads all four tabs from the API.
 Submission routes for posts, questions and answers, rate limited per hour and gated behind
 `COMMUNITY_SUBMISSIONS_ENABLED` so they stay closed until moderation is staffed — decision 2,
@@ -658,7 +658,7 @@ editor publishing it. Reporting is one tap from every post, question, answer and
 the response window shown to the reporter is the same one stamped on the queue: 24 hours for the
 categories the IT Rules give 24 hours, 72 for the rest.
 
-Three things changed shape in the process, and all three are the same decision:
+Four things changed shape in the process, and all four are the same decision:
 
 - **Engagement counts are real.** The mock feed shipped posts with three thousand invented likes.
   Counts now come from `pulse_post_reactions`, start at zero, and a zero is not drawn.
@@ -667,6 +667,13 @@ Three things changed shape in the process, and all three are the same decision:
 - **Seeded Pulse posts carry no image.** Every image in the catalogue is still stock, and 2.3 is
   explicit that a stock photo on a real named place destroys trust faster than no photo does.
   The cards render text-first until commissioned photography exists.
+- **Communities are gone, tables and all.** The section above lists them, and they were built:
+  a directory, real membership keyed to the reader, a moderation path. But a community you can
+  join has to have something inside it, and nothing here posts to one — no community-scoped
+  feed, no notifications. Join wrote a row and the reader got nothing back, which is the same
+  broken promise as a booking button with no booking behind it, and every card read "Be the
+  first to join" in perpetuity. Removed rather than hidden, so no dead API, table or moderation
+  type is left to explain. Reinstate it from git history when there is something to join.
 
 Still needed before submissions can be switched on: a named grievance officer
 (`GRIEVANCE_OFFICER_NAME` / `_EMAIL`), a staffed queue, and a verified feed URL per news source.

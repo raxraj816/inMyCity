@@ -25,8 +25,6 @@ import type {
   CityGuideContent,
   CitySearchResponse,
   Collection,
-  Community,
-  CommunityMembershipInput,
   CommunityPolicy,
   ContentReportReceipt,
   CreateCollectionInput,
@@ -38,7 +36,6 @@ import type {
   Favorite,
   GetActivitiesParams,
   GetCityGuideParams,
-  GetCommunitiesParams,
   GetDealsParams,
   GetEventsParams,
   GetExploreSummaryParams,
@@ -4059,188 +4056,6 @@ export function useGetNewsItems<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
-/**
- * @summary List communities for a city
- */
-export const getGetCommunitiesUrl = (params?: GetCommunitiesParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/communities?${stringifiedParams}`
-    : `/api/communities`;
-};
-
-export const getCommunities = async (
-  params?: GetCommunitiesParams,
-  options?: RequestInit,
-): Promise<Community[]> => {
-  return customFetch<Community[]>(getGetCommunitiesUrl(params), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetCommunitiesQueryKey = (params?: GetCommunitiesParams) => {
-  return [`/api/communities`, ...(params ? [params] : [])] as const;
-};
-
-export const getGetCommunitiesQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCommunities>>,
-  TError = ErrorType<unknown>,
->(
-  params?: GetCommunitiesParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getCommunities>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetCommunitiesQueryKey(params);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCommunities>>> = ({
-    signal,
-  }) => getCommunities(params, { signal, ...requestOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getCommunities>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetCommunitiesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getCommunities>>
->;
-export type GetCommunitiesQueryError = ErrorType<unknown>;
-
-/**
- * @summary List communities for a city
- */
-
-export function useGetCommunities<
-  TData = Awaited<ReturnType<typeof getCommunities>>,
-  TError = ErrorType<unknown>,
->(
-  params?: GetCommunitiesParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getCommunities>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetCommunitiesQueryOptions(params, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * @summary Join or leave a community
- */
-export const getSetCommunityMembershipUrl = (id: number) => {
-  return `/api/communities/${id}/membership`;
-};
-
-export const setCommunityMembership = async (
-  id: number,
-  communityMembershipInput: CommunityMembershipInput,
-  options?: RequestInit,
-): Promise<Community> => {
-  return customFetch<Community>(getSetCommunityMembershipUrl(id), {
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(communityMembershipInput),
-  });
-};
-
-export const getSetCommunityMembershipMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof setCommunityMembership>>,
-    TError,
-    { id: number; data: BodyType<CommunityMembershipInput> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof setCommunityMembership>>,
-  TError,
-  { id: number; data: BodyType<CommunityMembershipInput> },
-  TContext
-> => {
-  const mutationKey = ["setCommunityMembership"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof setCommunityMembership>>,
-    { id: number; data: BodyType<CommunityMembershipInput> }
-  > = (props) => {
-    const { id, data } = props ?? {};
-
-    return setCommunityMembership(id, data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type SetCommunityMembershipMutationResult = NonNullable<
-  Awaited<ReturnType<typeof setCommunityMembership>>
->;
-export type SetCommunityMembershipMutationBody =
-  BodyType<CommunityMembershipInput>;
-export type SetCommunityMembershipMutationError = ErrorType<void>;
-
-/**
- * @summary Join or leave a community
- */
-export const useSetCommunityMembership = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof setCommunityMembership>>,
-    TError,
-    { id: number; data: BodyType<CommunityMembershipInput> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof setCommunityMembership>>,
-  TError,
-  { id: number; data: BodyType<CommunityMembershipInput> },
-  TContext
-> => {
-  return useMutation(getSetCommunityMembershipMutationOptions(options));
-};
 
 /**
  * @summary List published questions for a city

@@ -14,5 +14,4 @@ export const SubmitContentReportInputTargetType = {
   news_item: "news_item",
   qa_question: "qa_question",
   qa_answer: "qa_answer",
-  community: "community",
 } as const;

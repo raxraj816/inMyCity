@@ -6,7 +6,7 @@ import { z } from "zod/v4";
  * Content types a reader can report. Kept as a plain string column rather than a Postgres
  * enum so adding a surface does not need a migration dance.
  */
-export const REPORTABLE_TYPES = ["pulse_post", "news_item", "qa_question", "qa_answer", "community"] as const;
+export const REPORTABLE_TYPES = ["pulse_post", "news_item", "qa_question", "qa_answer"] as const;
 export type ReportableType = (typeof REPORTABLE_TYPES)[number];
 
 export const REPORT_REASONS = [

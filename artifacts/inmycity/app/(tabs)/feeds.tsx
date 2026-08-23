@@ -21,19 +21,15 @@ import { AiChatFab } from "@/components/AiChatFab";
 import { ReportContentSheet, type ReportTarget } from "@/components/ReportContentSheet";
 import { useCity } from "@/context/CityContext";
 import {
-  getGetCommunitiesQueryKey,
   getGetNewsItemsQueryKey,
   getGetPulsePostsQueryKey,
   getGetQaQuestionsQueryKey,
-  useGetCommunities,
   useGetCommunityPolicy,
   useGetNewsItems,
   useGetPulsePosts,
   useGetQaQuestions,
-  useSetCommunityMembership,
   useToggleQaUpvote,
   useTogglePulseReaction,
-  type Community,
   type NewsItem,
   type PulsePost,
   type QaQuestion,
@@ -55,12 +51,11 @@ import {
  *   is one tap from the content rather than buried in a settings page.
  */
 
-type MainTab = "pulse" | "news" | "community" | "qa";
+type MainTab = "pulse" | "news" | "qa";
 
 const TABS: { id: MainTab; label: string; icon: React.ComponentProps<typeof Feather>["name"] }[] = [
   { id: "pulse", label: "Pulse", icon: "zap" },
   { id: "news", label: "News", icon: "bell" },
-  { id: "community", label: "Community", icon: "users" },
   { id: "qa", label: "Q&A", icon: "message-circle" },
 ];
 
@@ -146,16 +141,12 @@ export default function FeedsScreen() {
   const news = useGetNewsItems(cityParams, {
     query: { enabled, queryKey: getGetNewsItemsQueryKey(cityParams) },
   });
-  const communities = useGetCommunities(cityParams, {
-    query: { enabled, queryKey: getGetCommunitiesQueryKey(cityParams) },
-  });
   const questions = useGetQaQuestions(cityParams, {
     query: { enabled, queryKey: getGetQaQuestionsQueryKey(cityParams) },
   });
   const { data: policy } = useGetCommunityPolicy();
 
   const toggleReaction = useTogglePulseReaction();
-  const setMembership = useSetCommunityMembership();
   const toggleUpvote = useToggleQaUpvote();
 
   // Every mutation writes one row and changes one list, so the simplest correct thing is to
@@ -163,11 +154,10 @@ export default function FeedsScreen() {
   const invalidate = (key: unknown[]) => queryClient.invalidateQueries({ queryKey: key });
 
   const refreshControl = useListRefreshControl(
-    pulse.isRefetching || news.isRefetching || communities.isRefetching || questions.isRefetching,
+    pulse.isRefetching || news.isRefetching || questions.isRefetching,
     () => {
       pulse.refetch();
       news.refetch();
-      communities.refetch();
       questions.refetch();
     },
   );
@@ -377,41 +367,6 @@ export default function FeedsScreen() {
     );
   };
 
-  const renderCommunity = () => {
-    if (communities.isLoading) return <LoadingList bottomPad={bottomPad} />;
-    if (communities.isError) {
-      return <ErrorState error={communities.error} onRetry={() => communities.refetch()} subject="communities" />;
-    }
-
-    const items = communities.data ?? [];
-    if (items.length === 0) {
-      return <EmptyState icon="users" title="No communities yet" message={`We haven't set up communities for ${cityName}.`} />;
-    }
-
-    return (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 12, paddingBottom: bottomPad, paddingHorizontal: 16, gap: 12 }}
-        refreshControl={refreshControl}
-      >
-        {items.map((community) => (
-          <CommunityCard
-            key={community.id}
-            community={community}
-            colors={colors}
-            pending={setMembership.isPending}
-            onToggle={() =>
-              setMembership.mutate(
-                { id: community.id, data: { join: !community.viewerHasJoined } },
-                { onSuccess: () => invalidate(["/api/communities"]) },
-              )
-            }
-          />
-        ))}
-      </ScrollView>
-    );
-  };
-
   const renderQa = () => {
     if (questions.isLoading) return <LoadingList bottomPad={bottomPad} />;
     if (questions.isError) {
@@ -475,7 +430,6 @@ export default function FeedsScreen() {
       {header}
       {activeTab === "pulse" && renderPulse()}
       {activeTab === "news" && renderNews()}
-      {activeTab === "community" && renderCommunity()}
       {activeTab === "qa" && renderQa()}
       <ReportContentSheet target={reportTarget} onClose={() => setReportTarget(null)} />
       <AiChatFab />
@@ -681,67 +635,11 @@ function NewsCard({
   );
 }
 
-function CommunityCard({
-  community,
-  colors,
-  pending,
-  onToggle,
-}: {
-  community: Community;
-  colors: Colors;
-  pending: boolean;
-  onToggle: () => void;
-}) {
-  const joined = community.viewerHasJoined;
-
-  return (
-    <View style={[styles.communityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.communityTop}>
-        <View style={[styles.communityIcon, { backgroundColor: colors.accent }]}>
-          <Feather name={community.icon as React.ComponentProps<typeof Feather>["name"]} size={22} color={colors.amber} />
-        </View>
-        <View style={styles.communityInfo}>
-          <Text style={[styles.communityName, { color: colors.foreground }]}>{community.name}</Text>
-          <View style={styles.communityMeta}>
-            <Feather name="users" size={11} color={colors.mutedForeground} />
-            <Text style={[styles.communityMetaText, { color: colors.mutedForeground }]}>
-              {community.memberCount === 0
-                ? "Be the first to join"
-                : `${formatCount(community.memberCount)} ${community.memberCount === 1 ? "member" : "members"}`}
-            </Text>
-            {community.activitySummary ? (
-              <>
-                <Text style={[styles.communityMetaText, { color: colors.mutedForeground }]}>·</Text>
-                <Text style={[styles.communityMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>
-                  {community.activitySummary}
-                </Text>
-              </>
-            ) : null}
-          </View>
-        </View>
-        <TouchableOpacity
-          style={[styles.joinBtn, { backgroundColor: joined ? colors.muted : colors.amber, borderColor: joined ? colors.border : colors.amber }]}
-          onPress={onToggle}
-          disabled={pending}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={joined ? `Leave ${community.name}` : `Join ${community.name}`}
-        >
-          <Text style={[styles.joinBtnText, { color: joined ? colors.mutedForeground : "#fff" }]}>{joined ? "Joined" : "Join"}</Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={[styles.communityDesc, { color: colors.mutedForeground }]}>{community.description}</Text>
-      <View style={styles.communityTags}>
-        {community.tags.map((tag) => (
-          <View key={tag} style={[styles.communityTag, { backgroundColor: colors.muted }]}>
-            <Text style={[styles.communityTagText, { color: colors.mutedForeground }]}>#{tag}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
+/**
+ * A question card carries three separate actions — open, upvote, report — so the card itself
+ * cannot also be one. Nesting a button inside a button is invalid HTML on the web build and a
+ * hydration error, and it leaves a screen reader with controls inside a control.
+ */
 function QuestionCard({
   question,
   colors,
@@ -756,13 +654,7 @@ function QuestionCard({
   onReport: () => void;
 }) {
   return (
-    <TouchableOpacity
-      activeOpacity={0.88}
-      onPress={onOpen}
-      style={[styles.qaCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-      accessibilityRole="button"
-      accessibilityLabel={`${question.question}. ${question.answerCount} ${question.answerCount === 1 ? "answer" : "answers"}`}
-    >
+    <View style={[styles.qaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.qaTop}>
         <View style={[styles.qaAvatar, { backgroundColor: colors.amber + "20" }]}>
           <Text style={[styles.qaAvatarText, { color: colors.amber }]}>{question.authorInitials}</Text>
@@ -776,17 +668,25 @@ function QuestionCard({
         </TouchableOpacity>
       </View>
 
-      <Text style={[styles.qaQuestion, { color: colors.foreground }]}>{question.question}</Text>
+      <TouchableOpacity
+        onPress={onOpen}
+        activeOpacity={0.7}
+        style={styles.qaBody}
+        accessibilityRole="button"
+        accessibilityLabel={`${question.question}. ${question.answerCount} ${question.answerCount === 1 ? "answer" : "answers"}`}
+      >
+        <Text style={[styles.qaQuestion, { color: colors.foreground }]}>{question.question}</Text>
 
-      {question.tags.length > 0 ? (
-        <View style={styles.qaTags}>
-          {question.tags.map((tag) => (
-            <View key={tag} style={[styles.qaTag, { backgroundColor: colors.muted }]}>
-              <Text style={[styles.qaTagText, { color: colors.mutedForeground }]}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
+        {question.tags.length > 0 ? (
+          <View style={styles.qaTags}>
+            {question.tags.map((tag) => (
+              <View key={tag} style={[styles.qaTag, { backgroundColor: colors.muted }]}>
+                <Text style={[styles.qaTagText, { color: colors.mutedForeground }]}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+      </TouchableOpacity>
 
       <View style={[styles.qaFooter, { borderTopColor: colors.border }]}>
         <TouchableOpacity
@@ -801,15 +701,22 @@ function QuestionCard({
             {question.upvoteCount}
           </Text>
         </TouchableOpacity>
-        <View style={styles.qaAnswerCount}>
+
+        <TouchableOpacity
+          style={styles.qaAnswerCount}
+          onPress={onOpen}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Read ${question.answerCount} ${question.answerCount === 1 ? "answer" : "answers"}`}
+        >
           <Feather name="message-square" size={14} color={colors.mutedForeground} />
           <Text style={[styles.qaAnswerText, { color: colors.mutedForeground }]}>
             {question.answerCount} {question.answerCount === 1 ? "answer" : "answers"}
           </Text>
-        </View>
-        <Feather name="chevron-right" size={16} color={colors.mutedForeground} style={{ marginLeft: "auto" }} />
+          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -884,32 +791,19 @@ const styles = StyleSheet.create({
   newsFooter: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   newsRead: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
 
-  communityCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
-  communityTop: { flexDirection: "row", alignItems: "center", gap: 12 },
-  communityIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  communityInfo: { flex: 1 },
-  communityName: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
-  communityMeta: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },
-  communityMetaText: { fontFamily: "Inter_400Regular", fontSize: 11 },
-  joinBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
-  joinBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  communityDesc: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19 },
-  communityTags: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  communityTag: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
-  communityTagText: { fontFamily: "Inter_500Medium", fontSize: 11 },
-
   qaCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
   qaTop: { flexDirection: "row", alignItems: "center", gap: 10 },
   qaAvatar: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   qaAvatarText: { fontFamily: "Inter_700Bold", fontSize: 12 },
   qaAuthorRow: { flex: 1 },
+  qaBody: { gap: 10 },
   qaAuthor: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
   qaTime: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 1 },
   qaQuestion: { fontFamily: "Inter_600SemiBold", fontSize: 15, lineHeight: 22 },
   qaTags: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   qaTag: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
   qaTagText: { fontFamily: "Inter_500Medium", fontSize: 11 },
-  qaFooter: { flexDirection: "row", alignItems: "center", gap: 16, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
+  qaFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
   qaUpvote: { flexDirection: "row", alignItems: "center", gap: 5 },
   qaUpvoteText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
   qaAnswerCount: { flexDirection: "row", alignItems: "center", gap: 5 },

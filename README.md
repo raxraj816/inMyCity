@@ -113,6 +113,25 @@ DATABASE_URL=postgres://inmycity:inmycity@localhost:5432/inmycity
 EXPO_PUBLIC_API_BASE_URL=http://localhost:3001
 ```
 
+Building the app for deployment needs a host to build against:
+
+```sh
+EXPO_PUBLIC_APP_URL=inmycity.app
+```
+
+`pnpm --filter @workspace/inmycity run build` produces a static Expo Go deployment and writes
+this domain into the bundles and both manifests, so it has no default — a guess would give you
+a build that succeeds and then points Expo Go somewhere that does not serve it. For a throwaway
+local build, pass `LOCAL_APP_URL` instead:
+
+```sh
+LOCAL_APP_URL=localhost:8081 corepack pnpm --filter @workspace/inmycity run build
+```
+
+Neither is needed for `dev:app`, `typecheck` or `test`. To check that the app compiles, reach
+for `corepack pnpm run typecheck` — the build bundles both platforms through Metro and takes
+minutes.
+
 Optional AI settings:
 
 ```sh

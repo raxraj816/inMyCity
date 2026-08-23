@@ -8,6 +8,9 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+# Output of scripts/build.js. Its ios/ and android/ subdirectories already matched the native
+# patterns below, but the bundled assets beside them did not.
+static-build/
 
 # Native
 ios/

@@ -9,7 +9,7 @@ import {
   Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 
@@ -35,7 +35,7 @@ import {
   type Hotel,
   type Activity,
 } from "@workspace/api-client-react";
-import { MUMBAI_LAUNCH_ZONES, currencyFor, formatPriceForCity } from "@workspace/city-config";
+import { MUMBAI_LAUNCH_ZONES, formatPriceForCity } from "@workspace/city-config";
 
 const PLACE_FILTERS = [
   { id: "all", label: "All" },
@@ -87,7 +87,11 @@ const GUIDE_FILTERS = [
  * emergency number is an edit rather than a release — and neighbourhoods come from
  * `MUMBAI_LAUNCH_ZONES`, which was always the better source and is now the only one.
  *
- * Currency is resolved by `currencyFor`. It is never stored or written into copy: the old
+ * The screen no longer renders `cityGuide.facts`. They were a horizontal scroller in the hero
+ * and a starter-guide sheet behind an unlabelled icon, and both cost more space than they
+ * returned; the rows stay in the API for whatever surfaces them next.
+ *
+ * Money goes through `formatPriceForCity` and is never written into copy: the old
  * `CITY_AT_A_GLANCE` hardcoded "INR (₹)" per city, which is exactly how a Mumbai row ends up
  * priced in dollars.
  */
@@ -100,7 +104,6 @@ export default function CityGuideScreen() {
   const { selectedCity } = useCity();
   const [placeFilter, setPlaceFilter] = useState("all");
   const [guideFilter, setGuideFilter] = useState("all");
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [activitySort, setActivitySort] = useState("popular");
   const [activityDuration, setActivityDuration] = useState("all");
   const [audienceFilter, setAudienceFilter] = useState("all");
@@ -116,13 +119,8 @@ export default function CityGuideScreen() {
     { query: { enabled: Boolean(cityName), queryKey: getGetCityGuideQueryKey({ city: cityName ?? "" }) } },
   );
 
-  const facts = cityGuide?.facts ?? [];
   const insiderTips = cityGuide?.insiderTips ?? [];
-  const factValue = (label: string) => facts.find((fact) => fact.label === label)?.value;
   const tagline = cityGuide?.tagline ?? "Discover this city";
-  // The one fact that is computed rather than stored, so it can never disagree with a price.
-  const currency = currencyFor(cityName);
-  const currencyLabel = `${currency.code} (${currency.symbol})`;
 
   const { data: itineraries = [], isLoading: iLoading, isRefetching: iRefetching,
     error: iError, refetch: iRefetch } = useGetItineraries({ city: cityName });
@@ -210,87 +208,78 @@ export default function CityGuideScreen() {
         {iError ? <ErrorState error={iError} onRetry={iRefetch} subject="city guides" /> : null}
 
         <View style={[styles.heroBanner, { backgroundColor: colors.navy }]}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.heroContent}>
-              <Text style={styles.heroEyebrow}>Visiting</Text>
-              <Text style={styles.heroCity}>{selectedCity?.displayName ?? "Your City"}</Text>
-              <Text style={styles.heroTagline}>{tagline}</Text>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.82}
-              style={[styles.heroInfoButton, { backgroundColor: "rgba(249,115,22,0.16)", borderColor: "rgba(249,115,22,0.34)" }]}
-              onPress={() => setDetailsOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Open Mumbai city details"
-            >
-              <MaterialCommunityIcons name="star-four-points" size={20} color="#fb923c" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.heroDivider} />
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.heroFactsScroll}>
-            {[
-              { icon: "sun", label: "Best season", value: factValue("Best Season") ?? "Check locally" },
-              { icon: "navigation", label: "Transit", value: factValue("Getting Around") ?? "Public transit" },
-              { icon: "clock", label: "Timezone", value: cityGuide?.timezoneLabel ?? "Local time" },
-              { icon: "calendar", label: "Trip length", value: cityGuide?.tripLength ?? "2–4 days" },
-              { icon: "credit-card", label: "Currency", value: currencyLabel },
-            ].map((item) => (
-              <View key={item.label} style={styles.heroFactPill}>
-                <Feather name={item.icon as any} size={12} color="rgba(249,115,22,0.9)" />
-                <View>
-                  <Text style={styles.heroFactLabel}>{item.label}</Text>
-                  <Text style={styles.heroFactValue}>{item.value}</Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-
+          <Text style={styles.heroEyebrow}>Visiting</Text>
+          <Text style={styles.heroCity}>{selectedCity?.displayName ?? "Your City"}</Text>
+          <Text style={styles.heroTagline}>{tagline}</Text>
         </View>
 
-        {neighborhoods.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader title="Neighborhoods" icon="map" colors={colors} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.neighborhoodsScroll}>
-              {neighborhoods.map((hood) => (
+        <View style={styles.section}>
+          <SectionHeader title="Curated Guides" icon="map" colors={colors} onSeeAll={() => router.push("/itineraries" as any)} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.guideFilterScroll, { paddingBottom: 8 }]}>
+            {GUIDE_FILTERS.map((filter) => {
+              const active = guideFilter === filter.id;
+              return (
                 <TouchableOpacity
-                  key={hood.name}
-                  activeOpacity={0.8}
-                  style={[styles.neighborhoodCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => router.push(hood.id ? `/neighborhood/${hood.id}` as any : "/places")}
+                  key={filter.id}
+                  style={[styles.guideFilterPill, { backgroundColor: active ? "#4f46e5" : colors.card, borderColor: active ? "#4f46e5" : colors.border }]}
+                  onPress={() => setGuideFilter(filter.id)}
                 >
-                  <View style={[styles.neighborhoodDot, { backgroundColor: hood.color }]} />
-                  <Text style={[styles.neighborhoodName, { color: colors.foreground }]}>{hood.name}</Text>
-                  <Text style={[styles.neighborhoodVibe, { color: colors.mutedForeground }]}>{hood.vibe}</Text>
+                  <Text style={[styles.guideFilterText, { color: active ? "#fff" : colors.foreground }]}>{filter.label}</Text>
                 </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+          {!iLoading && day1Stops.length > 0 && (
+            <DayPlanPreview
+              stops={day1Stops}
+              colors={colors}
+              onPress={() => itineraries[0] && router.push(`/itinerary/${itineraries[0].id}` as any)}
+            />
+          )}
+          {iLoading ? (
+            <View style={styles.skeletonRow}>
+              <SkeletonCard height={220} style={styles.guideSkeletonCard} />
+              <SkeletonCard height={220} style={styles.guideSkeletonCard} />
+            </View>
+          ) : guideItems.length === 0 ? (
+            <EmptySection icon="map" message="No guides available for this city yet." colors={colors} />
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
+              {guideItems.map((itin) => (
+                <ItineraryGuideCard key={itin.id} itinerary={itin} colors={colors} onPress={() => router.push(`/itinerary/${itin.id}` as any)} />
               ))}
             </ScrollView>
-          </View>
-        )}
+          )}
+        </View>
 
-        {insiderTips.length > 0 && (
+        {/* PLAN YOUR DAY SECTION */}
+        {!actLoading && activities.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader title="Insider tips" icon="zap" colors={colors} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.insiderScroll}>
-              {insiderTips.map((tip) => (
+            <SectionHeader title="Plan Your Day" icon="clock" colors={colors} />
+            <View style={styles.todTabRow}>
+              {TIME_OF_DAY.map((slot) => (
                 <TouchableOpacity
-                  key={tip.id}
-                  activeOpacity={tip.neighborhoodId ? 0.85 : 1}
-                  disabled={!tip.neighborhoodId}
-                  onPress={() => tip.neighborhoodId && router.push(`/neighborhood/${tip.neighborhoodId}` as any)}
-                  style={[styles.insiderCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  accessibilityRole={tip.neighborhoodId ? "button" : "text"}
-                  accessibilityLabel={`${tip.label}. ${tip.tip}`}
+                  key={slot.id}
+                  style={[styles.todTab, { backgroundColor: todTime === slot.id ? slot.color : colors.card, borderColor: todTime === slot.id ? slot.color : colors.border }]}
+                  onPress={() => setTodTime(slot.id)}
                 >
-                  <View style={[styles.insiderIcon, { backgroundColor: tip.color + "18" }]}>
-                    <Feather name={tip.icon as any} size={14} color={tip.color} />
+                  <Feather name={slot.icon as any} size={14} color={todTime === slot.id ? "#fff" : colors.mutedForeground} />
+                  <View>
+                    <Text style={[styles.todTabLabel, { color: todTime === slot.id ? "#fff" : colors.foreground }]}>{slot.label}</Text>
+                    <Text style={[styles.todTabHint, { color: todTime === slot.id ? "rgba(255,255,255,0.7)" : colors.mutedForeground }]}>{slot.hint}</Text>
                   </View>
-                  <Text style={[styles.insiderLabel, { color: tip.color }]}>{tip.label}</Text>
-                  <Text style={[styles.insiderText, { color: colors.foreground }]}>{tip.tip}</Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
+            {todActivities.length === 0 ? (
+              <EmptySection icon="clock" message="No activities for this time slot yet." colors={colors} />
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
+                {todActivities.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} colors={colors} sort={activitySort} />
+                ))}
+              </ScrollView>
+            )}
           </View>
         )}
 
@@ -301,6 +290,7 @@ export default function CityGuideScreen() {
               <SkeletonCard height={220} style={styles.guideSkeletonCard} />
               <SkeletonCard height={220} style={styles.guideSkeletonCard} />
             </View>
+
           ) : placeHighlights.length === 0 ? (
             <EmptySection icon="star" message="No top highlights yet." colors={colors} />
           ) : (
@@ -423,36 +413,6 @@ export default function CityGuideScreen() {
           </View>
         )}
 
-        {/* PLAN YOUR DAY SECTION */}
-        {!actLoading && activities.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader title="Plan Your Day" icon="clock" colors={colors} />
-            <View style={styles.todTabRow}>
-              {TIME_OF_DAY.map((slot) => (
-                <TouchableOpacity
-                  key={slot.id}
-                  style={[styles.todTab, { backgroundColor: todTime === slot.id ? slot.color : colors.card, borderColor: todTime === slot.id ? slot.color : colors.border }]}
-                  onPress={() => setTodTime(slot.id)}
-                >
-                  <Feather name={slot.icon as any} size={14} color={todTime === slot.id ? "#fff" : colors.mutedForeground} />
-                  <View>
-                    <Text style={[styles.todTabLabel, { color: todTime === slot.id ? "#fff" : colors.foreground }]}>{slot.label}</Text>
-                    <Text style={[styles.todTabHint, { color: todTime === slot.id ? "rgba(255,255,255,0.7)" : colors.mutedForeground }]}>{slot.hint}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {todActivities.length === 0 ? (
-              <EmptySection icon="clock" message="No activities for this time slot yet." colors={colors} />
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
-                {todActivities.map((activity) => (
-                  <ActivityCard key={activity.id} activity={activity} colors={colors} sort={activitySort} />
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        )}
 
         <View style={styles.section}>
           <SectionHeader title="Taste of the City" icon="coffee" colors={colors} onSeeAll={() => router.push("/dining")} />
@@ -524,44 +484,6 @@ export default function CityGuideScreen() {
           )}
         </View>
 
-        <View style={styles.section}>
-          <SectionHeader title="Curated Guides" icon="map" colors={colors} onSeeAll={() => router.push("/itineraries" as any)} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.guideFilterScroll, { paddingBottom: 8 }]}>
-            {GUIDE_FILTERS.map((filter) => {
-              const active = guideFilter === filter.id;
-              return (
-                <TouchableOpacity
-                  key={filter.id}
-                  style={[styles.guideFilterPill, { backgroundColor: active ? "#4f46e5" : colors.card, borderColor: active ? "#4f46e5" : colors.border }]}
-                  onPress={() => setGuideFilter(filter.id)}
-                >
-                  <Text style={[styles.guideFilterText, { color: active ? "#fff" : colors.foreground }]}>{filter.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-          {!iLoading && day1Stops.length > 0 && (
-            <DayPlanPreview
-              stops={day1Stops}
-              colors={colors}
-              onPress={() => itineraries[0] && router.push(`/itinerary/${itineraries[0].id}` as any)}
-            />
-          )}
-          {iLoading ? (
-            <View style={styles.skeletonRow}>
-              <SkeletonCard height={220} style={styles.guideSkeletonCard} />
-              <SkeletonCard height={220} style={styles.guideSkeletonCard} />
-            </View>
-          ) : guideItems.length === 0 ? (
-            <EmptySection icon="map" message="No guides available for this city yet." colors={colors} />
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guidesScroll}>
-              {guideItems.map((itin) => (
-                <ItineraryGuideCard key={itin.id} itinerary={itin} colors={colors} onPress={() => router.push(`/itinerary/${itin.id}` as any)} />
-              ))}
-            </ScrollView>
-          )}
-        </View>
 
         <View style={styles.section}>
           <SectionHeader title="Events in the City" icon="calendar" colors={colors} onSeeAll={() => router.push("/events")} />
@@ -576,6 +498,51 @@ export default function CityGuideScreen() {
             upcomingEvents.map((event) => <EventRow key={event.id} event={event} colors={colors} onPress={() => router.push(`/event/${event.id}` as any)} />)
           )}
         </View>
+
+        {neighborhoods.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader title="Neighborhoods" icon="map" colors={colors} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.neighborhoodsScroll}>
+              {neighborhoods.map((hood) => (
+                <TouchableOpacity
+                  key={hood.name}
+                  activeOpacity={0.8}
+                  style={[styles.neighborhoodCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => router.push(hood.id ? `/neighborhood/${hood.id}` as any : "/places")}
+                >
+                  <View style={[styles.neighborhoodDot, { backgroundColor: hood.color }]} />
+                  <Text style={[styles.neighborhoodName, { color: colors.foreground }]}>{hood.name}</Text>
+                  <Text style={[styles.neighborhoodVibe, { color: colors.mutedForeground }]}>{hood.vibe}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {insiderTips.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader title="Insider tips" icon="zap" colors={colors} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.insiderScroll}>
+              {insiderTips.map((tip) => (
+                <TouchableOpacity
+                  key={tip.id}
+                  activeOpacity={tip.neighborhoodId ? 0.85 : 1}
+                  disabled={!tip.neighborhoodId}
+                  onPress={() => tip.neighborhoodId && router.push(`/neighborhood/${tip.neighborhoodId}` as any)}
+                  style={[styles.insiderCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  accessibilityRole={tip.neighborhoodId ? "button" : "text"}
+                  accessibilityLabel={`${tip.label}. ${tip.tip}`}
+                >
+                  <View style={[styles.insiderIcon, { backgroundColor: tip.color + "18" }]}>
+                    <Feather name={tip.icon as any} size={14} color={tip.color} />
+                  </View>
+                  <Text style={[styles.insiderLabel, { color: tip.color }]}>{tip.label}</Text>
+                  <Text style={[styles.insiderText, { color: colors.foreground }]}>{tip.tip}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
 
       {/* Sort Menu Modal */}
@@ -603,59 +570,6 @@ export default function CityGuideScreen() {
                   </TouchableOpacity>
                 );
               })}
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={detailsOpen} transparent animationType="fade" onRequestClose={() => setDetailsOpen(false)}>
-        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setDetailsOpen(false)}>
-          <TouchableOpacity activeOpacity={1} style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.modalHandle} />
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Mumbai Starter Guide</Text>
-              <TouchableOpacity onPress={() => setDetailsOpen(false)}>
-                <Feather name="x" size={20} color={colors.foreground} />
-              </TouchableOpacity>
-            </View>
-            <Text style={[styles.modalIntro, { color: colors.mutedForeground }]}>
-              First-time context, transit basics, rain backups, food areas, and city details in one place.
-            </Text>
-            <View style={styles.modalStarterList}>
-              {[
-                { icon: "compass", title: "First time in Mumbai", body: "Start with one neighborhood, one meal plan, and one transit anchor instead of trying to cross the whole city." },
-                { icon: "navigation", title: "Local train basics", body: "Use Western, Central, and Harbour lines for longer movement. Avoid peak crush hours when possible." },
-                { icon: "cloud-rain", title: "Rain-safe guide", body: "Keep indoor backups for monsoon days: cafes, malls, museums, movies, and station-adjacent plans." },
-                { icon: "coffee", title: "Food zones", body: "Bandra, Fort, Dadar, Ghatkopar, Juhu, and Colaba each solve a different food mood." },
-                { icon: "shield", title: "Safety/context", body: "Mumbai is active late, but plan clear pickup points, watch crowded markets, and keep a rain/traffic buffer." },
-              ].map((item) => (
-                <View key={item.title} style={[styles.modalStarterRow, { backgroundColor: colors.muted }]}>
-                  <View style={[styles.modalStarterIcon, { backgroundColor: colors.amber + "18" }]}>
-                    <Feather name={item.icon as any} size={14} color={colors.amber} />
-                  </View>
-                  <View style={styles.modalStarterText}>
-                    <Text style={[styles.modalStarterTitle, { color: colors.foreground }]}>{item.title}</Text>
-                    <Text style={[styles.modalStarterBody, { color: colors.mutedForeground }]}>{item.body}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-            <View style={styles.modalGlanceGrid}>
-              <GlanceStat icon="credit-card" label="Currency" value={currencyLabel} colors={colors} />
-              <GlanceStat icon="clock" label="Timezone" value={cityGuide?.timezoneLabel ?? "Local time"} colors={colors} />
-              <GlanceStat icon="trending-up" label="Known For" value={cityGuide?.knownFor ?? "Discover & explore"} colors={colors} />
-              <GlanceStat icon="calendar" label="Best Trip" value={cityGuide?.tripLength ?? "2–4 days"} colors={colors} />
-            </View>
-            <View style={styles.modalTipList}>
-              {facts.slice(0, 6).map((fact) => (
-                <View key={fact.id} style={[styles.modalTipRow, { borderBottomColor: colors.border }]}>
-                  <Feather name={fact.icon as any} size={14} color={colors.amber} />
-                  <View style={styles.modalTipText}>
-                    <Text style={[styles.modalTipLabel, { color: colors.foreground }]}>{fact.label}</Text>
-                    <Text style={[styles.modalTipValue, { color: colors.mutedForeground }]}>{fact.value}</Text>
-                  </View>
-                </View>
-              ))}
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -772,20 +686,6 @@ function HotelGuideCard({ hotel, colors, onPress }: { hotel: Hotel; colors: Retu
         {priceStr && <Text style={[styles.hotelPrice, { color: colors.amber }]}>{priceStr}</Text>}
       </View>
     </TouchableOpacity>
-  );
-}
-
-function GlanceStat({ icon, label, value, colors }: { icon: string; label: string; value: string; colors: ReturnType<typeof import("@/hooks/useColors").useColors>; }) {
-  return (
-    <View style={styles.glanceStat}>
-      <View style={[styles.glanceStatIcon, { backgroundColor: colors.accent }]}>
-        <Feather name={icon as any} size={14} color={colors.amber} />
-      </View>
-      <View style={styles.glanceStatText}>
-        <Text style={[styles.glanceStatLabel, { color: colors.mutedForeground }]}>{label}</Text>
-        <Text style={[styles.glanceStatValue, { color: colors.foreground }]}>{value}</Text>
-      </View>
-    </View>
   );
 }
 
@@ -920,17 +820,9 @@ function EventRow({ event, colors, onPress }: { event: Event; colors: ReturnType
 const styles = StyleSheet.create({
   container: { flex: 1 },
   heroBanner: { marginHorizontal: 20, marginBottom: 8, borderRadius: 20, padding: 20, overflow: "hidden", flexDirection: "column" },
-  heroTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
-  heroContent: { flex: 1 },
   heroEyebrow: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1 },
   heroCity: { fontFamily: "Inter_700Bold", fontSize: 26, color: "#fff", marginTop: 2 },
   heroTagline: { fontFamily: "Inter_400Regular", fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 },
-  heroInfoButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center", marginLeft: 12, ...Platform.select({ web: { boxShadow: "0 0 18px rgba(249,115,22,0.16)" }, default: { shadowColor: "#c2410c", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 10, elevation: 2 } }) },
-  heroDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.12)", marginVertical: 14 },
-  heroFactsScroll: { gap: 8, paddingBottom: 2 },
-  heroFactPill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 12 },
-  heroFactLabel: { fontFamily: "Inter_400Regular", fontSize: 10, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: 0.3 },
-  heroFactValue: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#fff", marginTop: 1 },
   section: { marginTop: 8 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
   sectionHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 7 },
@@ -1002,11 +894,6 @@ const styles = StyleSheet.create({
   emptyBox: { marginHorizontal: 20, borderRadius: 14, padding: 20, flexDirection: "row", alignItems: "center", gap: 10 },
   emptyText: { fontFamily: "Inter_400Regular", fontSize: 13, flex: 1 },
   glanceCard: { marginHorizontal: 20, borderRadius: 18, borderWidth: 1, padding: 16, flexDirection: "row", flexWrap: "wrap", gap: 14 },
-  glanceStat: { width: "45%", flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  glanceStatIcon: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  glanceStatText: { flex: 1 },
-  glanceStatLabel: { fontFamily: "Inter_400Regular", fontSize: 11 },
-  glanceStatValue: { fontFamily: "Inter_600SemiBold", fontSize: 13, lineHeight: 18, marginTop: 1 },
   activityCard: { width: 210, borderRadius: 18, overflow: "hidden", borderWidth: 1, ...Platform.select({ web: { boxShadow: "0 2px 10px rgba(0,0,0,0.08)" }, default: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 } }) },
   activityImageBox: { height: 120, position: "relative" },
   activityImage: { width: "100%", height: "100%" },
@@ -1041,19 +928,6 @@ const styles = StyleSheet.create({
   modalHandle: { width: 42, height: 4, borderRadius: 2, alignSelf: "center", backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 14 },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   modalTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
-  modalIntro: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, marginBottom: 14 },
-  modalStarterList: { gap: 10, marginBottom: 14 },
-  modalStarterRow: { flexDirection: "row", gap: 10, borderRadius: 14, padding: 12 },
-  modalStarterIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  modalStarterText: { flex: 1 },
-  modalStarterTitle: { fontFamily: "Inter_700Bold", fontSize: 13, marginBottom: 3 },
-  modalStarterBody: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 17 },
-  modalGlanceGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 14 },
-  modalTipList: { gap: 10 },
-  modalTipRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingBottom: 10, borderBottomWidth: 1 },
-  modalTipText: { flex: 1 },
-  modalTipLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
-  modalTipValue: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 2 },
 
   activityBadge: { position: "absolute", top: 8, right: 8, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
   activityBadgeText: { fontFamily: "Inter_700Bold", fontSize: 8, color: "#fff", letterSpacing: 0.5 },

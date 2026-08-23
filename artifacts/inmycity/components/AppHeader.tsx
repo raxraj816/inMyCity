@@ -24,6 +24,11 @@ export function AppHeader({
   const router = useRouter();
   const { selectedCity, showPicker } = useCity();
 
+  // The city belongs in the header on every screen, but while the picker is hidden for the
+  // Mumbai-only launch there is no control to hang it off. Naming it in the subtitle — the way
+  // Pulse already does — keeps it visible without a pill that looks pressable and is not.
+  const headerSubtitle = showCityPicker ? subtitle : `${selectedCity.name} · ${subtitle}`;
+
   return (
     <View
       style={[
@@ -34,8 +39,8 @@ export function AppHeader({
       <View style={styles.row}>
         <View style={styles.wordmarkBlock} accessible accessibilityRole="header">
           <Text style={[styles.wordmark, { color: colors.amber }]}>inMyCity</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}> 
-            {subtitle}
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
+            {headerSubtitle}
           </Text>
         </View>
 

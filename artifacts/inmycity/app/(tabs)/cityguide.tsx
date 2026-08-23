@@ -203,7 +203,7 @@ export default function CityGuideScreen() {
         contentContainerStyle={{ paddingBottom: bottomPadding }}
         refreshControl={refreshControl}
       >
-        <AppHeader subtitle="Your Visitor's Guide" topPadding={topPadding} showCityPicker />
+        <AppHeader subtitle="Your Visitor's Guide" topPadding={topPadding} />
 
         {/* The guide is mostly curated content that renders without the server. Only the
             itineraries section depends on it, so a failure is reported in place. */}
@@ -661,7 +661,7 @@ export default function CityGuideScreen() {
         </TouchableOpacity>
       </Modal>
 
-      <CityPicker />
+      {/* <CityPicker /> */}
       <AiChatFab />
     </View>
   );

@@ -139,7 +139,7 @@ export function CityPicker() {
         ))}
 
         {/* Section: Coming Soon */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 8 }]}>COMING SOON</Text>
+        {/* <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 8 }]}>COMING SOON</Text>
         {soonCities.map((city) => (
           <CityRow
             key={city.id}
@@ -147,7 +147,7 @@ export function CityPicker() {
             isSelected={false}
             onPress={() => {}}
           />
-        ))}
+        ))} */}
       </View>
     </Modal>
   );

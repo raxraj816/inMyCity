@@ -6,12 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type DigestSectionKind =
-  (typeof DigestSectionKind)[keyof typeof DigestSectionKind];
+export type FeedItemKind = (typeof FeedItemKind)[keyof typeof FeedItemKind];
 
-export const DigestSectionKind = {
-  pulse: "pulse",
+export const FeedItemKind = {
+  post: "post",
   news: "news",
   event: "event",
   deal: "deal",
+  ad: "ad",
 } as const;

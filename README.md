@@ -262,7 +262,7 @@ Important routes include:
 - `GET /api/activities`
 - `GET /api/transit/lines`
 - `GET /api/transit/routes`
-- `GET /api/pulse/digest` — the ranked Pulse front page
+- `GET /api/pulse/feed` — the ranked Pulse feed, one page at a time
 - `GET /api/pulse`, `GET /api/news`
 - `GET /api/city-guide` — the editable City Guide header, facts and insider tips
 - `GET /api/community-policy`, `POST /api/reports` — the published takedown path

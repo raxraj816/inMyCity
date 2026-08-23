@@ -575,10 +575,23 @@ export interface Activity {
   createdAt: string;
 }
 
+export type FeedItemKind = (typeof FeedItemKind)[keyof typeof FeedItemKind];
+
+export const FeedItemKind = {
+  post: "post",
+  news: "news",
+  event: "event",
+  deal: "deal",
+  ad: "ad",
+} as const;
+
 /**
- * One card in the digest. Every field beyond `id` and `title` is nullable — a section fills in only what its own kind carries. Prices are bare numbers; the client formats them through the city's own currency.
+ * One card in the Pulse feed. Every field beyond `key`, `kind`, `id` and `title` is nullable — each kind fills in only what it actually carries, so a text-only post and a deal are the same shape with different parts filled in. Prices are bare numbers; the client formats them through the city's own currency.
  */
-export interface DigestEntry {
+export interface FeedItem {
+  /** Unique across kinds and stable across pages, e.g. `deal:412`. */
+  key: string;
+  kind: FeedItemKind;
   id: number;
   title: string;
   /** @nullable */
@@ -588,27 +601,37 @@ export interface DigestEntry {
   /** @nullable */
   imageUrl?: string | null;
   /** @nullable */
+  mediaType?: string | null;
+  /** @nullable */
+  link?: string | null;
+  /** @nullable */
+  category?: string | null;
+  /** @nullable */
   price?: number | null;
   /** @nullable */
-  currency?: string | null;
+  originalPrice?: number | null;
   /** @nullable */
   isFree?: boolean | null;
   /** @nullable */
-  rating?: number | null;
+  discountText?: string | null;
   /** @nullable */
   startDate?: string | null;
   /** @nullable */
-  discountText?: string | null;
+  expiresAt?: string | null;
+  /** @nullable */
+  publishedAt?: string | null;
+  /** @nullable */
+  authorName?: string | null;
+  /** @nullable */
+  authorHandle?: string | null;
+  /** @nullable */
+  location?: string | null;
   /** @nullable */
   source?: string | null;
   /** @nullable */
   trustLabel?: string | null;
   /** @nullable */
   confidence?: string | null;
-  /** @nullable */
-  authorName?: string | null;
-  /** @nullable */
-  authorHandle?: string | null;
   /** @nullable */
   likeCount?: number | null;
   /** @nullable */
@@ -618,33 +641,28 @@ export interface DigestEntry {
   /** @nullable */
   viewerHasSaved?: boolean | null;
   /** @nullable */
-  answerCount?: number | null;
+  isFeatured?: boolean | null;
+  /**
+   * Set only on a sponsored card; its presence is what makes the label mandatory.
+   * @nullable
+   */
+  advertiserName?: string | null;
   /** @nullable */
-  upvoteCount?: number | null;
+  ctaLabel?: string | null;
   /** @nullable */
-  publishedAt?: string | null;
+  targetKind?: string | null;
+  /** @nullable */
+  targetId?: number | null;
 }
 
-export type DigestSectionKind =
-  (typeof DigestSectionKind)[keyof typeof DigestSectionKind];
-
-export const DigestSectionKind = {
-  pulse: "pulse",
-  news: "news",
-  event: "event",
-  deal: "deal",
-} as const;
-
-export interface DigestSection {
-  id: string;
-  label: string;
-  kind: DigestSectionKind;
-  entries: DigestEntry[];
-}
-
-export interface PulseDigest {
+export interface PulseFeedPage {
   city: string;
-  sections: DigestSection[];
+  items: FeedItem[];
+  /**
+   * Pass back as `cursor` for the next page. Null at the end of the feed. Opaque: it carries the clock the first page was ranked against, so a scroll stays stable while offers expire underneath it.
+   * @nullable
+   */
+  nextCursor: string | null;
 }
 
 export type PulsePostTier = (typeof PulsePostTier)[keyof typeof PulsePostTier];
@@ -1071,8 +1089,12 @@ export type GetPulsePostsParams = {
   offset?: number;
 };
 
-export type GetPulseDigestParams = {
+export type GetPulseFeedParams = {
   city: string;
+  /**
+   * The `nextCursor` from the previous page. Omit for the first page.
+   */
+  cursor?: string;
 };
 
 export type GetNewsItemsParams = {

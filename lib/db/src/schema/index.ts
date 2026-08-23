@@ -15,3 +15,4 @@ export * from "./pulse";
 export * from "./news";
 export * from "./moderation";
 export * from "./cityContent";
+export * from "./ads";

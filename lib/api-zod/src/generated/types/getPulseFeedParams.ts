@@ -5,9 +5,11 @@
  * inMyCity API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { DigestSection } from "./digestSection";
 
-export interface PulseDigest {
+export type GetPulseFeedParams = {
   city: string;
-  sections: DigestSection[];
-}
+  /**
+   * The `nextCursor` from the previous page. Omit for the first page.
+   */
+  cursor?: string;
+};

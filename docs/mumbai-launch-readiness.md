@@ -667,13 +667,19 @@ Four things changed shape in the process, and all four are the same decision:
 - **Seeded Pulse posts carry no image.** Every image in the catalogue is still stock, and 2.3 is
   explicit that a stock photo on a real named place destroys trust faster than no photo does.
   The cards render text-first until commissioned photography exists.
-- **Pulse is one page that answers one question.** It shipped as a feed of one content type
-  behind a row of filter chips, which meant the busiest tab could only show the least of what
-  the app knows. It is a front page now — `GET /pulse/digest` returns local news, offers that
-  are running out, events that have not happened yet, and the city desk, each section with a
-  stated ordering rather than a score. No tabs and no chips: a filter over five posts filters
-  nothing, and top-rated restaurants and films turned out to belong to the category grid, not
-  here. Pulse holds what changes; the catalogue is browsed elsewhere.
+- **Pulse is one scrolling feed.** It shipped as a feed of one content type behind a row of
+  filter chips, became a digest of four sections of horizontal tiles, and is now a single
+  vertical column: `GET /pulse/feed` returns local news, offers that are running out, events
+  that have not happened yet, the city desk and any booked placements, ranked into one list and
+  paged. The tiles were the problem — nothing on the page was ever the main thing, and an offer
+  ending tonight got the same 172 points as one ending in a fortnight. Full-width cards mean
+  fewer things seen and each one actually seen.
+
+  No tabs and no chips, and this time it is load-bearing rather than tidy: with no filter to
+  rescue a bad ordering, the ranking has to be right, so it stays a stated rule — three urgency
+  bands, closest to now first inside a band, never more than two cards of one kind in a row.
+  Anyone who wants only offers already has the Deals screen. Top-rated restaurants and films
+  belong to the category grid; Pulse holds what changes.
 - **Q&A is removed.** It was built and it worked — real questions with checked answers — but it
   is not part of what Pulse is for, and a surface nobody enters is a surface nobody maintains.
   Tables, routes, screens and spec entries are all gone rather than left dark. Git history has

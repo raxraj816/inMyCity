@@ -15,6 +15,7 @@ import {
   newsSourcesTable,
   placesTable,
   pulsePostsTable,
+  sponsoredPlacementsTable,
 } from "@workspace/db";
 
 import type { SearchableKind } from "./search/searchFields";
@@ -418,6 +419,32 @@ export const ADMIN_COLLECTIONS = {
     externalIdColumn: insiderTipsTable.externalId,
     lastVerifiedColumn: insiderTipsTable.lastVerifiedAt,
     orderColumn: insiderTipsTable.sortOrder,
+    deletable: true,
+  },
+  sponsored_placements: {
+    label: "Sponsored placements",
+    table: sponsoredPlacementsTable,
+    idColumn: sponsoredPlacementsTable.id,
+    fields: {
+      externalId: "string",
+      city: "string",
+      advertiserName: "string",
+      headline: "string",
+      body: "text",
+      imageUrl: "string",
+      ctaLabel: "string",
+      targetKind: "string",
+      targetId: "int",
+      startsAt: "date",
+      endsAt: "date",
+      isActive: "boolean",
+      priority: "int",
+    },
+    required: ["externalId", "city", "advertiserName", "targetKind", "targetId", "startsAt", "endsAt"],
+    searchColumns: [sponsoredPlacementsTable.advertiserName, sponsoredPlacementsTable.headline],
+    cityColumn: sponsoredPlacementsTable.city,
+    externalIdColumn: sponsoredPlacementsTable.externalId,
+    orderColumn: sponsoredPlacementsTable.startsAt,
     deletable: true,
   },
 } as const satisfies Record<string, CollectionSpec>;

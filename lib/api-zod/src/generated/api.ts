@@ -1265,14 +1265,20 @@ export const SubmitPulsePostBody = zod.object({
 });
 
 /**
- * What is happening in this city now: local news, offers that are running out, events that have not happened yet, and the city desk. Each section states what it holds and how it is ordered; a section with nothing in it is omitted rather than returned empty.
- * @summary The ranked Pulse front page for a city
+ * Everything happening in this city as a single ranked column: local news, offers that are running out, events that have not happened yet, the city desk, and sponsored cards in fixed slots. Ordering is stated rather than scored — three urgency bands, closest to now first within a band, and never more than two cards of one kind in a row.
+ * @summary The Pulse feed for a city, one page at a time
  */
-export const GetPulseDigestQueryParams = zod.object({
+export const GetPulseFeedQueryParams = zod.object({
   city: zod.coerce.string(),
+  cursor: zod.coerce
+    .string()
+    .optional()
+    .describe(
+      "The `nextCursor` from the previous page. Omit for the first page.",
+    ),
 });
 
-export const GetPulseDigestHeader = zod.object({
+export const GetPulseFeedHeader = zod.object({
   "X-Device-Id": zod
     .string()
     .optional()
@@ -1281,46 +1287,63 @@ export const GetPulseDigestHeader = zod.object({
     ),
 });
 
-export const GetPulseDigestResponse = zod.object({
+export const GetPulseFeedResponse = zod.object({
   city: zod.string(),
-  sections: zod.array(
-    zod.object({
-      id: zod.string(),
-      label: zod.string(),
-      kind: zod.enum(["pulse", "news", "event", "deal"]),
-      entries: zod.array(
-        zod
-          .object({
-            id: zod.number(),
-            title: zod.string(),
-            subtitle: zod.string().nullish(),
-            body: zod.string().nullish(),
-            imageUrl: zod.string().nullish(),
-            price: zod.number().nullish(),
-            currency: zod.string().nullish(),
-            isFree: zod.boolean().nullish(),
-            rating: zod.number().nullish(),
-            startDate: zod.string().nullish(),
-            discountText: zod.string().nullish(),
-            source: zod.string().nullish(),
-            trustLabel: zod.string().nullish(),
-            confidence: zod.string().nullish(),
-            authorName: zod.string().nullish(),
-            authorHandle: zod.string().nullish(),
-            likeCount: zod.number().nullish(),
-            saveCount: zod.number().nullish(),
-            viewerHasLiked: zod.boolean().nullish(),
-            viewerHasSaved: zod.boolean().nullish(),
-            answerCount: zod.number().nullish(),
-            upvoteCount: zod.number().nullish(),
-            publishedAt: zod.string().nullish(),
-          })
+  items: zod.array(
+    zod
+      .object({
+        key: zod
+          .string()
           .describe(
-            "One card in the digest. Every field beyond `id` and `title` is nullable — a section fills in only what its own kind carries. Prices are bare numbers; the client formats them through the city's own currency.",
+            "Unique across kinds and stable across pages, e.g. `deal:412`.",
           ),
+        kind: zod.enum(["post", "news", "event", "deal", "ad"]),
+        id: zod.number(),
+        title: zod.string(),
+        subtitle: zod.string().nullish(),
+        body: zod.string().nullish(),
+        imageUrl: zod.string().nullish(),
+        mediaType: zod.string().nullish(),
+        link: zod.string().nullish(),
+        category: zod.string().nullish(),
+        price: zod.number().nullish(),
+        originalPrice: zod.number().nullish(),
+        isFree: zod.boolean().nullish(),
+        discountText: zod.string().nullish(),
+        startDate: zod.string().nullish(),
+        expiresAt: zod.string().nullish(),
+        publishedAt: zod.string().nullish(),
+        authorName: zod.string().nullish(),
+        authorHandle: zod.string().nullish(),
+        location: zod.string().nullish(),
+        source: zod.string().nullish(),
+        trustLabel: zod.string().nullish(),
+        confidence: zod.string().nullish(),
+        likeCount: zod.number().nullish(),
+        saveCount: zod.number().nullish(),
+        viewerHasLiked: zod.boolean().nullish(),
+        viewerHasSaved: zod.boolean().nullish(),
+        isFeatured: zod.boolean().nullish(),
+        advertiserName: zod
+          .string()
+          .nullish()
+          .describe(
+            "Set only on a sponsored card; its presence is what makes the label mandatory.",
+          ),
+        ctaLabel: zod.string().nullish(),
+        targetKind: zod.string().nullish(),
+        targetId: zod.number().nullish(),
+      })
+      .describe(
+        "One card in the Pulse feed. Every field beyond `key`, `kind`, `id` and `title` is nullable — each kind fills in only what it actually carries, so a text-only post and a deal are the same shape with different parts filled in. Prices are bare numbers; the client formats them through the city's own currency.",
       ),
-    }),
   ),
+  nextCursor: zod
+    .string()
+    .nullable()
+    .describe(
+      "Pass back as `cursor` for the next page. Null at the end of the feed. Opaque: it carries the clock the first page was ranked against, so a scroll stays stable while offers expire underneath it.",
+    ),
 });
 
 /**

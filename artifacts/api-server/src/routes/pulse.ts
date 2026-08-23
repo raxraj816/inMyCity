@@ -3,7 +3,8 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { db, pulsePostsTable, pulseReactionsTable, type PulsePost } from "@workspace/db";
 
 import { actorDisplayName, actorKeyFrom } from "../lib/actor";
-import { buildDigest } from "../lib/digest";
+import { buildFeed } from "../lib/feed";
+import { decodeCursor } from "../lib/feed/ranking";
 import { viewerReactions } from "../lib/pulseReactions";
 import { submissionsEnabled } from "../lib/features";
 import { parseLimit, parseOffset } from "../lib/pagination";
@@ -86,11 +87,15 @@ router.get("/pulse", async (req, res) => {
 });
 
 /**
- * The Pulse front page: a ranked mix of everything the app holds for this city.
+ * The Pulse feed: one ranked column of everything happening in this city.
  *
- * Registered before `/pulse/:id` so Express does not read "digest" as a post id.
+ * Registered before `/pulse/:id` so Express does not read "feed" as a post id.
+ *
+ * The cursor is opaque and carries the clock the first page was built against, which is what
+ * keeps a scroll stable while offers expire underneath it. An unreadable cursor is not an
+ * error — it means start at the top.
  */
-router.get("/pulse/digest", async (req, res) => {
+router.get("/pulse/feed", async (req, res) => {
   try {
     const city = req.query.city as string | undefined;
     if (!city) {
@@ -98,8 +103,8 @@ router.get("/pulse/digest", async (req, res) => {
       return;
     }
 
-    // The reader's own likes and saves are resolved in one pass over the posts the digest
-    // chose, so the featured card paints the right state on first render.
+    // The reader's own likes and saves are resolved in one pass over this city's posts, so
+    // every card paints the right state on first render rather than guessing until a tap.
     const actorKey = actorKeyFrom(req);
     const postIds = await db
       .select({ id: pulsePostsTable.id })
@@ -108,9 +113,9 @@ router.get("/pulse/digest", async (req, res) => {
 
     const viewer = await viewerReactions(actorKey, postIds.map((row) => row.id));
 
-    res.json({ city, sections: await buildDigest(city, viewer) });
+    res.json(await buildFeed(city, viewer, decodeCursor(req.query.cursor)));
   } catch (err) {
-    req.log.error({ err }, "Failed to build the Pulse digest");
+    req.log.error({ err }, "Failed to build the Pulse feed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

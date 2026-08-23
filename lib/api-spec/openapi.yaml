@@ -1125,15 +1125,16 @@ paths:
         "503":
           description: Submissions are not open yet
 
-  /pulse/digest:
+  /pulse/feed:
     get:
-      operationId: getPulseDigest
+      operationId: getPulseFeed
       tags: [pulse]
-      summary: The ranked Pulse front page for a city
+      summary: The Pulse feed for a city, one page at a time
       description: >-
-        What is happening in this city now: local news, offers that are running out, events
-        that have not happened yet, and the city desk. Each section states what it holds and
-        how it is ordered; a section with nothing in it is omitted rather than returned empty.
+        Everything happening in this city as a single ranked column: local news, offers that are
+        running out, events that have not happened yet, the city desk, and sponsored cards in
+        fixed slots. Ordering is stated rather than scored — three urgency bands, closest to now
+        first within a band, and never more than two cards of one kind in a row.
       parameters:
         - $ref: '#/components/parameters/DeviceIdHeader'
         - name: city
@@ -1141,15 +1142,18 @@ paths:
           required: true
           schema:
             type: string
+        - name: cursor
+          in: query
+          description: The `nextCursor` from the previous page. Omit for the first page.
+          schema:
+            type: string
       responses:
         "200":
-          description: The digest
+          description: A page of the feed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PulseDigest"
-        "400":
-          description: city is required
+                $ref: "#/components/schemas/PulseFeedPage"
 
   /pulse/{id}:
     get:
@@ -2312,14 +2316,21 @@ components:
         - images
         - tags
         - createdAt
-    DigestEntry:
+    FeedItem:
       type: object
-      required: [id, title]
+      required: [key, kind, id, title]
       description: >-
-        One card in the digest. Every field beyond `id` and `title` is nullable — a section
-        fills in only what its own kind carries. Prices are bare numbers; the client formats
-        them through the city's own currency.
+        One card in the Pulse feed. Every field beyond `key`, `kind`, `id` and `title` is
+        nullable — each kind fills in only what it actually carries, so a text-only post and a
+        deal are the same shape with different parts filled in. Prices are bare numbers; the
+        client formats them through the city's own currency.
       properties:
+        key:
+          type: string
+          description: Unique across kinds and stable across pages, e.g. `deal:412`.
+        kind:
+          type: string
+          enum: [post, news, event, deal, ad]
         id:
           type: integer
         title:
@@ -2330,27 +2341,37 @@ components:
           type: [string, 'null']
         imageUrl:
           type: [string, 'null']
+        mediaType:
+          type: [string, 'null']
+        link:
+          type: [string, 'null']
+        category:
+          type: [string, 'null']
         price:
           type: [number, 'null']
-        currency:
-          type: [string, 'null']
+        originalPrice:
+          type: [number, 'null']
         isFree:
           type: [boolean, 'null']
-        rating:
-          type: [number, 'null']
+        discountText:
+          type: [string, 'null']
         startDate:
           type: [string, 'null']
-        discountText:
+        expiresAt:
+          type: [string, 'null']
+        publishedAt:
+          type: [string, 'null']
+        authorName:
+          type: [string, 'null']
+        authorHandle:
+          type: [string, 'null']
+        location:
           type: [string, 'null']
         source:
           type: [string, 'null']
         trustLabel:
           type: [string, 'null']
         confidence:
-          type: [string, 'null']
-        authorName:
-          type: [string, 'null']
-        authorHandle:
           type: [string, 'null']
         likeCount:
           type: [integer, 'null']
@@ -2360,37 +2381,33 @@ components:
           type: [boolean, 'null']
         viewerHasSaved:
           type: [boolean, 'null']
-        answerCount:
-          type: [integer, 'null']
-        upvoteCount:
-          type: [integer, 'null']
-        publishedAt:
+        isFeatured:
+          type: [boolean, 'null']
+        advertiserName:
           type: [string, 'null']
-    DigestSection:
+          description: Set only on a sponsored card; its presence is what makes the label mandatory.
+        ctaLabel:
+          type: [string, 'null']
+        targetKind:
+          type: [string, 'null']
+        targetId:
+          type: [integer, 'null']
+    PulseFeedPage:
       type: object
-      required: [id, label, kind, entries]
-      properties:
-        id:
-          type: string
-        label:
-          type: string
-        kind:
-          type: string
-          enum: [pulse, news, event, deal]
-        entries:
-          type: array
-          items:
-            $ref: "#/components/schemas/DigestEntry"
-    PulseDigest:
-      type: object
-      required: [city, sections]
+      required: [city, items, nextCursor]
       properties:
         city:
           type: string
-        sections:
+        items:
           type: array
           items:
-            $ref: "#/components/schemas/DigestSection"
+            $ref: "#/components/schemas/FeedItem"
+        nextCursor:
+          type: [string, 'null']
+          description: >-
+            Pass back as `cursor` for the next page. Null at the end of the feed. Opaque: it
+            carries the clock the first page was ranked against, so a scroll stays stable while
+            offers expire underneath it.
     PulsePost:
       type: object
       required:

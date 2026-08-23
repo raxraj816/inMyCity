@@ -44,7 +44,7 @@ import type {
   GetMoviesParams,
   GetNewsItemsParams,
   GetPlacesParams,
-  GetPulseDigestParams,
+  GetPulseFeedParams,
   GetPulsePostsParams,
   GetRecommendationsParams,
   GetTransitLinesParams,
@@ -60,7 +60,7 @@ import type {
   Movie,
   NewsItem,
   Place,
-  PulseDigest,
+  PulseFeedPage,
   PulsePost,
   PulseReactionInput,
   PulseReactionState,
@@ -3786,10 +3786,10 @@ export const useSubmitPulsePost = <
 };
 
 /**
- * What is happening in this city now: local news, offers that are running out, events that have not happened yet, and the city desk. Each section states what it holds and how it is ordered; a section with nothing in it is omitted rather than returned empty.
- * @summary The ranked Pulse front page for a city
+ * Everything happening in this city as a single ranked column: local news, offers that are running out, events that have not happened yet, the city desk, and sponsored cards in fixed slots. Ordering is stated rather than scored — three urgency bands, closest to now first within a band, and never more than two cards of one kind in a row.
+ * @summary The Pulse feed for a city, one page at a time
  */
-export const getGetPulseDigestUrl = (params: GetPulseDigestParams) => {
+export const getGetPulseFeedUrl = (params: GetPulseFeedParams) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -3801,32 +3801,32 @@ export const getGetPulseDigestUrl = (params: GetPulseDigestParams) => {
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/pulse/digest?${stringifiedParams}`
-    : `/api/pulse/digest`;
+    ? `/api/pulse/feed?${stringifiedParams}`
+    : `/api/pulse/feed`;
 };
 
-export const getPulseDigest = async (
-  params: GetPulseDigestParams,
+export const getPulseFeed = async (
+  params: GetPulseFeedParams,
   options?: RequestInit,
-): Promise<PulseDigest> => {
-  return customFetch<PulseDigest>(getGetPulseDigestUrl(params), {
+): Promise<PulseFeedPage> => {
+  return customFetch<PulseFeedPage>(getGetPulseFeedUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getGetPulseDigestQueryKey = (params?: GetPulseDigestParams) => {
-  return [`/api/pulse/digest`, ...(params ? [params] : [])] as const;
+export const getGetPulseFeedQueryKey = (params?: GetPulseFeedParams) => {
+  return [`/api/pulse/feed`, ...(params ? [params] : [])] as const;
 };
 
-export const getGetPulseDigestQueryOptions = <
-  TData = Awaited<ReturnType<typeof getPulseDigest>>,
-  TError = ErrorType<void>,
+export const getGetPulseFeedQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPulseFeed>>,
+  TError = ErrorType<unknown>,
 >(
-  params: GetPulseDigestParams,
+  params: GetPulseFeedParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getPulseDigest>>,
+      Awaited<ReturnType<typeof getPulseFeed>>,
       TError,
       TData
     >;
@@ -3835,43 +3835,43 @@ export const getGetPulseDigestQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetPulseDigestQueryKey(params);
+  const queryKey = queryOptions?.queryKey ?? getGetPulseFeedQueryKey(params);
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPulseDigest>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPulseFeed>>> = ({
     signal,
-  }) => getPulseDigest(params, { signal, ...requestOptions });
+  }) => getPulseFeed(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getPulseDigest>>,
+    Awaited<ReturnType<typeof getPulseFeed>>,
     TError,
     TData
   > & { queryKey: QueryKey };
 };
 
-export type GetPulseDigestQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getPulseDigest>>
+export type GetPulseFeedQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPulseFeed>>
 >;
-export type GetPulseDigestQueryError = ErrorType<void>;
+export type GetPulseFeedQueryError = ErrorType<unknown>;
 
 /**
- * @summary The ranked Pulse front page for a city
+ * @summary The Pulse feed for a city, one page at a time
  */
 
-export function useGetPulseDigest<
-  TData = Awaited<ReturnType<typeof getPulseDigest>>,
-  TError = ErrorType<void>,
+export function useGetPulseFeed<
+  TData = Awaited<ReturnType<typeof getPulseFeed>>,
+  TError = ErrorType<unknown>,
 >(
-  params: GetPulseDigestParams,
+  params: GetPulseFeedParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getPulseDigest>>,
+      Awaited<ReturnType<typeof getPulseFeed>>,
       TError,
       TData
     >;
     request?: SecondParameter<typeof customFetch>;
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetPulseDigestQueryOptions(params, options);
+  const queryOptions = getGetPulseFeedQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

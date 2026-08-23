@@ -378,7 +378,7 @@ export default function ExploreScreen() {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader subtitle="City At Your Fingertips" topPadding={topPadding} showCityPicker />
+      <AppHeader subtitle="City At Your Fingertips" topPadding={topPadding} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -551,7 +551,7 @@ export default function ExploreScreen() {
         )}
       </ScrollView>
 
-      <CityPicker />
+      {/* <CityPicker /> */}
       <AiChatFab />
     </View>
   );

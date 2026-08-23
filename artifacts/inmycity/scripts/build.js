@@ -3,6 +3,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 const { Readable } = require("stream");
 const { pipeline } = require("stream/promises");
+const { pathToFileURL } = require("url");
 
 let metroProcess = null;
 
@@ -54,6 +55,25 @@ function stripProtocol(domain) {
   return new URL(urlString).host;
 }
 
+/**
+ * Loads the workspace `.env.local`, the same file every other entry point reads.
+ *
+ * Without this the variable below could be set in the documented place and the build would
+ * still fail, which is the one failure mode a developer has no way to debug.
+ */
+async function loadLocalEnv() {
+  const loader = path.join(workspaceRoot, "scripts", "load-local-env.mjs");
+  if (!fs.existsSync(loader)) return;
+  await import(pathToFileURL(loader).href);
+}
+
+/**
+ * The host this build will be served from.
+ *
+ * It is baked into `launchAsset.url` and into every asset URL in both manifests, so it cannot
+ * be defaulted: a guess would produce a build that succeeds and then points Expo Go at a
+ * domain that does not serve it, which is a far worse failure than this one.
+ */
 function getDeploymentDomain() {
   if (process.env.EXPO_PUBLIC_APP_URL) {
     return stripProtocol(process.env.EXPO_PUBLIC_APP_URL);
@@ -64,7 +84,22 @@ function getDeploymentDomain() {
   }
 
   console.error(
-    "ERROR: No app URL found. Set EXPO_PUBLIC_APP_URL or LOCAL_APP_URL",
+    [
+      "ERROR: no app URL found, so there is no host to build against.",
+      "",
+      "This step produces a static Expo Go deployment, and the domain it will be served",
+      "from is written into the bundles and both manifests. Set one of:",
+      "",
+      "  EXPO_PUBLIC_APP_URL   the real deployment host, e.g. inmycity.app",
+      "  LOCAL_APP_URL         a host for a throwaway local build, e.g. localhost:8081",
+      "",
+      "Put it in .env.local (see .env.example), or pass it inline:",
+      "",
+      "  LOCAL_APP_URL=localhost:8081 corepack pnpm --filter @workspace/inmycity run build",
+      "",
+      "To check that the app compiles, you want `corepack pnpm run typecheck` instead —",
+      "this script bundles both platforms through Metro and takes minutes.",
+    ].join("\n"),
   );
   process.exit(1);
 }
@@ -498,6 +533,7 @@ async function main() {
 
   setupSignalHandlers();
 
+  await loadLocalEnv();
   const domain = getDeploymentDomain();
   const baseUrl = `https://${domain}`;
   const timestamp = `${Date.now()}-${process.pid}`;

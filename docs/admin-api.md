@@ -39,7 +39,8 @@ POST   /api/admin/:collection/:id/verify # stamps lastVerifiedAt
 ```
 
 Collections: `places`, `events`, `deals`, `movies`, `hotels`, `activities`, `pulse_posts`,
-`news_items`, `news_sources`, `city_guides`, `city_facts`, `insider_tips`.
+`news_items`, `news_sources`, `city_guides`, `city_facts`, `insider_tips`,
+`sponsored_placements`.
 
 Four properties are worth knowing because they are enforced rather than conventional:
 
